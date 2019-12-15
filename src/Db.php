@@ -3,8 +3,8 @@
 namespace Pike;
 
 class Db {
-    public $tablePrefix;
-    public $database;
+    protected $tablePrefix;
+    protected $database;
     private $pdo;
     private $transactionLevel = 0;
     private $config;
@@ -19,13 +19,13 @@ class Db {
      * @throws \Pike\PikeException
      */
     public function open() {
-        $this->tablePrefix = $this->config['db.tablePrefix'];
+        $this->tablePrefix = $this->config['db.tablePrefix'] ?? '';
         $this->database = $this->config['db.database'];
         try {
             $this->pdo = new \PDO(
                 'mysql:host=' . $this->config['db.host'] .
                      ';dbname=' . $this->config['db.database'] .
-                     ';charset=' . $this->config['db.charset'],
+                     ';charset=' . $this->config['db.charset'] ?? 'utf8',
                 $this->config['db.user'],
                 $this->config['db.pass'],
                 [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]

@@ -22,10 +22,12 @@ final class App {
     /**
      * RadCMS:n entry-point.
      *
-     * @param \Pike\Request $request
-     * @param \Auryn\Injector $injector = new Auryn\Injector
+     * @param \Pike\Request|string $request
+     * @param string|\Auryn\Injector ...$args
      */
-    public function handleRequest(Request $request, Injector $injector = null) {
+    public function handleRequest($request, ...$args) {
+        if (is_string($request))
+            $request = Request::createFromGlobals($request, $args[0] ?? null);
         if (($match = $this->ctx->router->match($request->path, $request->method))) {
             $request->params = (object)$match['params'];
             // @allow \Pike\PikeException
@@ -35,8 +37,7 @@ final class App {
             if ($requireAuth && !$request->user) {
                 (new Response(403))->json(['err' => 'Login required']);
             } else {
-                $injector = $injector ?? new Injector();
-                $this->setupIocContainer($injector, $request);
+                $injector = $this->setupIocContainer(array_pop($args), $request);
                 $injector->execute($ctrlClassPath . '::' . $ctrlMethodName);
             }
         } else {
@@ -63,10 +64,12 @@ final class App {
         return $routeInfo;
     }
     /**
-     * @param \Auryn\Injector $container
+     * @param \Auryn\Injector|string $candidate
      * @param \Pike\Request $request
+     * @return \Auryn\Injector
      */
-    private function setupIocContainer($container, $request) {
+    private function setupIocContainer($candidate, $request) {
+        $container = !($candidate instanceof Injector) ? new Injector() : $candidate;
         $container->share($this->ctx->db);
         $container->share($this->ctx->auth);
         $container->share($request);
@@ -76,6 +79,7 @@ final class App {
             if (method_exists($clsPath, 'alterIoc'))
                 call_user_func([$clsPath, 'alterIoc'], $container);
         }
+        return $container;
     }
     /**
      * @param callable[] $modules
@@ -87,12 +91,13 @@ final class App {
         //
         if (!isset($ctx->db))
             $ctx->db = new Db($config);
-        if (!isset($ctx->router))
+        if (!isset($ctx->router)) {
             $ctx->router = new AltoRouter();
+            $ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_-]++']);
+        }
         if (!isset($ctx->auth)) {
             $ctx->auth = new Authenticator(new Crypto(),
                                            new CachingServicesFactory($ctx->db));
-            $ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_-]++']);
         }
         //
         foreach ($modules as $clsPath) {
