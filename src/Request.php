@@ -25,7 +25,7 @@ class Request {
                                 $method = 'GET',
                                 $body = null,
                                 $files = null) {
-        $this->path = $path;
+        $this->path = urldecode($path);
         $this->method = $method;
         $this->body = $body ?? new \stdClass();
         $this->files = $files ?? new \stdClass();

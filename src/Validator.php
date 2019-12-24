@@ -63,7 +63,7 @@ class Validator {
      */
     public function present() {
         return [function ($input, $key) {
-            return isset($input->$key);
+            return property_exists($input, $key);
         }, '%s is required'];
     }
     /**
@@ -80,7 +80,7 @@ class Validator {
     public function integer() {
         return [function ($input, $key) {
             return $this->present()[0]($input, $key) &&
-                   (is_int($input->$key) || ctype_digit((string)$input->key));
+                   (is_int($input->$key) || ctype_digit((string)$input->$key));
         }, '%s must be an integer'];
     }
     /**

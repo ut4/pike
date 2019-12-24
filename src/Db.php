@@ -114,6 +114,12 @@ class Db {
             : $this->pdo->setAttribute($attr, $value);
     }
     /**
+     * @param array $config ['db.host' => string, ...]
+     */
+    public function setConfig(array $config) {
+        $this->config = $config;
+    }
+    /**
      * .
      */
     private function q($query) {

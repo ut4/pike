@@ -41,7 +41,7 @@ final class App {
                 $injector->execute($ctrlClassPath . '::' . $ctrlMethodName);
             }
         } else {
-            throw new PikeException("No route for {$request->path}");
+            throw new PikeException("No route for {$request->method} {$request->path}");
         }
     }
     /**
