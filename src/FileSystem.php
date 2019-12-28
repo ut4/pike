@@ -81,4 +81,13 @@ class FileSystem implements FileSystemInterface {
     public function lastModTime($path) {
         return @filemtime($path);
     }
+    /**
+     * 'foo/bar\baz' -> 'foo/bar/baz/'
+     *
+     * @param string $path
+     * @return string
+     */
+    public static function normalizePath($path) {
+        return rtrim(str_replace('\\', '/', $path), '/') . '/';
+    }
 }

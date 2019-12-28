@@ -12,15 +12,13 @@ class Db {
      * @param array $config ['db.host' => string, ...]
      */
     public function __construct(array $config) {
-        $this->config = $config;
+        $this->setConfig($config);
     }
     /**
      * @return bool
      * @throws \Pike\PikeException
      */
     public function open() {
-        $this->tablePrefix = $this->config['db.tablePrefix'] ?? '';
-        $this->database = $this->config['db.database'];
         try {
             $this->pdo = new \PDO(
                 'mysql:host=' . $this->config['db.host'] .
@@ -118,6 +116,8 @@ class Db {
      */
     public function setConfig(array $config) {
         $this->config = $config;
+        $this->tablePrefix = $config['db.tablePrefix'] ?? '';
+        $this->database = $config['db.database'];
     }
     /**
      * .

@@ -4,9 +4,10 @@ namespace Pike\TestUtils;
 
 use Auryn\Injector;
 use Pike\Response;
-use Pike\FileSystemInterface;
 use Pike\Auth\Authenticator;
 use Pike\Db;
+use Pike\FileSystem;
+use Pike\Auth\Crypto;
 
 trait HttpTestUtils {
     /**
@@ -45,14 +46,10 @@ trait HttpTestUtils {
      */
     public function sendRequest($req, $res, $createApp, $ctx = null, $alterInjectorFn = null) {
         if (!$ctx) {
-            $ctx = (object)['db' => null, 'fs' => null];
+            $ctx = (object)['db' => null];
         }
         if (!isset($ctx->db)) {
             $ctx->db = DbTestCase::getDb();
-        }
-        if (!isset($ctx->fs)) {
-            $ctx->fs = $this->createMock(FileSystemInterface::class);
-            $ctx->fs->method('readDir')->willReturn([]); // plugins
         }
         if (!isset($ctx->auth)) {
             $ctx->auth = $this->createMock(Authenticator::class);
@@ -62,6 +59,10 @@ trait HttpTestUtils {
         $injector = new Injector();
         $injector->delegate(Response::class, function() use ($res) { return $res; });
         $injector->alias(Db::class, SingleConnectionDb::class);
+        if (isset($ctx->fs))
+            $injector->delegate(FileSystem::class, function () use ($ctx) { return $ctx->fs; });
+        if (isset($ctx->crypto))
+            $injector->delegate(Crypto::class, function () use ($ctx) { return $ctx->crypto; });
         if ($alterInjectorFn) $alterInjectorFn($injector);
         $app->handleRequest($req, $injector);
     }
