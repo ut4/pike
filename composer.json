@@ -2,7 +2,7 @@
     "name": "ut4/pike",
     "description": "A minimal framework.",
     "type": "library",
-    "license": "BSD 3-Clause",
+    "license": "Apache-2.0",
     "require": {
         "php": "~7.1",
         "ext-pdo_mysql": "*",
