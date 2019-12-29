@@ -117,7 +117,7 @@ class Db {
     public function setConfig(array $config) {
         $this->config = $config;
         $this->tablePrefix = $config['db.tablePrefix'] ?? '';
-        $this->database = $config['db.database'];
+        $this->database = $config['db.database'] ?? '';
     }
     /**
      * .
