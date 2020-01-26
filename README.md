@@ -4,7 +4,7 @@
 
 # Version
 
-1.0-dev.1.1.1
+0.0.0
 
 # License
 

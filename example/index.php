@@ -4,12 +4,12 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 
 class SomeModule {
     public static function init(\stdClass $ctx) {
-        $ctx->router->map('GET', '/protected', function () {
-            return [SomeController::class, 'handleProtectdRequest', true];
-        });
-        $ctx->router->map('GET', '/[**:stuff]', function () {
-            return [SomeController::class, 'handleSomeRequest', false];
-        });
+        $ctx->router->map('GET', '/protected',
+            [SomeController::class, 'handleProtectdRequest', true]
+        );
+        $ctx->router->map('GET', '/[**:stuff]',
+            [SomeController::class, 'handleSomeRequest', false]
+        );
     }
 }
 

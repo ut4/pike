@@ -26,7 +26,7 @@ class Response {
         $this->type('json')->send($data);
     }
     /**
-     * @param string $data
+     * @param string $body
      */
     public function html($body) {
         $this->type('html')->send($body);
