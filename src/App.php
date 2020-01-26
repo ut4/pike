@@ -32,7 +32,7 @@ final class App {
             $request->params = (object)$match['params'];
             // @allow \Pike\PikeException
             [$ctrlClassPath, $ctrlMethodName, $requireAuth] =
-                $this->validateRouteMatch($match);
+                $this->validateRouteMatch($match, $request);
             $request->user = $this->ctx->auth->getIdentity();
             if ($requireAuth && !$request->user) {
                 (new Response(403))->json(['err' => 'Login required']);
@@ -49,16 +49,16 @@ final class App {
      * @return array [string, string, bool]
      * @throws \Pike\PikeException
      */
-    private function validateRouteMatch($match) {
-        $routeInfo = $match['target']();
+    private function validateRouteMatch($match, $req) {
+        $routeInfo = $match['target'];
         if (!is_array($routeInfo) ||
             count($routeInfo) !== 3 ||
             !is_string($routeInfo[0]) ||
             !is_string($routeInfo[1]) ||
             !is_bool($routeInfo[2])) {
             throw new PikeException(
-                'A route (' . json_encode($routeInfo) . ') must return [\'Ctrl\\Class\\Path\',' .
-                ' \'methodName\', \'requireAuth\' ? true : false].',
+                'A route (' . $req->method . ' ' . $req->path . ') must be an array ' .
+                '[\'Ctrl\\Class\\Path\', \'methodName\', \'requireAuth\' ? true : false].',
                 PikeException::BAD_INPUT);
         }
         return $routeInfo;

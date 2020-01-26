@@ -4,6 +4,7 @@ namespace Pike;
 
 class Template {
     protected $__locals;
+    protected $__dir;
     private $__vars;
     private $__file;
     /**
@@ -13,6 +14,7 @@ class Template {
     public function __construct($file, array $vars = null) {
         $this->__vars = $vars ?? [];
         $this->__file = $file;
+        $this->__dir = dirname($file) . '/';
     }
     /**
      * @param array $locals = []
