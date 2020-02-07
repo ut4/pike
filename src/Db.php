@@ -96,6 +96,25 @@ class Db {
         return false;
     }
     /**
+     * @param \Closure $fn
+     */
+    public function runInTransaction(\Closure $fn) {
+        if (!$this->beginTransaction()) {
+            throw new PikeException('Failed to start a transaction',
+                                    PikeException::FAILED_DB_OP);
+        }
+        try {
+            $fn();
+            if (!$this->commit()) {
+                throw new PikeException('Failed to commit a transaction',
+                                        PikeException::FAILED_DB_OP);
+            }
+        } catch (\Exception $e) {
+            $this->rollback();
+            throw $e;
+        }
+    }
+    /**
      * @return string
      */
     public function lastInsertId() {

@@ -3,6 +3,7 @@
 namespace Pike\Auth;
 
 use Pike\Db;
+use Pike\DbUtils;
 
 class UserRepository {
     private $db;
@@ -13,25 +14,52 @@ class UserRepository {
         $this->db = $db;
     }
     /**
-     * @param string $username
-     * @return object|null {id: string, username: string, email: string, passwordHash: string}
+     * @param {username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int}
+     * @return int $lastInsertId
      */
-    public function getUser($username) {
+    public function putUser(object $user) {
+        return 0;
+    }
+    /**
+     * @param string $wherePlaceholders
+     * @param array $whereVals
+     * @return {id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int}|null 
+     */
+    public function getUser($wherePlaceholders, $whereVals) {
         try {
             $row = $this->db->fetchOne('SELECT `id`,`username`,`email`,`passwordHash`' .
-                                       ' FROM ${p}users WHERE `username` = ?',
-                                       [$username]);
+                                       ',`resetKey`,`resetRequestedAt`' .
+                                       ' FROM ${p}users' .
+                                       ' WHERE ' . $wherePlaceholders,
+                                       $whereVals);
             return $row ? makeUser($row) : null;
-        } catch (\PDOException $e) {
+        } catch (\PDOException $_) {
             return null;
         }
     }
     /**
-     * @param object {id: string, username: string, email: string, asswordHash: string}
-     * @return bool
+     * @param {username?: string, email?: string, passwordHash?: string, resetKey?: string, resetRequestedAt?: int} $data Olettaa että validi
+     * @param string $wherePlaceholders
+     * @param array $whereVals
+     * @return int $numAffectedRows
      */
-    public function putUser($user) {
-        return true;
+    public function updateUser(object $data, $wherePlaceholders, $whereVals) {
+        try {
+            [$placeholders, $vals] = DbUtils::makeUpdateBinders($data);
+            return $this->db->exec('UPDATE ${p}users' .
+                                   ' SET ' . $placeholders .
+                                   ' WHERE ' . $wherePlaceholders,
+                                   array_merge($vals, $whereVals)) === 1;
+        } catch (\PDOException $_) {
+            return 0;
+        }
+    }
+    /**
+     * @param \Closure $fn
+     */
+    public function runInTransaction($fn) {
+        // @allow \Pike\PikeException
+        $this->db->runInTransaction($fn);
     }
 }
 
@@ -40,6 +68,10 @@ function makeUser($row) {
         'id' => $row['id'],
         'username' => $row['username'],
         'email' => $row['email'],
-        'passwordHash' => $row['passwordHash']
+        'passwordHash' => $row['passwordHash'],
+        'resetKey' => $row['resetKey'] ?? null,
+        'resetRequestedAt' => isset($row['resetRequestedAt'])
+            ? (int)$row['resetRequestedAt']
+            : null,
     ];
 }

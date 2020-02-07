@@ -10,7 +10,7 @@ use Pike\NativeSession;
  */
 class CachingServicesFactory {
     private $db;
-    private $userRepo;
+    private $userRepository;
     private $session;
     private $mailer;
     /**
@@ -22,11 +22,11 @@ class CachingServicesFactory {
     /**
      * @return \Pike\Auth\UserRepository
      */
-    public function makeUserRepo() {
-        if (!$this->userRepo) {
-            $this->userRepo = new UserRepository($this->db);
+    public function makeUserRepository() {
+        if (!$this->userRepository) {
+            $this->userRepository = new UserRepository($this->db);
         }
-        return $this->userRepo;
+        return $this->userRepository;
     }
     /**
      * @return \Pike\Auth\AuthUserRepository
@@ -38,9 +38,12 @@ class CachingServicesFactory {
         return $this->session;
     }
     /**
-     * @return null
+     * @return \Pike\Auth\PhpMailerMailer
      */
     public function makeMailer() {
-        throw new \Exception('Not implemented yet');
+        if (!$this->mailer) {
+            $this->mailer = new PhpMailerMailer();
+        }
+        return $this->mailer;
     }
 }
