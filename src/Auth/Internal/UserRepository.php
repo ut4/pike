@@ -1,6 +1,6 @@
 <?php
 
-namespace Pike\Auth;
+namespace Pike\Auth\Internal;
 
 use Pike\Db;
 use Pike\DbUtils;

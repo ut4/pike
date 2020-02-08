@@ -1,5 +1,5 @@
 .vscode
-internal
+/internal
 vendor
 composer.lock
 config.php

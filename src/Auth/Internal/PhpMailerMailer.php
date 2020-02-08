@@ -1,6 +1,6 @@
 <?php
 
-namespace Pike\Auth;
+namespace Pike\Auth\Internal;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PhpMailerException;
