@@ -4,10 +4,9 @@ namespace Pike;
 
 class Db {
     protected $tablePrefix;
-    protected $database;
+    protected $config;
     private $pdo;
     private $transactionLevel = 0;
-    private $config;
     /**
      * @param array $config ['db.host' => string, ...]
      */
@@ -41,7 +40,7 @@ class Db {
      * @throws \PDOException
      */
     public function fetchAll($query, array $params = null) {
-        $prep = $this->pdo->prepare($this->q($query));
+        $prep = $this->pdo->prepare($this->compileQ($query));
         $prep->execute($params);
         return $prep->fetchAll(\PDO::FETCH_ASSOC);
     }
@@ -52,7 +51,7 @@ class Db {
      * @throws \PDOException
      */
     public function fetchOne($query, array $params = null) {
-        $prep = $this->pdo->prepare($this->q($query));
+        $prep = $this->pdo->prepare($this->compileQ($query));
         $prep->execute($params);
         return $prep->fetch(\PDO::FETCH_ASSOC);
     }
@@ -62,50 +61,50 @@ class Db {
      * @return int
      */
     public function exec($query, array $params = null) {
-        $prep = $this->pdo->prepare($this->q($query));
+        $prep = $this->pdo->prepare($this->compileQ($query));
         $prep->execute($params ? array_map(function ($val) {
             return !is_bool($val) ? $val : (int)$val;
         }, $params) : $params);
         return $prep->rowCount();
     }
     /**
-     * @return bool
+     * @return int $this->transactionLevel or -1 on failure
      */
     public function beginTransaction() {
         if (++$this->transactionLevel === 1) {
-            return $this->pdo->beginTransaction();
+            if (!$this->pdo->beginTransaction()) return -1;
         }
-        return false;
+        return $this->transactionLevel;
     }
     /**
-     * @return bool
+     * @return int $this->transactionLevel or -1 on failure
      */
     public function commit() {
         if ($this->transactionLevel > 0 && --$this->transactionLevel === 0) {
-            return $this->pdo->commit();
+            if (!$this->pdo->commit()) return -1;
         }
-        return false;
+        return $this->transactionLevel;
     }
     /**
-     * @return bool
+     * @return int $this->transactionLevel or -1 on failure
      */
     public function rollback() {
         if ($this->transactionLevel > 0 && --$this->transactionLevel === 0) {
-            return $this->pdo->rollBack();
+            if (!$this->pdo->rollBack()) return -1;
         }
-        return false;
+        return $this->transactionLevel;
     }
     /**
      * @param \Closure $fn
      */
     public function runInTransaction(\Closure $fn) {
-        if (!$this->beginTransaction()) {
+        if ($this->beginTransaction() < 0) {
             throw new PikeException('Failed to start a transaction',
                                     PikeException::FAILED_DB_OP);
         }
         try {
             $fn();
-            if (!$this->commit()) {
+            if ($this->commit() < 0) {
                 throw new PikeException('Failed to commit a transaction',
                                         PikeException::FAILED_DB_OP);
             }
@@ -136,12 +135,11 @@ class Db {
     public function setConfig(array $config) {
         $this->config = $config;
         $this->tablePrefix = $config['db.tablePrefix'] ?? '';
-        $this->database = $config['db.database'] ?? '';
     }
     /**
-     * .
+     * @return string
      */
-    private function q($query) {
+    private function compileQ($query) {
         return str_replace('${p}', $this->tablePrefix, $query);
     }
 }
