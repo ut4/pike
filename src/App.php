@@ -9,6 +9,7 @@ use Pike\Auth\Crypto;
 use Pike\Auth\Internal\CachingServicesFactory;
 
 final class App {
+    public const VERSION = '0.1.0';
     private $ctx;
     private $moduleClsPaths;
     /**

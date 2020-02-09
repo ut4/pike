@@ -1,10 +1,6 @@
-# Todo
+# Pike
 
-...
-
-# Version
-
-0.0.0
+A tight set of classes that helps you write killer applications. Does not try to build everything from sratch, but uses existing, high-quality, bloat-free libraries instead.
 
 # Dependencies
 
