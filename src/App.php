@@ -6,9 +6,10 @@ use AltoRouter;
 use Auryn\Injector;
 use Pike\Auth\Authenticator;
 use Pike\Auth\Crypto;
-use Pike\Auth\CachingServicesFactory;
+use Pike\Auth\Internal\CachingServicesFactory;
 
 final class App {
+    public const VERSION = '0.1.0';
     private $ctx;
     private $moduleClsPaths;
     /**
@@ -96,13 +97,14 @@ final class App {
             $ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_-]++']);
         }
         if (!isset($ctx->auth)) {
-            $ctx->auth = new Authenticator(new Crypto(),
-                                           new CachingServicesFactory($ctx->db));
+            $ctx->auth = new Authenticator(new CachingServicesFactory($ctx->db,
+                                                                      new Crypto()));
         }
         //
         foreach ($modules as $clsPath) {
             if (!method_exists($clsPath, 'init'))
-                throw new PikeException('', PikeException::BAD_INPUT);
+                throw new PikeException('Module must have init() -method',
+                                        PikeException::BAD_INPUT);
             call_user_func([$clsPath, 'init'], $ctx);
         }
         //
@@ -116,7 +118,8 @@ final class App {
             $config = require $config;
         if (!$ctx) {
             if (!is_array($config))
-                throw new PikeException('Can\'t make db without config');
+                throw new PikeException('Can\'t make db without config',
+                                        PikeException::BAD_INPUT);
             $ctx = (object)['db' => null, 'router' => null, 'auth' => null];
         }
         return [$config, $ctx];

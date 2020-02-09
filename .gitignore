@@ -1,3 +1,5 @@
-internal
+.vscode
+/internal
 vendor
 composer.lock
+config.php
