@@ -23,12 +23,12 @@ class UserRepository {
     /**
      * @param string $wherePlaceholders
      * @param array $whereVals
-     * @return {id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int}|null 
+     * @return {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}|null
      */
     public function getUser($wherePlaceholders, $whereVals) {
         try {
             $row = $this->db->fetchOne('SELECT `id`,`username`,`email`,`passwordHash`' .
-                                       ',`resetKey`,`resetRequestedAt`' .
+                                       ',`role`,`resetKey`,`resetRequestedAt`' .
                                        ' FROM ${p}users' .
                                        ' WHERE ' . $wherePlaceholders,
                                        $whereVals);
@@ -38,7 +38,7 @@ class UserRepository {
         }
     }
     /**
-     * @param {username?: string, email?: string, passwordHash?: string, resetKey?: string, resetRequestedAt?: int} $data Olettaa että validi
+     * @param {username?: string, email?: string, passwordHash?: string, role?: string, resetKey?: string, resetRequestedAt?: int} $data Olettaa että validi
      * @param string $wherePlaceholders
      * @param array $whereVals
      * @return int $numAffectedRows
@@ -69,6 +69,7 @@ function makeUser($row) {
         'username' => $row['username'],
         'email' => $row['email'],
         'passwordHash' => $row['passwordHash'],
+        'role' => (int)$row['role'],
         'resetKey' => $row['resetKey'] ?? null,
         'resetRequestedAt' => isset($row['resetRequestedAt'])
             ? (int)$row['resetRequestedAt']
