@@ -8,8 +8,54 @@ use Pike\Auth\Authenticator;
 use Pike\Db;
 use Pike\FileSystem;
 use Pike\Auth\Crypto;
+use PHPUnit\Framework\MockObject\MockObject;
 
 trait HttpTestUtils {
+    /**
+     * Luo uuden \Pike\App:n kutsumalla $factoryä passaten sille testiympäistöön
+     * configuroidut $config, ja $ctx -objektit. Luo automaattisesti $ctx->db,
+     * ja $ctx->auth (käytä makeApp(..., ..., ['db' => 'none', 'auth' => 'none'])
+     * mikäli et tarvitse niitä).
+     *
+     * @param fn(array $config, object $ctx, callable? $makeInjector): \Pike\App $factory
+     * @param array|string|null $config = null
+     * @param object|array $ctx = null
+     * @param fn(\Auryn\Injector $injector): void $alterInjector = null
+     * @return \Pike\TestUtils\AppHolder
+     */
+    public function makeApp(callable $factory,
+                            $config = null,
+                            $ctx = null,
+                            \Closure $alterInjector = null) {
+        if (!($ctx instanceof \stdClass)) {
+            if (!is_array($ctx)) $ctx = new \stdClass;
+            else $ctx = $ctx ? (object)$ctx : new \stdClass;
+        }
+        if (!isset($ctx->auth)) {
+            $ctx->auth = $this->createMock(Authenticator::class);
+            $ctx->auth->method('getIdentity')->willReturn((object)['id' => '1', 'role' => 0]);
+        }
+        if (!isset($ctx->db)) {
+            $ctx->db = DbTestCase::getDb(!is_string($config) ? $config : require $config);
+        }
+        return new AppHolder(
+            call_user_func($factory, $config, $ctx, function () use ($ctx, $alterInjector) {
+                $injector = new Injector();
+                $injector->alias(Db::class, SingleConnectionDb::class);
+                if (isset($ctx->fs))
+                    $injector->delegate(FileSystem::class, function () use ($ctx) { return $ctx->fs; });
+                if (isset($ctx->crypto))
+                    $injector->delegate(Crypto::class, function () use ($ctx) { return $ctx->crypto; });
+                if (($ctx->res instanceof MutedResponse) ||
+                    ($ctx->res instanceof MockObject))
+                    $injector->delegate(Response::class, function () use ($ctx) { return $ctx->res; });
+                if ($alterInjector)
+                    $alterInjector($injector);
+                return $injector;
+            }),
+            $ctx
+        );
+    }
     /**
      * @param mixed $expectedBody
      * @param string $expectedStatus = 200
@@ -38,41 +84,44 @@ trait HttpTestUtils {
         return $stub;
     }
     /**
+     * Esimerkki:
+     * ```
+     * $req = new Request('/api/foo', 'GET');
+     * $res = $this->createMockResponse(['expected response'], 200);
+     * $app = $this->makeApp('\My\App::create', $this->getAppConfig());
+     * $this->sendRequest($req, $res, $app);
+     * ```
+     *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param callable $createApp
-     * @param object $ctx = null
-     * @param \Callable $alterInjectorFn = null ($injector: \Auryn\Injector): void
+     * @param \Pike\TestUtils\AppHolder $appHolder
      */
-    public function sendRequest($req, $res, $createApp, $ctx = null, $alterInjectorFn = null) {
-        if (!$ctx) {
-            $ctx = (object)['db' => null];
-        }
-        if (!isset($ctx->db)) {
-            $ctx->db = DbTestCase::getDb();
-        }
-        if (!isset($ctx->auth)) {
-            $ctx->auth = $this->createMock(Authenticator::class);
-            $ctx->auth->method('getIdentity')->willReturn('1');
-        }
-        $app = call_user_func($createApp, require TEST_CONFIG_DIR_PATH. 'config.php', $ctx);
-        $injector = new Injector();
-        $injector->delegate(Response::class, function() use ($res) { return $res; });
-        $injector->alias(Db::class, SingleConnectionDb::class);
-        if (isset($ctx->fs))
-            $injector->delegate(FileSystem::class, function () use ($ctx) { return $ctx->fs; });
-        if (isset($ctx->crypto))
-            $injector->delegate(Crypto::class, function () use ($ctx) { return $ctx->crypto; });
-        if ($alterInjectorFn) $alterInjectorFn($injector);
-        $app->handleRequest($req, $injector);
+    public function sendRequest($req,
+                                $res,
+                                AppHolder $appHolder) {
+        $appHolder->getAppCtx()->res = $res;
+        $appHolder->getApp()->handleRequest($req);
     }
     /**
+     * Esimerkki:
+     * ```
+     * $req = new Request('/api/foo', 'GET');
+     * $res = $this->createMock(\Pike\Response::class);
+     * $app = $this->makeApp('\My\App::create', $this->getAppConfig());
+     * $state = (object)['actualResponseBody' => null];
+     * $this->sendResponseBodyCapturingRequest($req, $res, $app);
+     * $this->assertEquals();
+     * ```
+     *
      * @param \Pike\Request $req
-     * @param callable $createApp
+     * @param \Pike\Response $res
+     * @param \Pike\TestUtils\AppHolder $appHolder
      * @param object $state
      */
-    public function sendResponseBodyCapturingRequest($req, $createApp, $state) {
-        $res = $this->createMock(MutedResponse::class);
+    public function sendResponseBodyCapturingRequest($req,
+                                                     $res,
+                                                     AppHolder $appHolder,
+                                                     $state) {
         $res->expects($this->once())
             ->method('json')
             ->with($this->callback(function ($actualResponse) use ($state) {
@@ -80,6 +129,6 @@ trait HttpTestUtils {
                 return true;
             }))
             ->willReturn($res);
-        return $this->sendRequest($req, $res, $createApp, $state->ctx ?? null);
+        $this->sendRequest($req, $res, $appHolder);
     }
 }
