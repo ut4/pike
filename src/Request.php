@@ -15,7 +15,7 @@ class Request {
     public $params;
     /** @var mixed */
     public $user;
-    /** @var mixed */
+    /** @var {myData: mixed, name: string|null} */
     public $routeCtx;
     /** @var array */
     private $serverVars;
