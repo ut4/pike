@@ -43,6 +43,15 @@ class Response {
         return $this;
     }
     /**
+     * @param string $body
+     * @return $this
+     */
+    public function plain($body) {
+        $this->body = $body;
+        $this->type('plain');
+        return $this;
+    }
+    /**
      * @param string $data
      * @param string $fileName = 'file.zip'
      * @param string $mime = 'application/zip'
@@ -109,12 +118,13 @@ class Response {
         return $this->isSent;
     }
     /**
-     * @param string $type 'html' | 'json'
+     * @param string $type 'html' | 'json' | 'plain'
      */
     private function type($type) {
         $this->contentType = [
             'html' => 'text/html',
             'json' => 'application/json',
+            'plain' => 'text/plain',
         ][$type];
     }
 }
