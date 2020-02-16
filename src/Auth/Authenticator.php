@@ -36,7 +36,7 @@ class Authenticator {
      *
      * @param string $username
      * @param string $password
-     * @param fn(object $user): mixed $serializeUserForSession = null
+     * @param callable $serializeUserForSession = null fn(\stdClass $user): mixed
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -62,7 +62,7 @@ class Authenticator {
      * ...
      *
      * @param string $usernameOrEmail
-     * @param fn({id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void $makeEmailSettings
+     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
      * @return bool
      * @throws \Pike\PikeException
      */

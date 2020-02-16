@@ -16,13 +16,13 @@ final class App {
     private $moduleClsPaths;
     private $makeInjector;
     /**
-     * @param \stdClass $ctx
+     * @param object $ctx
      * @param string[] $modules
-     * @param null|fn(): \Auryn\Injector $makeInjector
+     * @param closure|null $makeInjector fn(): \Auryn\Injector
      */
-    private function __construct(\stdClass $ctx,
-                                 array $modules,
-                                 callable $makeInjector = null) {
+    private function __construct($ctx,
+                                 $modules,
+                                 $makeInjector) {
         $this->ctx = $ctx;
         $this->moduleClsPaths = $modules;
         $this->makeInjector = $makeInjector;
@@ -59,7 +59,7 @@ final class App {
     }
     /**
      * @param int $index
-     * @param {req: \Pike\Request, res: \Pike\Response} $state
+     * @param \stdClass $state {req: \Pike\Request, res: \Pike\Response}
      */
     private function execMiddlewareCallback($index, $state) {
         $ware = $this->ctx->router->middleware[$index] ?? null;
@@ -90,7 +90,7 @@ final class App {
         return $routeInfo;
     }
     /**
-     * @param {req: \Pike\Request, res: \Pike\Response} $http
+     * @param \stdClass $http {req: \Pike\Request, res: \Pike\Response}
      * @return \Auryn\Injector
      */
     private function setupIocContainer($http) {
@@ -112,8 +112,8 @@ final class App {
     /**
      * @param callable[] $modules
      * @param string|array $config = null
-     * @param object $ctx = null
-     * @param fn(): \Auryn\Injector $makeInjector = null
+     * @param object|array $ctx = null
+     * @param callable $makeInjector = null fn(): \Auryn\Injector
      * @return \Pike\App
      */
     public static function create(array $modules,
@@ -151,13 +151,13 @@ final class App {
     }
     /**
      * @param array|string|null $confix
-     * @param object|array $ctx
+     * @param object|array|null $ctx
      * @return array [array|null, object]
      */
     private static function getNormalizedSettings($config, $ctx) {
         if (is_string($config) && strlen($config))
             $config = require $config;
-        if (!($ctx instanceof \stdClass)) {
+        if (!is_object($ctx)) {
             if (is_array($ctx))
                 $ctx = $ctx ? (object)$ctx : new \stdClass;
             elseif ($ctx === null)

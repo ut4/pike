@@ -47,7 +47,7 @@ class Db {
     /**
      * @param string $query
      * @param array $params = null
-     * @return object|bool
+     * @return \stdClass|bool
      * @throws \PDOException
      */
     public function fetchOne($query, array $params = null) {

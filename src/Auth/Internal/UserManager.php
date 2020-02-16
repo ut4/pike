@@ -25,7 +25,7 @@ class UserManager {
      *
      * @param string $username
      * @param string $password
-     * @return object
+     * @return \stdClass
      * @throws \Pike\PikeException
      */
     public function login($username, $password) {
@@ -42,7 +42,7 @@ class UserManager {
      * ...
      *
      * @param string $usernameOrEmail
-     * @param fn({id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void $makeEmailSettings
+     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
      * @param \Pike\Auth\Internal\PhpMailerMailer $mailer
      * @return bool
      * @throws \Pike\PikeException
@@ -126,7 +126,7 @@ class UserManager {
     private function makeResetPassEmailSettings($userDefinedMakeEmailSettings,
                                                 $user,
                                                 $resetKey) {
-        $settings = new \stdClass();
+        $settings = new \stdClass;
         $settings->fromAddress = '';
         $settings->fromName = '';
         $settings->toAddress = $user->email;

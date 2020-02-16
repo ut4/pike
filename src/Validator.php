@@ -17,9 +17,9 @@ class Validator {
     public $errors;
     public $input;
     /**
-     * @param object &$input
+     * @param object $input
      */
-    public function __construct(&$input) {
+    public function __construct($input) {
         $this->errors = [];
         $this->input = $input;
     }

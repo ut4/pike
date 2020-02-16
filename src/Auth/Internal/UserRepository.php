@@ -14,16 +14,16 @@ class UserRepository {
         $this->db = $db;
     }
     /**
-     * @param {username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int}
+     * @param \stdClass $user {username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int}
      * @return int $lastInsertId
      */
-    public function putUser(object $user) {
+    public function putUser(\stdClass $user) {
         return 0;
     }
     /**
      * @param string $wherePlaceholders
      * @param array $whereVals
-     * @return {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}|null
+     * @return \stdClass|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
      */
     public function getUser($wherePlaceholders, $whereVals) {
         try {
@@ -38,12 +38,12 @@ class UserRepository {
         }
     }
     /**
-     * @param {username?: string, email?: string, passwordHash?: string, role?: string, resetKey?: string, resetRequestedAt?: int} $data Olettaa että validi
+     * @param \stdClass $data {username?: string, email?: string, passwordHash?: string, role?: string, resetKey?: string, resetRequestedAt?: int}, olettaa että validi
      * @param string $wherePlaceholders
      * @param array $whereVals
      * @return int $numAffectedRows
      */
-    public function updateUser(object $data, $wherePlaceholders, $whereVals) {
+    public function updateUser(\stdClass $data, $wherePlaceholders, $whereVals) {
         try {
             [$placeholders, $vals] = DbUtils::makeUpdateBinders($data);
             return $this->db->exec('UPDATE ${p}users' .

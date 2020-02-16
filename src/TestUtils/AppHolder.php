@@ -7,7 +7,7 @@ class AppHolder {
     private $ctx;
     /**
      * @param \Pike\App $app
-     * @param object $appCtx
+     * @param object $appCtx {router: \Pike\Router, ...}
      */
     public function __construct($app, $appCtx) {
         $this->app = $app;
@@ -20,7 +20,7 @@ class AppHolder {
         return $this->app;
     }
     /**
-     * @return object
+     * @return object {router: \Pike\Router, ...}
      */
     public function getAppCtx() {
         return $this->ctx;

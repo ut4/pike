@@ -15,10 +15,10 @@ class PhpMailerMailer {
         $this->mailer = $mailer ?? new PHPMailer(true);
     }
     /**
-     * @param {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settings Olettaa että validi
+     * @param object $settings {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string}, olettaa että validi
      * @return bool
      */
-    public function sendMail(object $settings) {
+    public function sendMail($settings) {
         try {
             $this->mailer->isSMTP();
             $this->mailer->CharSet = PHPMailer::CHARSET_UTF8;
