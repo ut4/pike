@@ -2,11 +2,8 @@
 
 namespace Pike\TestUtils;
 
-use PHPUnit\Framework\TestCase;
-
-class DbTestCase extends TestCase {
+abstract class DbTestCase extends ConfigProvidingTestCase {
     protected static $db = null;
-    protected static $dbConfig = null;
     protected function setUp() {
         if (!self::$db) self::getDb();
         self::$db->beginTransaction();
@@ -14,17 +11,10 @@ class DbTestCase extends TestCase {
     protected function tearDown() {
         self::$db->rollback();
     }
-    public static function getDb() {
+    public static function getDb(array $config = null) {
         if (!self::$db) {
-            $config = self::$dbConfig;
-            if (!$config) {
-                if (!defined('TEST_CONFIG_DIR_PATH'))
-                    throw new \Exception('Can\'t make db without TEST_CONFIG_' .
-                                         'DIR_PATH . "config.php".');
-                $config = require TEST_CONFIG_DIR_PATH . 'config.php';
-            }
             self::$db = new SingleConnectionDb([]);
-            self::createOrOpenTestDb($config);
+            self::createOrOpenTestDb($config ?? static::getAppConfig());
         }
         return self::$db;
     }

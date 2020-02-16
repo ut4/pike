@@ -88,6 +88,6 @@ class FileSystem implements FileSystemInterface {
      * @return string
      */
     public static function normalizePath($path) {
-        return rtrim(str_replace('\\', '/', $path), '/') . '/';
+        return rtrim(str_replace('\\', '/', $path), '/');
     }
 }

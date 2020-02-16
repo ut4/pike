@@ -9,19 +9,14 @@ use Pike\Auth\Authenticator;
 class UserManager {
     private $persistence;
     private $crypto;
-    private $services;
     private $lastErrReason;
     /**
      * @param \Pike\Auth\Internal\UserRepository $persistence
      * @param \Pike\Auth\Crypto $crypto
-     * @param \Pike\Auth\Internal\CachingServicesFactory $services
      */
-    public function __construct(UserRepository $persistence,
-                                Crypto $crypto,
-                                CachingServicesFactory $services) {
+    public function __construct(UserRepository $persistence, Crypto $crypto) {
         $this->persistence = $persistence;
         $this->crypto = $crypto;
-        $this->services = $services;
     }
     /**
      * Asettaa käyttäjän $username kirjautuneeksi käyttäjäksi, tai heittää
@@ -30,7 +25,7 @@ class UserManager {
      *
      * @param string $username
      * @param string $password
-     * @return bool
+     * @return object
      * @throws \Pike\PikeException
      */
     public function login($username, $password) {
@@ -41,18 +36,20 @@ class UserManager {
         if (!$this->crypto->verifyPass($password, $user->passwordHash))
             throw new PikeException('Invalid password',
                                     Authenticator::INVALID_CREDENTIAL);
-        $this->services->makeSession()->put('user', $user->id);
-        return true;
+        return $user;
     }
     /**
      * ...
      *
      * @param string $usernameOrEmail
      * @param fn({id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void $makeEmailSettings
+     * @param \Pike\Auth\Internal\PhpMailerMailer $mailer
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function requestPasswordReset($usernameOrEmail, callable $makeEmailSettings) {
+    public function requestPasswordReset($usernameOrEmail,
+                                         callable $makeEmailSettings,
+                                         $mailer) {
         $user = $this->persistence->getUser('username = ? OR email = ?',
                                             [$usernameOrEmail, $usernameOrEmail]);
         if (!$user)
@@ -69,15 +66,15 @@ class UserManager {
             $user, $key);
         // @allow \Pike\PikeException
         $this->persistence->runInTransaction(function () use ($key,
-                                                            $emailSettings,
-                                                            $user) {
+                                                              $emailSettings,
+                                                              $user,
+                                                              $mailer) {
             $data = new \stdClass;
             $data->resetKey = $key;
             $data->resetRequestedAt = time();
             if (!$this->persistence->updateUser($data, 'id = ?', [$user->id]))
                 throw new PikeException('Failed to insert resetInfo',
                                         PikeException::FAILED_DB_OP);
-            $mailer = $this->services->makeMailer();
             if (!$mailer->sendMail($emailSettings))
                 throw new PikeException('Failed to send mail: ' .
                                         $mailer->getLastError()->getMessage(),

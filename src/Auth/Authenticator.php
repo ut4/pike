@@ -36,11 +36,18 @@ class Authenticator {
      *
      * @param string $username
      * @param string $password
+     * @param fn(object $user): mixed $serializeUserForSession = null
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function login($username, $password) {
-        return $this->services->makeUserManager()->login($username, $password);
+    public function login($username, $password, callable $serializeUserForSession = null) {
+        if (($user = $this->services->makeUserManager()->login($username, $password))) {
+            $this->services->makeSession()->put('user', $serializeUserForSession
+                ? call_user_func($serializeUserForSession, $user)
+                : $user->id);
+            return true;
+        }
+        return false;
     }
     /**
      * Kirjaa käyttäjän ulos poistamalla käyttäjän tiedot sessiosta.
@@ -61,7 +68,9 @@ class Authenticator {
      */
     public function requestPasswordReset($usernameOrEmail, callable $makeEmailSettings) {
         return $this->services->makeUserManager()
-            ->requestPasswordReset($usernameOrEmail, $makeEmailSettings);
+            ->requestPasswordReset($usernameOrEmail,
+                                   $makeEmailSettings,
+                                   $this->services->makeMailer());
     }
     /**
      * ...

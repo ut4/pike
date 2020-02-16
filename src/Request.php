@@ -15,21 +15,35 @@ class Request {
     public $params;
     /** @var mixed */
     public $user;
+    /** @var {myData: mixed, name: string|null} */
+    public $routeCtx;
+    /** @var array */
+    private $serverVars;
     /**
      * @param string $path
      * @param string $method = 'GET'
      * @param object $body = new \stdClass()
      * @param object $files = new \stdClass()
+     * @param array $serverVars = []
      */
     public function __construct($path,
                                 $method = 'GET',
-                                $body = null,
-                                $files = null) {
+                                object $body = null,
+                                object $files = null,
+                                array $serverVars = null) {
         $this->path = urldecode($path !== '' ? $path : '/');
         $this->method = $method;
         $this->body = $body ?? new \stdClass();
         $this->files = $files ?? new \stdClass();
         $this->params = new \stdClass();
+        $this->serverVars = $serverVars ?? [];
+    }
+    /**
+     * @param string $key e.g. 'SERVER_NAME'
+     * @param mized $default = null
+     */
+    public function attr($key, $default = null) {
+        return $this->serverVars[$key] || $default;
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -59,7 +73,8 @@ class Request {
             $urlPath ?? substr($_SERVER['REQUEST_URI'], strlen($BASE_URL) - 1),
             $method,
             $body,
-            $files
+            $files,
+            $_SERVER
         );
     }
 }
