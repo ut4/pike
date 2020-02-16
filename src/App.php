@@ -8,7 +8,7 @@ use Pike\Auth\Crypto;
 use Pike\Auth\Internal\CachingServicesFactory;
 
 final class App {
-    public const VERSION = '0.1.0';
+    public const VERSION = '0.2.0';
     public const SERVICE_DB = 'db';
     public const SERVICE_AUTH = 'auth';
     public const MAKE_AUTOMATICALLY = '@auto';

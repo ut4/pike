@@ -1,6 +1,6 @@
 {
     "name": "ut4/pike",
-    "description": "A minimal framework.",
+    "description": "A minimalistic application framework.",
     "type": "library",
     "license": "Apache-2.0",
     "require": {
