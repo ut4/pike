@@ -5,7 +5,8 @@ namespace Pike\Auth;
 use Pike\Auth\Internal\CachingServicesFactory;
 
 /**
- * Auth-moduulin julkinen API: sisältää metodit kuten isLoggedIn() ja login().
+ * Autentikaatiomoduulin julkinen API: sisältää metodit kuten login() ja
+ * getIdentity().
  */
 class Authenticator {
     public const RESET_KEY_EXPIRATION_SECS = 60 * 60 * 2;
@@ -31,7 +32,7 @@ class Authenticator {
     }
     /**
      * Asettaa käyttäjän $username kirjautuneeksi käyttäjäksi, tai heittää
-     * RadExceptionin mikäli käyttäjää ei voitu hakea kannasta tai salasana ei
+     * PikeExceptionin mikäli käyttäjää ei voitu hakea kannasta tai salasana ei
      * täsmännyt. Olettaa että parametrit on jo validoitu.
      *
      * @param string $username
@@ -41,6 +42,7 @@ class Authenticator {
      * @throws \Pike\PikeException
      */
     public function login($username, $password, callable $serializeUserForSession = null) {
+        // @allow \Pike\PikeException
         if (($user = $this->services->makeUserManager()->login($username, $password))) {
             $this->services->makeSession()->put('user', $serializeUserForSession
                 ? call_user_func($serializeUserForSession, $user)
@@ -67,6 +69,7 @@ class Authenticator {
      * @throws \Pike\PikeException
      */
     public function requestPasswordReset($usernameOrEmail, callable $makeEmailSettings) {
+        // @allow \Pike\PikeException
         return $this->services->makeUserManager()
             ->requestPasswordReset($usernameOrEmail,
                                    $makeEmailSettings,
@@ -82,6 +85,7 @@ class Authenticator {
      * @throws \Pike\PikeException
      */
     public function finalizePasswordReset($key, $email, $newPassword) {
+        // @allow \Pike\PikeException
         return $this->services->makeUserManager()
             ->finalizePasswordReset($key, $email, $newPassword);
     }

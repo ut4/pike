@@ -4,6 +4,7 @@ namespace Pike\Auth\Internal;
 
 use Pike\Db;
 use Pike\DbUtils;
+use Pike\PikeException;
 
 class UserRepository {
     private $db;
@@ -24,6 +25,7 @@ class UserRepository {
      * @param string $wherePlaceholders
      * @param array $whereVals
      * @return \stdClass|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
+     * @throws \Pike\PikeException
      */
     public function getUser($wherePlaceholders, $whereVals) {
         try {
@@ -33,8 +35,9 @@ class UserRepository {
                                        ' WHERE ' . $wherePlaceholders,
                                        $whereVals);
             return $row ? makeUser($row) : null;
-        } catch (\PDOException $_) {
-            return null;
+        } catch (\PDOException $e) {
+            throw new PikeException("Unexpected database error: {$e->getMessage()}",
+                                    PikeException::FAILED_DB_OP);
         }
     }
     /**
@@ -42,6 +45,7 @@ class UserRepository {
      * @param string $wherePlaceholders
      * @param array $whereVals
      * @return int $numAffectedRows
+     * @throws \Pike\PikeException
      */
     public function updateUser(\stdClass $data, $wherePlaceholders, $whereVals) {
         try {
@@ -50,8 +54,9 @@ class UserRepository {
                                    ' SET ' . $placeholders .
                                    ' WHERE ' . $wherePlaceholders,
                                    array_merge($vals, $whereVals)) === 1;
-        } catch (\PDOException $_) {
-            return 0;
+        } catch (\PDOException $e) {
+            throw new PikeException("Unexpected database error: {$e->getMessage()}",
+                                    PikeException::FAILED_DB_OP);
         }
     }
     /**
