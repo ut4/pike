@@ -37,8 +37,10 @@ abstract class Validation {
             $cls = self::class . '::';
             self::$ruleImpls = array_merge(self::$ruleImpls, [
                 'type'       => ["{$cls}is", '%s must be %s'],
-                'maxLength'  => ["{$cls}isLessOrEqualLength", 'The length of %s must be %d or less'],
                 'minLength'  => ["{$cls}isMoreOrEqualLength", 'The length of %s must be at least %d'],
+                'maxLength'  => ["{$cls}isLessOrEqualLength", 'The length of %s must be %d or less'],
+                'min'        => ["{$cls}isEqualOrGreaterThan", 'The value of %s must be %d or greater'],
+                'max'        => ["{$cls}isEqualOrLessThan", 'The value of %s must be %d or less'],
                 'in'         => ["{$cls}isOneOf", 'The value of %s was not in the list'],
                 'identifier' => ["{$cls}isIdentifier", '%s must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]'],
             ]);
@@ -59,13 +61,21 @@ abstract class Validation {
         throw new PikeException("is_{$type}() not supported",
                                 PikeException::BAD_INPUT);
     }
-    public static function isLessOrEqualLength($strOrArray, $max) {
-        return (is_string($strOrArray) && mb_strlen($strOrArray) <= $max) ||
-               (is_array($strOrArray) && count($strOrArray) <= $max);
-    }
     public static function isMoreOrEqualLength($strOrArray, $min) {
         return (is_string($strOrArray) && mb_strlen($strOrArray) >= $min) ||
-               (is_array($strOrArray) && count($strOrArray) >= $min);
+               ((is_array($strOrArray) || $strOrArray instanceof \Countable) &&
+                count($strOrArray) >= $min);
+    }
+    public static function isLessOrEqualLength($strOrArray, $max) {
+        return (is_string($strOrArray) && mb_strlen($strOrArray) <= $max) ||
+               ((is_array($strOrArray) || $strOrArray instanceof \Countable) &&
+                count($strOrArray) <= $max);
+    }
+    public static function isEqualOrGreaterThan($value, $min) {
+        return $value >= $min;
+    }
+    public static function isEqualOrLessThan($value, $max) {
+        return $value <= $max;
     }
     public static function isOneOf($value, $listOfAllowedVals) {
         return in_array($value, $listOfAllowedVals);

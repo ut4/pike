@@ -99,6 +99,7 @@ final class App {
             : call_user_func($this->makeInjector);
         $container->share($http->req);
         $container->share($http->res);
+        $container->share($this->ctx->appConfig);
         if (isset($this->ctx->db)) $container->share($this->ctx->db);
         if (isset($this->ctx->auth)) $container->share($this->ctx->auth);
         $container->alias(FileSystemInterface::class, FileSystem::class);
@@ -111,7 +112,7 @@ final class App {
     }
     /**
      * @param callable[] $modules
-     * @param string|array $config = null
+     * @param string|array|\Pike\AppConfig $config = null
      * @param object|array $ctx = null
      * @param callable $makeInjector = null fn(): \Auryn\Injector
      * @return \Pike\App
@@ -120,21 +121,18 @@ final class App {
                                   $config = null,
                                   $ctx = null,
                                   callable $makeInjector = null) {
-        [$config, $ctx] = self::getNormalizedSettings($config, $ctx);
+        $ctx = self::makeEmptyCtx($config, $ctx);
         //
         if (!isset($ctx->router)) {
             $ctx->router = new Router();
             $ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_-]++']);
         }
         if (($ctx->{self::SERVICE_DB} ?? null) === self::MAKE_AUTOMATICALLY) {
-            if (!is_array($config))
-                throw new PikeException('cant orovide db without config',
-                                        PikeException::BAD_INPUT);
-            $ctx->db = new Db($config);
+            $ctx->db = new Db($ctx->appConfig->getVals());
         }
         if (($ctx->{self::SERVICE_AUTH} ?? '') === self::MAKE_AUTOMATICALLY) {
             if (!isset($ctx->db))
-                throw new PikeException('cant provide auth without db',
+                throw new PikeException('Can\'t make auth without db',
                                         PikeException::BAD_INPUT);
             $ctx->auth = new Authenticator(new CachingServicesFactory($ctx->db,
                                                                       new Crypto()));
@@ -152,11 +150,9 @@ final class App {
     /**
      * @param array|string|null $confix
      * @param object|array|null $ctx
-     * @return array [array|null, object]
+     * @return array [\Pike\AppConfig, object]
      */
-    private static function getNormalizedSettings($config, $ctx) {
-        if (is_string($config) && strlen($config))
-            $config = require $config;
+    private static function makeEmptyCtx($config, $ctx) {
         if (!is_object($ctx)) {
             if (is_array($ctx))
                 $ctx = $ctx ? (object)$ctx : new \stdClass;
@@ -165,6 +161,11 @@ final class App {
             else
                 throw new PikeException('ctx must be object|array');
         }
-        return [$config, $ctx];
+        if (is_string($config) && strlen($config))
+            $config = require $config;
+        $ctx->appConfig = !($config instanceof AppConfig)
+            ? new AppConfig($config ?? [])
+            : $config;
+        return $ctx;
     }
 }

@@ -20,7 +20,10 @@ class PhpMailerMailer {
      */
     public function sendMail($settings) {
         try {
-            $this->mailer->isSMTP();
+            if (property_exists($settings, 'useSMTP'))
+                $this->mailer->isSMTP();
+            else
+                $this->mailer->isMail();
             $this->mailer->CharSet = PHPMailer::CHARSET_UTF8;
             $this->mailer->setFrom($settings->fromAddress, $settings->fromName ?? '');
             $this->mailer->addAddress($settings->toAddress, $settings->toName ?? '');

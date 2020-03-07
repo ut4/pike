@@ -33,7 +33,7 @@ trait HttpTestUtils {
         }
         if (!isset($ctx->auth)) {
             $ctx->auth = $this->createMock(Authenticator::class);
-            $ctx->auth->method('getIdentity')->willReturn((object)['id' => '1', 'role' => 0]);
+            $ctx->auth->method('getIdentity')->willReturn((object)['id' => '1', 'role' => 1]);
         }
         if (!isset($ctx->db)) {
             $ctx->db = DbTestCase::getDb(!is_string($config) ? $config : require $config);
@@ -57,12 +57,12 @@ trait HttpTestUtils {
         );
     }
     /**
-     * @param mixed $expectedBody
+     * @param mixed $expectedBody = null
      * @param string $expectedStatus = 200
      * @param string $expectedContentType = 'json'
      * @return \PHPUnit\Framework\MockObject\MockObject
      */
-    public function createMockResponse($expectedBody,
+    public function createMockResponse($expectedBody = null,
                                        $expectedStatus = 200,
                                        $expectedContentType = 'json') {
         $stub = $this->createMock(MutedResponse::class);
@@ -75,12 +75,13 @@ trait HttpTestUtils {
                 ->with($this->equalTo($expectedStatus))
                 ->willReturn($stub);
         }
-        $stub->expects($this->once())
-            ->method($expectedContentType)
-            ->with(is_string($expectedBody)
-                ? $this->equalTo($expectedBody)
-                : $expectedBody)
-            ->willReturn($stub);
+        if ($expectedBody !== null)
+            $stub->expects($this->once())
+                ->method($expectedContentType)
+                ->with(is_string($expectedBody)
+                    ? $this->equalTo($expectedBody)
+                    : $expectedBody)
+                ->willReturn($stub);
         return $stub;
     }
     /**
