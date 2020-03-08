@@ -17,23 +17,23 @@ trait HttpTestUtils {
      * ja $ctx->auth (käytä makeApp(..., ..., ['db' => 'none', 'auth' => 'none'])
      * mikäli et tarvitse niitä).
      *
-     * @param fn(array $config, object $ctx, callable? $makeInjector): \Pike\App $factory
+     * @param callable $factory fn(array $config, object $ctx, callable? $makeInjector): \Pike\App
      * @param array|string|null $config = null
-     * @param object|array $ctx = null
-     * @param fn(\Auryn\Injector $injector): void $alterInjector = null
+     * @param object $ctx = null
+     * @param callable $alterInjector = null fn(\Auryn\Injector $injector): void
      * @return \Pike\TestUtils\AppHolder
      */
     public function makeApp(callable $factory,
                             $config = null,
                             $ctx = null,
                             \Closure $alterInjector = null) {
-        if (!($ctx instanceof \stdClass)) {
+        if (!is_object($ctx)) {
             if (!is_array($ctx)) $ctx = new \stdClass;
             else $ctx = $ctx ? (object)$ctx : new \stdClass;
         }
         if (!isset($ctx->auth)) {
             $ctx->auth = $this->createMock(Authenticator::class);
-            $ctx->auth->method('getIdentity')->willReturn((object)['id' => '1', 'role' => 0]);
+            $ctx->auth->method('getIdentity')->willReturn((object)['id' => '1', 'role' => 1]);
         }
         if (!isset($ctx->db)) {
             $ctx->db = DbTestCase::getDb(!is_string($config) ? $config : require $config);
@@ -57,12 +57,12 @@ trait HttpTestUtils {
         );
     }
     /**
-     * @param mixed $expectedBody
+     * @param mixed $expectedBody = null
      * @param string $expectedStatus = 200
      * @param string $expectedContentType = 'json'
      * @return \PHPUnit\Framework\MockObject\MockObject
      */
-    public function createMockResponse($expectedBody,
+    public function createMockResponse($expectedBody = null,
                                        $expectedStatus = 200,
                                        $expectedContentType = 'json') {
         $stub = $this->createMock(MutedResponse::class);
@@ -75,12 +75,13 @@ trait HttpTestUtils {
                 ->with($this->equalTo($expectedStatus))
                 ->willReturn($stub);
         }
-        $stub->expects($this->once())
-            ->method($expectedContentType)
-            ->with(is_string($expectedBody)
-                ? $this->equalTo($expectedBody)
-                : $expectedBody)
-            ->willReturn($stub);
+        if ($expectedBody !== null)
+            $stub->expects($this->once())
+                ->method($expectedContentType)
+                ->with(is_string($expectedBody)
+                    ? $this->equalTo($expectedBody)
+                    : $expectedBody)
+                ->willReturn($stub);
         return $stub;
     }
     /**

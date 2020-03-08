@@ -5,7 +5,8 @@ namespace Pike\Auth;
 use Pike\Auth\Internal\CachingServicesFactory;
 
 /**
- * Auth-moduulin julkinen API: sisältää metodit kuten isLoggedIn() ja login().
+ * Autentikaatiomoduulin julkinen API: sisältää metodit kuten login() ja
+ * getIdentity().
  */
 class Authenticator {
     public const RESET_KEY_EXPIRATION_SECS = 60 * 60 * 2;
@@ -31,16 +32,17 @@ class Authenticator {
     }
     /**
      * Asettaa käyttäjän $username kirjautuneeksi käyttäjäksi, tai heittää
-     * RadExceptionin mikäli käyttäjää ei voitu hakea kannasta tai salasana ei
+     * PikeExceptionin mikäli käyttäjää ei voitu hakea kannasta tai salasana ei
      * täsmännyt. Olettaa että parametrit on jo validoitu.
      *
      * @param string $username
      * @param string $password
-     * @param fn(object $user): mixed $serializeUserForSession = null
+     * @param callable $serializeUserForSession = null fn(\stdClass $user): mixed
      * @return bool
      * @throws \Pike\PikeException
      */
     public function login($username, $password, callable $serializeUserForSession = null) {
+        // @allow \Pike\PikeException
         if (($user = $this->services->makeUserManager()->login($username, $password))) {
             $this->services->makeSession()->put('user', $serializeUserForSession
                 ? call_user_func($serializeUserForSession, $user)
@@ -62,11 +64,12 @@ class Authenticator {
      * ...
      *
      * @param string $usernameOrEmail
-     * @param fn({id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void $makeEmailSettings
+     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
      * @return bool
      * @throws \Pike\PikeException
      */
     public function requestPasswordReset($usernameOrEmail, callable $makeEmailSettings) {
+        // @allow \Pike\PikeException
         return $this->services->makeUserManager()
             ->requestPasswordReset($usernameOrEmail,
                                    $makeEmailSettings,
@@ -82,6 +85,7 @@ class Authenticator {
      * @throws \Pike\PikeException
      */
     public function finalizePasswordReset($key, $email, $newPassword) {
+        // @allow \Pike\PikeException
         return $this->services->makeUserManager()
             ->finalizePasswordReset($key, $email, $newPassword);
     }

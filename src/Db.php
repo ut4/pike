@@ -8,9 +8,9 @@ class Db {
     private $pdo;
     private $transactionLevel = 0;
     /**
-     * @param array $config ['db.host' => string, ...]
+     * @param array|object $config ['db.host' => string, ...]
      */
-    public function __construct(array $config) {
+    public function __construct($config) {
         $this->setConfig($config);
     }
     /**
@@ -20,11 +20,11 @@ class Db {
     public function open() {
         try {
             $this->pdo = new \PDO(
-                'mysql:host=' . $this->config['db.host'] .
-                     ';dbname=' . $this->config['db.database'] .
-                     ';charset=' . $this->config['db.charset'] ?? 'utf8',
-                $this->config['db.user'],
-                $this->config['db.pass'],
+                'mysql:host=' . ($this->config['db.host'] ?? '127.0.0.1') .
+                     ';dbname=' . ($this->config['db.database'] ?? '') .
+                     ';charset=' . ($this->config['db.charset'] ?? 'utf8') ,
+                $this->config['db.user'] ?? '',
+                $this->config['db.pass'] ?? '',
                 [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
             );
             return true;
@@ -47,7 +47,7 @@ class Db {
     /**
      * @param string $query
      * @param array $params = null
-     * @return object|bool
+     * @return \stdClass|bool
      * @throws \PDOException
      */
     public function fetchOne($query, array $params = null) {
@@ -130,11 +130,11 @@ class Db {
             : $this->pdo->setAttribute($attr, $value);
     }
     /**
-     * @param array $config ['db.host' => string, ...]
+     * @param array|object $config ['db.host' => string, ...]
      */
-    public function setConfig(array $config) {
-        $this->config = $config;
-        $this->tablePrefix = $config['db.tablePrefix'] ?? '';
+    public function setConfig($config) {
+        $this->config = is_array($config) ? $config : (array) $config;
+        $this->tablePrefix = $this->config['db.tablePrefix'] ?? '';
     }
     /**
      * @return string

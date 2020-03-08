@@ -22,20 +22,20 @@ class Request {
     /**
      * @param string $path
      * @param string $method = 'GET'
-     * @param object $body = new \stdClass()
-     * @param object $files = new \stdClass()
+     * @param object $body = new \stdClass
+     * @param object $files = new \stdClass
      * @param array $serverVars = []
      */
     public function __construct($path,
                                 $method = 'GET',
-                                object $body = null,
-                                object $files = null,
+                                $body = null,
+                                $files = null,
                                 array $serverVars = null) {
         $this->path = urldecode($path !== '' ? $path : '/');
         $this->method = $method;
-        $this->body = $body ?? new \stdClass();
-        $this->files = $files ?? new \stdClass();
-        $this->params = new \stdClass();
+        $this->body = $body ?? new \stdClass;
+        $this->files = $files ?? new \stdClass;
+        $this->params = new \stdClass;
         $this->serverVars = $serverVars ?? [];
     }
     /**
@@ -64,7 +64,7 @@ class Request {
                 $files = (object)$_FILES;
             } else {
                 if (!($json = file_get_contents('php://input')))
-                    $body = new \stdClass();
+                    $body = new \stdClass;
                 elseif (($body = json_decode($json)) === null)
                     throw new PikeException('Invalid json input', PikeException::BAD_INPUT);
             }

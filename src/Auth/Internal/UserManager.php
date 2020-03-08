@@ -5,6 +5,7 @@ namespace Pike\Auth\Internal;
 use Pike\Auth\Crypto;
 use Pike\PikeException;
 use Pike\Auth\Authenticator;
+use Pike\Validation;
 
 class UserManager {
     private $persistence;
@@ -19,16 +20,13 @@ class UserManager {
         $this->crypto = $crypto;
     }
     /**
-     * Asettaa käyttäjän $username kirjautuneeksi käyttäjäksi, tai heittää
-     * RadExceptionin mikäli käyttäjää ei voitu hakea kannasta tai salasana ei
-     * täsmännyt. Olettaa että parametrit on jo validoitu.
-     *
      * @param string $username
      * @param string $password
-     * @return object
+     * @return \stdClass
      * @throws \Pike\PikeException
      */
     public function login($username, $password) {
+        // @allow \Pike\PikeException
         $user = $this->persistence->getUser('username = ?', [$username]);
         if (!$user)
             throw new PikeException('User not found',
@@ -39,10 +37,8 @@ class UserManager {
         return $user;
     }
     /**
-     * ...
-     *
      * @param string $usernameOrEmail
-     * @param fn({id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void $makeEmailSettings
+     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
      * @param \Pike\Auth\Internal\PhpMailerMailer $mailer
      * @return bool
      * @throws \Pike\PikeException
@@ -50,6 +46,7 @@ class UserManager {
     public function requestPasswordReset($usernameOrEmail,
                                          callable $makeEmailSettings,
                                          $mailer) {
+        // @allow \Pike\PikeException
         $user = $this->persistence->getUser('username = ? OR email = ?',
                                             [$usernameOrEmail, $usernameOrEmail]);
         if (!$user)
@@ -57,8 +54,8 @@ class UserManager {
                                     Authenticator::INVALID_CREDENTIAL);
         try {
             $key = $this->crypto->genRandomToken();
-        } catch (\Exception $_) {
-            throw new PikeException('Failed to generate reset key',
+        } catch (\Exception $e) {
+            throw new PikeException("Failed to generate reset key: {$e->getMessage()}",
                                     Authenticator::CRYPTO_FAILURE);
         }
         // @allow \Pike\PikeException
@@ -72,6 +69,7 @@ class UserManager {
             $data = new \stdClass;
             $data->resetKey = $key;
             $data->resetRequestedAt = time();
+            // @allow \Pike\PikeException
             if (!$this->persistence->updateUser($data, 'id = ?', [$user->id]))
                 throw new PikeException('Failed to insert resetInfo',
                                         PikeException::FAILED_DB_OP);
@@ -83,8 +81,6 @@ class UserManager {
         return true;
     }
     /**
-     * ...
-     *
      * @param string $key
      * @param string $email
      * @param string $newPassword
@@ -93,6 +89,7 @@ class UserManager {
      */
     public function finalizePasswordReset($key, $email, $newPassword) {
         // 1. Hae resetointidata tietokannasta
+        // @allow \Pike\PikeException
         $user = $this->persistence->getUser('resetKey = ?', [$key]);
         $this->lastErrReason = null;
         // 2. Validoi avain ja email
@@ -115,6 +112,7 @@ class UserManager {
         $data->passwordHash = $user->passwordHash;
         $data->resetKey = null;
         $data->resetRequestedAt = null;
+        // @allow \Pike\PikeException
         if (!$this->persistence->updateUser($data, 'id = ?', [$user->id]))
             throw new PikeException('Failed to clear resetInfo',
                                     PikeException::FAILED_DB_OP);
@@ -126,7 +124,7 @@ class UserManager {
     private function makeResetPassEmailSettings($userDefinedMakeEmailSettings,
                                                 $user,
                                                 $resetKey) {
-        $settings = new \stdClass();
+        $settings = new \stdClass;
         $settings->fromAddress = '';
         $settings->fromName = '';
         $settings->toAddress = $user->email;
@@ -135,15 +133,14 @@ class UserManager {
         $settings->body = '';
         call_user_func($userDefinedMakeEmailSettings, $user, $resetKey, $settings);
         //
-        $errors = [];
-        foreach (['fromAddress', 'toAddress', 'subject', 'body'] as $key) {
-            if (!isset($settings->$key) || !is_string($settings->$key))
-                $errors[] = "mailSettings->{$key} is required";
-        }
-        foreach (['fromName', 'toName'] as $optional) {
-            if (isset($settings->$optional) && !is_string($settings->$optional))
-                $errors[] = "mailSettings->{$optional} must be a string";
-        }
+        $errors = (Validation::makeObjectValidator())
+            ->rule('fromAddress', 'type', 'string')
+            ->rule('toAddress', 'type', 'string')
+            ->rule('subject', 'type', 'string')
+            ->rule('body', 'type', 'string')
+            ->rule('fromName?', 'type', 'string')
+            ->rule('toName?', 'type', 'string')
+            ->validate($settings);
         if ($errors)
             throw new PikeException(implode(', ', $errors),
                                     Authenticator::FAILED_TO_FORMAT_MAIL);

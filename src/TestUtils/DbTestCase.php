@@ -18,7 +18,7 @@ abstract class DbTestCase extends ConfigProvidingTestCase {
         }
         return self::$db;
     }
-    private function createOrOpenTestDb($config) {
+    private static function createOrOpenTestDb($config) {
         $databaseName = $config['db.database'];
         $config['db.database'] = '';
         self::$db->setConfig($config);

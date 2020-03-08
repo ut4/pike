@@ -12,9 +12,9 @@ class SingleConnectionDb extends Db {
         parent::open();
         $this->connectionOpened = true;
     }
-    public function setConfig(array $config) {
+    public function setConfig($config) {
         parent::setConfig($config);
-        $this->currentDatabaseName = $config['db.database'] ?? '';
+        $this->currentDatabaseName = $this->config['db.database'] ?? '';
     }
     public function getCurrentDatabaseName() {
         return $this->currentDatabaseName;

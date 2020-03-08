@@ -4,6 +4,7 @@ namespace Pike\Auth\Internal;
 
 use Pike\Db;
 use Pike\DbUtils;
+use Pike\PikeException;
 
 class UserRepository {
     private $db;
@@ -14,16 +15,17 @@ class UserRepository {
         $this->db = $db;
     }
     /**
-     * @param {username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int}
+     * @param \stdClass $user {username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int}
      * @return int $lastInsertId
      */
-    public function putUser(object $user) {
+    public function putUser(\stdClass $user) {
         return 0;
     }
     /**
      * @param string $wherePlaceholders
      * @param array $whereVals
-     * @return {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}|null
+     * @return \stdClass|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
+     * @throws \Pike\PikeException
      */
     public function getUser($wherePlaceholders, $whereVals) {
         try {
@@ -33,25 +35,28 @@ class UserRepository {
                                        ' WHERE ' . $wherePlaceholders,
                                        $whereVals);
             return $row ? makeUser($row) : null;
-        } catch (\PDOException $_) {
-            return null;
+        } catch (\PDOException $e) {
+            throw new PikeException("Unexpected database error: {$e->getMessage()}",
+                                    PikeException::FAILED_DB_OP);
         }
     }
     /**
-     * @param {username?: string, email?: string, passwordHash?: string, role?: string, resetKey?: string, resetRequestedAt?: int} $data Olettaa että validi
+     * @param \stdClass $data {username?: string, email?: string, passwordHash?: string, role?: string, resetKey?: string, resetRequestedAt?: int}, olettaa että validi
      * @param string $wherePlaceholders
      * @param array $whereVals
      * @return int $numAffectedRows
+     * @throws \Pike\PikeException
      */
-    public function updateUser(object $data, $wherePlaceholders, $whereVals) {
+    public function updateUser(\stdClass $data, $wherePlaceholders, $whereVals) {
         try {
             [$placeholders, $vals] = DbUtils::makeUpdateBinders($data);
             return $this->db->exec('UPDATE ${p}users' .
                                    ' SET ' . $placeholders .
                                    ' WHERE ' . $wherePlaceholders,
                                    array_merge($vals, $whereVals)) === 1;
-        } catch (\PDOException $_) {
-            return 0;
+        } catch (\PDOException $e) {
+            throw new PikeException("Unexpected database error: {$e->getMessage()}",
+                                    PikeException::FAILED_DB_OP);
         }
     }
     /**

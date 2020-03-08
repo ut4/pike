@@ -1,5 +1,7 @@
 <?php
 
+namespace Pike\Tests\Auth;
+
 use Pike\Auth\Authenticator;
 use Pike\Auth\Internal\CachingServicesFactory;
 use Pike\TestUtils\DbTestCase;
@@ -69,7 +71,7 @@ class AuthenticatorTest extends DbTestCase {
                             $s->actualEmailSettings->body);
     }
     private function makeTestUser() {
-        return ['id' => 'a',
+        return ['id' => 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
                 'username' => 'Test User',
                 'email' => 'testuser@email.com',
                 'passwordHash' => MockCrypto::mockEncrypt('foo')];
