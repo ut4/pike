@@ -72,13 +72,13 @@ abstract class Validation {
                 count($strOrArray) <= $max);
     }
     public static function isEqualOrGreaterThan($value, $min) {
-        return $value >= $min;
+        return is_numeric($value) && $value >= $min;
     }
     public static function isEqualOrLessThan($value, $max) {
-        return $value <= $max;
+        return is_numeric($value) && $value <= $max;
     }
     public static function isOneOf($value, $listOfAllowedVals) {
-        return in_array($value, $listOfAllowedVals);
+        return in_array($value, $listOfAllowedVals, true);
     }
     public static function isIdentifier($str) {
         return is_string($str) &&
