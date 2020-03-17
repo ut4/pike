@@ -11,18 +11,15 @@ use Pike\Auth\Crypto;
  */
 class CachingServicesFactory {
     private $db;
-    private $crypto;
     private $session;
     private $mailer;
-    private $userManager;
+    private $authService;
     /**
      * @param \Pike\Db $db
-     * @param \Pike\Auth\Crypto $crypto
      * @param \Pike\Auth\PhpMailerMailer $mailer = null
      */
-    public function __construct(Db $db, Crypto $crypto, PhpMailerMailer $mailer = null) {
+    public function __construct(Db $db, PhpMailerMailer $mailer = null) {
         $this->db = $db;
-        $this->crypto = $crypto;
         $this->mailer = $mailer;
     }
     /**
@@ -44,14 +41,19 @@ class CachingServicesFactory {
         return $this->mailer;
     }
     /**
-     * @return \Pike\Auth\Internal\UserManager
+     * @return \Pike\Auth\Internal\AuthService
      */
-    public function makeUserManager() {
-        if (!$this->userManager) {
-            $this->userManager = new UserManager(new UserRepository($this->db),
-                                                 $this->crypto,
-                                                 $this);
+    public function makeAuthService() {
+        if (!$this->authService) {
+            $this->authService = new AuthService(new UserRepository($this->db),
+                                                 $this->makeCrypto());
         }
-        return $this->userManager;
+        return $this->authService;
+    }
+    /**
+     * @return \Pike\Auth\Crypto
+     */
+    public function makeCrypto() {
+        return new Crypto;
     }
 }

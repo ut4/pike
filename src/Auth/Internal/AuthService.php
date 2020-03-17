@@ -7,7 +7,7 @@ use Pike\PikeException;
 use Pike\Auth\Authenticator;
 use Pike\Validation;
 
-class UserManager {
+class AuthService {
     private $persistence;
     private $crypto;
     private $lastErrReason;
@@ -70,7 +70,7 @@ class UserManager {
             $data->resetKey = $key;
             $data->resetRequestedAt = time();
             // @allow \Pike\PikeException
-            if (!$this->persistence->updateUser($data, 'id = ?', [$user->id]))
+            if (!$this->persistence->updateUser($data, '`id` = ?', [$user->id]))
                 throw new PikeException('Failed to insert resetInfo',
                                         PikeException::FAILED_DB_OP);
             if (!$mailer->sendMail($emailSettings))
@@ -95,7 +95,7 @@ class UserManager {
         // 2. Validoi avain ja email
         if (!$user)
             $this->lastErrReason = 'Reset key didn\'t exist';
-        elseif (time () > $user->resetRequestedAt +
+        elseif (time() > $user->resetRequestedAt +
                           Authenticator::RESET_KEY_EXPIRATION_SECS)
             $this->lastErrReason = 'Reset key had expired';
         elseif ($user->email !== $email)
@@ -113,8 +113,32 @@ class UserManager {
         $data->resetKey = null;
         $data->resetRequestedAt = null;
         // @allow \Pike\PikeException
-        if (!$this->persistence->updateUser($data, 'id = ?', [$user->id]))
+        if (!$this->persistence->updateUser($data, '`id` = ?', [$user->id]))
             throw new PikeException('Failed to clear resetInfo',
+                                    PikeException::FAILED_DB_OP);
+        return true;
+    }
+    /**
+     * @param mixed $userId
+     * @param string $newPassword
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function updatePassword($userId, $newPassword) {
+        // @allow \Pike\PikeException
+        $filters = ['`id` = ?', [$userId]];
+        if (!($user = $this->persistence->getUser(...$filters)))
+            throw new PikeException('User not found',
+                                    Authenticator::INVALID_CREDENTIAL);
+        //
+        if (!($user->passwordHash = $this->crypto->hashPass($newPassword)))
+            throw new PikeException('Failed to hash a password',
+                                    Authenticator::CRYPTO_FAILURE);
+        //
+        $data = (object) ['passwordHash' => $user->passwordHash];
+        // @allow \Pike\PikeException
+        if (!$this->persistence->updateUser($data, ...$filters))
+            throw new PikeException('Failed to update user',
                                     PikeException::FAILED_DB_OP);
         return true;
     }

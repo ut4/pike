@@ -43,7 +43,7 @@ class Authenticator {
      */
     public function login($username, $password, callable $serializeUserForSession = null) {
         // @allow \Pike\PikeException
-        if (($user = $this->services->makeUserManager()->login($username, $password))) {
+        if (($user = $this->services->makeAuthService()->login($username, $password))) {
             $this->services->makeSession()->put('user', $serializeUserForSession
                 ? call_user_func($serializeUserForSession, $user)
                 : $user->id);
@@ -70,7 +70,7 @@ class Authenticator {
      */
     public function requestPasswordReset($usernameOrEmail, callable $makeEmailSettings) {
         // @allow \Pike\PikeException
-        return $this->services->makeUserManager()
+        return $this->services->makeAuthService()
             ->requestPasswordReset($usernameOrEmail,
                                    $makeEmailSettings,
                                    $this->services->makeMailer());
@@ -86,7 +86,20 @@ class Authenticator {
      */
     public function finalizePasswordReset($key, $email, $newPassword) {
         // @allow \Pike\PikeException
-        return $this->services->makeUserManager()
+        return $this->services->makeAuthService()
             ->finalizePasswordReset($key, $email, $newPassword);
+    }
+    /**
+     * ...
+     *
+     * @param mixed $userId
+     * @param string $newPassword
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function updatePassword($userId, $newPassword) {
+        // @allow \Pike\PikeException
+        return $this->services->makeAuthService()
+            ->updatePassword($userId, $newPassword);
     }
 }

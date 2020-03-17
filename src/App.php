@@ -4,7 +4,6 @@ namespace Pike;
 
 use Auryn\Injector;
 use Pike\Auth\Authenticator;
-use Pike\Auth\Crypto;
 use Pike\Auth\Internal\CachingServicesFactory;
 
 final class App {
@@ -134,8 +133,7 @@ final class App {
             if (!isset($ctx->db))
                 throw new PikeException('Can\'t make auth without db',
                                         PikeException::BAD_INPUT);
-            $ctx->auth = new Authenticator(new CachingServicesFactory($ctx->db,
-                                                                      new Crypto()));
+            $ctx->auth = new Authenticator(new CachingServicesFactory($ctx->db));
         }
         //
         foreach ($modules as $clsPath) {

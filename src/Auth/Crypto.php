@@ -2,7 +2,11 @@
 
 namespace Pike\Auth;
 
+use Pike\PikeException;
+
 class Crypto {
+    public const SECRETBOX_KEYBYTES = SODIUM_CRYPTO_SECRETBOX_KEYBYTES;
+    private const SECRETBOX_NONCEBYTES = SODIUM_CRYPTO_SECRETBOX_NONCEBYTES;
     /**
      * @param string $plainPass
      * @param string $hashedPass
@@ -41,16 +45,37 @@ class Crypto {
      * @param string $plainStr
      * @param string $key
      * @return string
+     * @throws \Pike\PikeException|\Exception
      */
     public function encrypt($plainStr, $key) {
-        return base64_encode($plainStr . $key); // :D
+        $nonce = random_bytes(self::SECRETBOX_NONCEBYTES);
+        try {
+            $ciphertext = sodium_crypto_secretbox($plainStr, $nonce, $key);
+        } catch (\SodiumException $e) {
+            throw new PikeException($e->getMessage(), Authenticator::CRYPTO_FAILURE);
+        }
+        return base64_encode($nonce . $ciphertext);
     }
     /**
      * @param string $encodedStr
      * @param string $key
      * @return string
+     * @throws \Pike\PikeException
      */
     public function decrypt($encodedStr, $key) {
-        return base64_decode($encodedStr . $key);
+        if (!($decoded = base64_decode($encodedStr)))
+            throw new PikeException('Failed to decode input string',
+                                    PikeException::BAD_INPUT);
+        $nonce = substr($decoded, 0, self::SECRETBOX_NONCEBYTES);
+        $ciphertext = substr($decoded, self::SECRETBOX_NONCEBYTES);
+        try {
+            if (($out = sodium_crypto_secretbox_open($ciphertext, $nonce, $key)))
+                return $out;
+        } catch (\SodiumException $e) {
+            throw new PikeException($e->getMessage(),
+                                    Authenticator::CRYPTO_FAILURE);
+        }
+        throw new PikeException('Failed to decrypt input string',
+                                Authenticator::CRYPTO_FAILURE);
     }
 }

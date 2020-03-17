@@ -7,13 +7,14 @@ use Pike\Auth\Internal\CachingServicesFactory;
 use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\MockCrypto;
 use Pike\Auth\Internal\PhpMailerMailer;
+use Pike\Db;
 
 class AuthenticatorTest extends DbTestCase {
     private $auth;
     public function testRequestPasswordResetWritesResetKeyToDbAndSendsItViaEmail() {
         $state = $this->setupTestRequestPasswordTest();
-        $this->auth = new Authenticator(new CachingServicesFactory(
-            self::getDb(), new MockCrypto, $state->mockMailer
+        $this->auth = new Authenticator($this->makeCryptoMockedServicesFactory(
+            $state->mockMailer
         ));
         $this->createTestUser($state);
         $this->invokeRequestPasswordResetFeature($state);
@@ -88,9 +89,7 @@ class AuthenticatorTest extends DbTestCase {
 
     public function testFinalizePasswordResetValidatesResetKeyAndWritesNewPasswordToDb() {
         $state = $this->setupFinalizePasswordResetTest();
-        $this->auth = new Authenticator(new CachingServicesFactory(
-            self::getDb(), new MockCrypto
-        ));
+        $this->auth = new Authenticator($this->makeCryptoMockedServicesFactory());
         $this->createTestUser($state);
         $this->insertTestResetInfoToDb($state);
         $this->invokeFinalizePasswordResetFeature($state);
@@ -130,5 +129,17 @@ class AuthenticatorTest extends DbTestCase {
         $row = $s->actualUserFromDb;
         $this->assertEquals(null, $row['resetKey']);
         $this->assertEquals(null, $row['resetRequestedAt']);
+    }
+    /**
+     * @return \Pike\Auth\Internal\CachingServicesFactory
+     */
+    private function makeCryptoMockedServicesFactory(PhpMailerMailer $mailer = null) {
+        $out = $this->getMockBuilder(CachingServicesFactory::class)
+            ->setConstructorArgs([self::getDb(), $mailer])
+            ->setMethods(['makeCrypto'])
+            ->getMock();
+        $out->method('makeCrypto')
+            ->willReturn(new MockCrypto);
+        return $out;
     }
 }
