@@ -3,27 +3,19 @@
 namespace Pike\Tests\Auth;
 
 use Pike\Auth\Authenticator;
-use Pike\Auth\Internal\CachingServicesFactory;
-use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\MockCrypto;
 use Pike\Auth\Internal\PhpMailerMailer;
-use Pike\Db;
 
-class AuthenticatorTest extends DbTestCase {
-    private $auth;
+class AuthenticatorResetPassTest extends AuthenticatorTestCase {
     public function testRequestPasswordResetWritesResetKeyToDbAndSendsItViaEmail() {
         $state = $this->setupTestRequestPasswordTest();
-        $this->auth = new Authenticator($this->makeCryptoMockedServicesFactory(
-            $state->mockMailer
-        ));
-        $this->createTestUser($state);
+        $this->insertTestUserToDb();
         $this->invokeRequestPasswordResetFeature($state);
         $this->verifyInsertedResetKeyToDb($state);
         $this->verifySentEmail($state);
     }
     private function setupTestRequestPasswordTest() {
         $out = new \stdClass;
-        $out->testUser = $this->makeTestUser();
         $out->mockResetKey = MockCrypto::mockGenRandomToken();
         $out->actualEmailSettings = null;
         $out->mockMailer = $this->createMock(PhpMailerMailer::class);
@@ -31,19 +23,16 @@ class AuthenticatorTest extends DbTestCase {
             ->method('sendMail')
             ->with($this->callback(function ($val) use ($out) {
                 $out->actualEmailSettings = $val;
-                return true; // assert later
+                return true;
             }))
             ->willReturn(true);
         return $out;
     }
-    private function createTestUser($s) {
-        if (self::$db->exec('INSERT INTO users (`id`,`username`,`email`,`passwordHash`)' .
-                            ' VALUES (?,?,?,?)',
-                            array_values($s->testUser)) !== 1)
-            throw new \Exception('Failed to insert test data');
-    }
     private function invokeRequestPasswordResetFeature($s) {
-        $this->auth->requestPasswordReset($s->testUser['email'],
+        $auth = new Authenticator($this->makePartiallyMockedServicesFactory(
+            null, $s->mockMailer
+        ));
+        $auth->requestPasswordReset(self::TEST_USER_EMAIL,
             function ($_user, $resetKey, $settingsOut) {
                 $settingsOut->fromAddress = 'mysite.com';
                 $settingsOut->subject = 'mysite.com | Password reset';
@@ -51,21 +40,22 @@ class AuthenticatorTest extends DbTestCase {
             });
     }
     private function verifyInsertedResetKeyToDb($s) {
-        $row = $this->getTestUserFromDb($s->testUser['id']);
+        $row = $this->getTestUserFromDb(self::TEST_USER_ID);
         $this->assertNotNull($row);
         $this->assertEquals($s->mockResetKey, $row['resetKey']);
         $this->assertEquals(true, $row['resetRequestedAt'] !== null);
         $this->assertEquals(true, $row['resetRequestedAt'] > time() - 20);
         // verifyDidNotChangeExistingData
-        $this->assertEquals($s->testUser['username'], $row['username']);
-        $this->assertEquals($s->testUser['email'], $row['email']);
-        $this->assertEquals($s->testUser['passwordHash'], $row['passwordHash']);
+        $this->assertEquals(self::TEST_USER_NAME, $row['username']);
+        $this->assertEquals(self::TEST_USER_EMAIL, $row['email']);
+        $this->assertEquals(MockCrypto::mockHashPass(self::TEST_USER_PASS),
+                            $row['passwordHash']);
     }
     private function verifySentEmail($s) {
         $this->assertEquals(true, $s->actualEmailSettings !== null,
             'Pitäisi kutsua $mailer->sendMail()');
-        $this->assertEquals($s->testUser['email'], $s->actualEmailSettings->toAddress);
-        $this->assertEquals($s->testUser['username'], $s->actualEmailSettings->toName);
+        $this->assertEquals(self::TEST_USER_EMAIL, $s->actualEmailSettings->toAddress);
+        $this->assertEquals(self::TEST_USER_NAME, $s->actualEmailSettings->toName);
         $this->assertEquals('mysite.com', $s->actualEmailSettings->fromAddress);
         $this->assertEquals('mysite.com | Password reset', $s->actualEmailSettings->subject);
         $this->assertEquals("Please visit /change-password/{$s->mockResetKey}",
@@ -75,7 +65,8 @@ class AuthenticatorTest extends DbTestCase {
         return ['id' => 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
                 'username' => 'Test User',
                 'email' => 'testuser@email.com',
-                'passwordHash' => MockCrypto::mockEncrypt('foo')];
+                'passwordHash' => MockCrypto::mockEncrypt('foo'),
+                'role' => 1];
     }
     private function getTestUserFromDb($userId) {
         return self::$db->fetchOne('SELECT `username`,`email`,`passwordHash`' .
@@ -85,12 +76,13 @@ class AuthenticatorTest extends DbTestCase {
                                    [$userId]);
     }
 
+
     ////////////////////////////////////////////////////////////////////////////
+
 
     public function testFinalizePasswordResetValidatesResetKeyAndWritesNewPasswordToDb() {
         $state = $this->setupFinalizePasswordResetTest();
-        $this->auth = new Authenticator($this->makeCryptoMockedServicesFactory());
-        $this->createTestUser($state);
+        $this->insertTestUserToDb();
         $this->insertTestResetInfoToDb($state);
         $this->invokeFinalizePasswordResetFeature($state);
         $this->verifyWroteNewPasswordToDb($state);
@@ -98,7 +90,6 @@ class AuthenticatorTest extends DbTestCase {
     }
     private function setupFinalizePasswordResetTest() {
         $out = new \stdClass;
-        $out->testUser = $this->makeTestUser();
         $out->actualUserFromDb = null;
         $out->testResetKey = 'fus';
         $out->newPassword = 'ro';
@@ -107,39 +98,28 @@ class AuthenticatorTest extends DbTestCase {
     private function insertTestResetInfoToDb($s) {
         if (!self::$db->exec('UPDATE users SET `resetKey`=?,`resetRequestedAt`=?' .
                              ' WHERE `id` = ?',
-                             [$s->testResetKey, time()-10, $s->testUser['id']]))
+                             [$s->testResetKey, time()-10, self::TEST_USER_ID]))
             throw new \Exception('Failed to insert test data');
     }
     private function invokeFinalizePasswordResetFeature($s) {
-        $this->auth->finalizePasswordReset($s->testResetKey,
-                                           $s->testUser['email'],
-                                           $s->newPassword);
+        $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
+        $auth->finalizePasswordReset($s->testResetKey,
+                                     self::TEST_USER_EMAIL,
+                                     $s->newPassword);
     }
     private function verifyWroteNewPasswordToDb($s) {
-        $row = $this->getTestUserFromDb($s->testUser['id']);
+        $row = $this->getTestUserFromDb(self::TEST_USER_ID);
         $this->assertNotNull($row);
         $this->assertEquals(MockCrypto::mockHashPass($s->newPassword),
                             $row['passwordHash']);
         // verifyDidNotChangeExistingData
-        $this->assertEquals($s->testUser['username'], $row['username']);
-        $this->assertEquals($s->testUser['email'], $row['email']);
+        $this->assertEquals(self::TEST_USER_NAME, $row['username']);
+        $this->assertEquals(self::TEST_USER_EMAIL, $row['email']);
         $s->actualUserFromDb = $row;
     }
     private function verifyClearedResetPassInfoFromToDb($s) {
         $row = $s->actualUserFromDb;
         $this->assertEquals(null, $row['resetKey']);
         $this->assertEquals(null, $row['resetRequestedAt']);
-    }
-    /**
-     * @return \Pike\Auth\Internal\CachingServicesFactory
-     */
-    private function makeCryptoMockedServicesFactory(PhpMailerMailer $mailer = null) {
-        $out = $this->getMockBuilder(CachingServicesFactory::class)
-            ->setConstructorArgs([self::getDb(), $mailer])
-            ->setMethods(['makeCrypto'])
-            ->getMock();
-        $out->method('makeCrypto')
-            ->willReturn(new MockCrypto);
-        return $out;
     }
 }

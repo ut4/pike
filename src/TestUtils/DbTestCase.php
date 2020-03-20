@@ -1,24 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike\TestUtils;
+
+use Pike\Db;
 
 abstract class DbTestCase extends ConfigProvidingTestCase {
     protected static $db = null;
-    protected function setUp() {
+    protected function setUp(): void {
         if (!self::$db) self::getDb();
         self::$db->beginTransaction();
     }
-    protected function tearDown() {
+    protected function tearDown(): void {
         self::$db->rollback();
     }
-    public static function getDb(array $config = null) {
+    public static function getDb(array $config = null): Db {
         if (!self::$db) {
             self::$db = new SingleConnectionDb([]);
             self::createOrOpenTestDb($config ?? static::getAppConfig());
         }
         return self::$db;
     }
-    private static function createOrOpenTestDb($config) {
+    private static function createOrOpenTestDb(array $config): void {
         $databaseName = $config['db.database'];
         $config['db.database'] = '';
         self::$db->setConfig($config);

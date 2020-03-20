@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike\Auth;
 
 use Pike\Auth\Internal\CachingServicesFactory;
@@ -25,7 +27,7 @@ class Authenticator {
     /**
      * Palauttaa käyttäjän id:n mikäli käyttäjä on kirjautunut, muutoin null.
      *
-     * @return string|null
+     * @return mixed|null
      */
     public function getIdentity() {
         return $this->services->makeSession()->get('user');
@@ -41,7 +43,9 @@ class Authenticator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function login($username, $password, callable $serializeUserForSession = null) {
+    public function login(string $username,
+                          string $password,
+                          callable $serializeUserForSession = null): bool {
         // @allow \Pike\PikeException
         if (($user = $this->services->makeAuthService()->login($username, $password))) {
             $this->services->makeSession()->put('user', $serializeUserForSession
@@ -56,7 +60,7 @@ class Authenticator {
      *
      * @return bool
      */
-    public function logout() {
+    public function logout(): bool {
         $this->services->makeSession()->destroy();
         return true;
     }
@@ -68,7 +72,8 @@ class Authenticator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function requestPasswordReset($usernameOrEmail, callable $makeEmailSettings) {
+    public function requestPasswordReset(string $usernameOrEmail,
+                                         callable $makeEmailSettings): bool {
         // @allow \Pike\PikeException
         return $this->services->makeAuthService()
             ->requestPasswordReset($usernameOrEmail,
@@ -84,7 +89,9 @@ class Authenticator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function finalizePasswordReset($key, $email, $newPassword) {
+    public function finalizePasswordReset(string $key,
+                                          string $email,
+                                          string $newPassword): bool {
         // @allow \Pike\PikeException
         return $this->services->makeAuthService()
             ->finalizePasswordReset($key, $email, $newPassword);
@@ -97,7 +104,7 @@ class Authenticator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function updatePassword($userId, $newPassword) {
+    public function updatePassword(string $userId, string $newPassword): bool {
         // @allow \Pike\PikeException
         return $this->services->makeAuthService()
             ->updatePassword($userId, $newPassword);
