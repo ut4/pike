@@ -15,6 +15,14 @@ class MyCtrl {
 }
 ```
 
+## Sisällysluettelo
+
+- [Datan insertointi](#datan-insertointi)
+- [Datan hakeminen, useita rivejä](#datan-hakeminen-useita-rivejä)
+- [Datan hakeminen, yksi rivi](#datan-hakeminen-yksi-rivi)
+- [Datan päivittäminen](#datan-päivittäminen)
+- [Datan poistaminen](#datan-poistaminen)
+
 ## Datan insertointi
 
 ```php
