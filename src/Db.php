@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike;
 
 class Db {
@@ -17,7 +19,7 @@ class Db {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function open() {
+    public function open(): bool {
         try {
             $this->pdo = new \PDO(
                 'mysql:host=' . ($this->config['db.host'] ?? '127.0.0.1') .
@@ -39,7 +41,7 @@ class Db {
      * @return array
      * @throws \PDOException
      */
-    public function fetchAll($query, array $params = null) {
+    public function fetchAll(string $query, array $params = null) {
         $prep = $this->pdo->prepare($this->compileQ($query));
         $prep->execute($params);
         return $prep->fetchAll(\PDO::FETCH_ASSOC);
@@ -50,7 +52,7 @@ class Db {
      * @return \stdClass|bool
      * @throws \PDOException
      */
-    public function fetchOne($query, array $params = null) {
+    public function fetchOne(string $query, array $params = null) {
         $prep = $this->pdo->prepare($this->compileQ($query));
         $prep->execute($params);
         return $prep->fetch(\PDO::FETCH_ASSOC);
@@ -60,17 +62,17 @@ class Db {
      * @param array $params = null
      * @return int
      */
-    public function exec($query, array $params = null) {
+    public function exec(string $query, array $params = null): int {
         $prep = $this->pdo->prepare($this->compileQ($query));
         $prep->execute($params ? array_map(function ($val) {
-            return !is_bool($val) ? $val : (int)$val;
+            return !is_bool($val) ? $val : (int) $val;
         }, $params) : $params);
         return $prep->rowCount();
     }
     /**
      * @return int $this->transactionLevel or -1 on failure
      */
-    public function beginTransaction() {
+    public function beginTransaction(): int {
         if (++$this->transactionLevel === 1) {
             if (!$this->pdo->beginTransaction()) return -1;
         }
@@ -79,7 +81,7 @@ class Db {
     /**
      * @return int $this->transactionLevel or -1 on failure
      */
-    public function commit() {
+    public function commit(): int {
         if ($this->transactionLevel > 0 && --$this->transactionLevel === 0) {
             if (!$this->pdo->commit()) return -1;
         }
@@ -88,7 +90,7 @@ class Db {
     /**
      * @return int $this->transactionLevel or -1 on failure
      */
-    public function rollback() {
+    public function rollback(): int {
         if ($this->transactionLevel > 0 && --$this->transactionLevel === 0) {
             if (!$this->pdo->rollBack()) return -1;
         }
@@ -96,8 +98,9 @@ class Db {
     }
     /**
      * @param \Closure $fn
+     * @throws \Pike\PikeException
      */
-    public function runInTransaction(\Closure $fn) {
+    public function runInTransaction(\Closure $fn): void {
         if ($this->beginTransaction() < 0) {
             throw new PikeException('Failed to start a transaction',
                                     PikeException::FAILED_DB_OP);
@@ -116,7 +119,7 @@ class Db {
     /**
      * @return string
      */
-    public function lastInsertId() {
+    public function lastInsertId(): string {
         return $this->pdo->lastInsertId();
     }
     /**
@@ -124,7 +127,7 @@ class Db {
      * @param mixed $value = null
      * @return mixed|bool
      */
-    public function attr($attr, $value = null) {
+    public function attr(int $attr, $value = null) {
         return !$value
             ? $this->pdo->getAttribute($attr)
             : $this->pdo->setAttribute($attr, $value);
@@ -132,14 +135,14 @@ class Db {
     /**
      * @param array|object $config ['db.host' => string, ...]
      */
-    public function setConfig($config) {
+    public function setConfig($config): void {
         $this->config = is_array($config) ? $config : (array) $config;
         $this->tablePrefix = $this->config['db.tablePrefix'] ?? '';
     }
     /**
      * @return string
      */
-    private function compileQ($query) {
+    private function compileQ(string $query): string {
         return str_replace('${p}', $this->tablePrefix, $query);
     }
 }
