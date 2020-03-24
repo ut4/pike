@@ -8,3 +8,4 @@ Minimalistinen dokumentaatio minimalistiselle frameworkille. Työn alla.
     - [Hello world](examples/hello-world.md)
 - [Tietokanta](database.md)
 - [Tiedostot](filesystem.md)
+- [Validaatio](validation.md)

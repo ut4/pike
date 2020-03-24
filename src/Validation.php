@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike;
 
 /**
@@ -10,13 +12,13 @@ abstract class Validation {
     /**
      * @return \Pike\ValueValidator
      */
-    public static function makeValueValidator() {
+    public static function makeValueValidator(): ValueValidator {
         return new ValueValidator;
     }
     /**
      * @return \Pike\ObjectValidator
      */
-    public static function makeObjectValidator() {
+    public static function makeObjectValidator(): ObjectValidator {
         return new ObjectValidator;
     }
     /**
@@ -24,7 +26,9 @@ abstract class Validation {
      * @param callable $n
      * @param string $errorTmpl
      */
-    public static function registerRuleImpl($name, callable $fn, $errorTmpl) {
+    public static function registerRuleImpl(string $name,
+                                            callable $fn,
+                                            string $errorTmpl): void {
         self::$ruleImpls[$name] = [$fn, $errorTmpl];
     }
     /**
@@ -32,7 +36,7 @@ abstract class Validation {
      * @return array [callable, string]
      * @throws \Pike\PikeException
      */
-    public static function getRuleImpl($name) {
+    public static function getRuleImpl(string $name): array {
         if (!isset(self::$ruleImpls['string'])) {
             $cls = self::class . '::';
             self::$ruleImpls = array_merge(self::$ruleImpls, [
@@ -51,7 +55,7 @@ abstract class Validation {
         return self::$ruleImpls[$name];
     }
     // == Default asserters ====================================================
-    public static function is($value, $type) {
+    public static function is($value, string $type): bool {
         if ($type === 'string') return is_string($value);
         if ($type === 'int') return is_int($value);
         if ($type === 'array') return is_array($value);
@@ -61,26 +65,26 @@ abstract class Validation {
         throw new PikeException("is_{$type}() not supported",
                                 PikeException::BAD_INPUT);
     }
-    public static function isMoreOrEqualLength($strOrArray, $min) {
+    public static function isMoreOrEqualLength($strOrArray, int $min): bool {
         return (is_string($strOrArray) && mb_strlen($strOrArray) >= $min) ||
                ((is_array($strOrArray) || $strOrArray instanceof \Countable) &&
                 count($strOrArray) >= $min);
     }
-    public static function isLessOrEqualLength($strOrArray, $max) {
+    public static function isLessOrEqualLength($strOrArray, int $max): bool {
         return (is_string($strOrArray) && mb_strlen($strOrArray) <= $max) ||
                ((is_array($strOrArray) || $strOrArray instanceof \Countable) &&
                 count($strOrArray) <= $max);
     }
-    public static function isEqualOrGreaterThan($value, $min) {
+    public static function isEqualOrGreaterThan($value, int $min): bool {
         return is_numeric($value) && $value >= $min;
     }
-    public static function isEqualOrLessThan($value, $max) {
+    public static function isEqualOrLessThan($value, int $max): bool {
         return is_numeric($value) && $value <= $max;
     }
-    public static function isOneOf($value, $listOfAllowedVals) {
+    public static function isOneOf($value, array $listOfAllowedVals): bool {
         return in_array($value, $listOfAllowedVals, true);
     }
-    public static function isIdentifier($str) {
+    public static function isIdentifier($str): bool {
         return is_string($str) &&
                strlen($str) &&
                (ctype_alpha($str[0]) || $str[0] === '_') &&
@@ -95,7 +99,7 @@ class ValueValidator {
      * @param array ...$args
      * @return $this
      */
-    public function rule($ruleName, ...$args) {
+    public function rule(string $ruleName, ...$args): ValueValidator {
         $this->rules[] = [Validation::getRuleImpl($ruleName), $args];
         return $this;
     }
@@ -104,7 +108,7 @@ class ValueValidator {
      * @param string $valueName = 'value'
      * @return string[]
      */
-    public function validate($value, $valueName = 'value') {
+    public function validate($value, string $valueName = 'value'): array {
         $errors = [];
         foreach ($this->rules as [$validator, $args]) {
             if (!call_user_func($validator[0], $value, ...$args))
@@ -122,7 +126,9 @@ class ObjectValidator {
      * @param array ...$args
      * @return $this
      */
-    public function rule($propPath, $ruleName, ...$args) {
+    public function rule(string $propPath,
+                         string $ruleName,
+                         ...$args): ObjectValidator {
         $rule = new \stdClass;
         $rule->validator = Validation::getRuleImpl($ruleName);
         $rule->isOptional = $propPath[-1] === '?';
@@ -137,7 +143,7 @@ class ObjectValidator {
      * @param object $object
      * @return string[]
      */
-    public function validate($object) {
+    public function validate(object $object): array {
         $errors = [];
         foreach ($this->rules as $r) {
             $isValid = false;
@@ -185,7 +191,8 @@ class ObjectValidator {
      * @param object $object
      * @return array [mixed, bool]
      */
-    private static function getValFor($pathPieces, $object) {
+    private static function getValFor(array $pathPieces,
+                                      object $object): array {
         $end = count($pathPieces) - 1;
         $cur = $object;
         foreach ($pathPieces as $i => $p) {
