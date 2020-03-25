@@ -13,6 +13,7 @@ class MyCtrl {
         // tee jotain $fs:llä
     }
 }
+
 ```
 
 ## Sisällysluettelo

@@ -7,5 +7,6 @@ Minimalistinen dokumentaatio minimalistiselle frameworkille. Työn alla.
 - Esimerkit
     - [Hello world](examples/hello-world.md)
 - [Tietokanta](database.md)
-- [Tiedostot](filesystem.md)
-- [Validaatio](validation.md)
+- [Tiedostojen hallinta](filesystem.md)
+- [Datan validointi](validation.md)
+- [Käyttäjäroolit ja oikeudet](acl.md)

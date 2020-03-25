@@ -17,11 +17,64 @@ class MyCtrl {
 
 ## Sisällysluettelo
 
+- [Käyttöönotto](#käyttöönotto-mariadbmysql)
 - [Datan insertointi](#datan-insertointi)
 - [Datan hakeminen, useita rivejä](#datan-hakeminen-useita-rivejä)
 - [Datan hakeminen, yksi rivi](#datan-hakeminen-yksi-rivi)
 - [Datan päivittäminen](#datan-päivittäminen)
 - [Datan poistaminen](#datan-poistaminen)
+
+## Käyttöönotto (MariaDb/MySQL)
+
+`\Pike\Db`:n konfigrointiin tarvitaan kolme asiaa:
+- `\Pike\App::create()`:een passattu `$config`, jossa vähintään `db.host => 'myval'`
+- `\Pike\App::create()`:een passattu `$ctx`, jossa `'db' => \Pike\App::MAKE_AUTOMATICALLY`
+- `$db->open()`-kutsu
+
+Näiden jälkeen `\Pike\Db` injektoituu minkä tahansa kontrollerin konstruktoriin tai metodiin type-hinttien perusteella (ks. [examples/hello-world.md](examples/hello-world.md#helloworldsomecontrollerphp) mikäli et muista miten tämä tapahtuu). `\Pike\Db` -luokasta luodaan vain yksi instanssi, ks. [\Auryn\Injector->share()](https://github.com/rdlowrey/Auryn#instance-sharing).
+
+Esimerkki:
+
+### index.php
+
+```php
+$ctx = (object) [\Pike\App::SERVICE_DB => \Pike\App::MAKE_AUTOMATICALLY];
+// tai
+$ctx = (object) ['db' => '@auto'];
+
+$config = [
+    'db.host'        => '127.0.0.1', // oletus '127.0.0.1'
+    'db.database'    => 'new2',      // oletus ''
+    'db.user'        => 'devuser',   // oletus ''
+    'db.pass'        => 'qweqwe',    // oletus ''
+    'db.tablePrefix' => 'rad_',      // oletus ''
+    'db.charset'     => 'utf8',      // oletus 'utf8'
+];
+// tai
+$config = __DIR__ . '/config.php'; // jossa <?php return [...];
+
+$app = \RadCms\App::create([MyBootstrapModule::class], $config, $ctx);
+$app->handleRequest(...);
+
+```
+
+### MyBootstrapModule.php
+
+```php
+abstract class MyBootstrapModule {
+    /**
+     * @param \stdClass $ctx {\Pike\Db db, \Pike\Router router}
+     */
+    public static function init(\stdClass $ctx) {
+        try {
+            $ctx->db->open();
+        } catch (\Pike\PikeException $e) {
+            // Tee jotain
+        }
+    }
+}
+
+```
 
 ## Datan insertointi
 

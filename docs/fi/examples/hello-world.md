@@ -114,13 +114,17 @@ class SomeClass {
 
 ## Esimerkkipyynnöt
 
-Esimerkin applikaatio löytyy kansiosta `/examples/`. Kansion `/examples/hello-world.php` vastaa esimerkin `index.php` -tiedostoa.
+Esimerkin applikaatio löytyy kansiosta `/examples/`, jota voi testata esim. php:hen bundlatulla dev-serverillä:
+- `cd examples`
+- `php -S localhost:8080`
+
+Kansion `/examples/hello-world.php` vastaa esimerkin `index.php` -tiedostoa.
 
 - some-route
-    - url: http://localhost/pike/examples/hello-world.php?q=/some-route
+    - url: http://localhost:8080/hello-world.php?q=/some-route
     - method: GET
 - another-route
-    - url: http://localhost/pike/examples/hello-world.php?q=/another-route/foo
+    - url: http://localhost:8080/hello-world.php?q=/another-route/foo
     - method: POST
     - body: {"any": "thing"}
     - header: Content-Type: application/json
