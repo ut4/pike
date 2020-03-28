@@ -6,8 +6,9 @@ Pike sisältää luokat [olioiden](#olioiden-validointi), ja yksittäisten [arvo
 
 - [Olioiden validointi](#olioiden-validointi)
 - [Yksittäisten arvojen validointi](#yksittäisten-arvojen-validointi)
+- [Custom one-time -validaattorit](#custom-one-time--validaattorit)
 - [Oletusvalidaattorit](#oletusvalidaattorit)
-    - [rule('type', 'string'|'int'|'array'|'bool'|'float'|'object` $expectedDataType)](#ruletype-stringintarrayboolfloatobject-expecteddatatype)
+    - [rule('type', 'string'|'int'|'array'|'bool'|'float'|'object' $expectedDataType)](#ruletype-stringintarrayboolfloatobject-expecteddatatype)
     - [rule('minLength', int $minLength)](#ruleminlength-int-minlength)
     - [rule('maxLength', int $maxLength)](#rulemaxlength-int-maxlength)
     - [rule('min', int $min)](#rulemin-int-min)
@@ -50,6 +51,24 @@ if (!$errors)
     ; // Ok, $errors == []
 else
     ; // Fail, $errors == ['Virheviesti', 'Toinen virheviesti' ...]
+```
+
+## Custom one-time -validaattorit
+
+Yksittäiselle validaattori-instanssille lisätä omia validaattoreita metodilla `addRuleImpl()`.
+
+```php
+$v = Validation::makeValueValidator();
+$v2 = Validation::makeValueValidator();
+
+$v->addRuleImpl('myRule', function ($value, $arg1, $arg2) {
+    return $value === $arg1 || $value === $arg2;
+}, '%s is not %s nor %d');
+
+$errors = $v->rule('myRule', 'foo', 1)
+            ->validate('bar'); // value is not foo nor 1
+
+$v2->rule('myRule', ...) // PikeException, No implementation found for `myRule`.
 ```
 
 ## Oletusvalidaattorit

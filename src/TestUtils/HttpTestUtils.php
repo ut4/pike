@@ -42,6 +42,8 @@ trait HttpTestUtils {
             call_user_func($factory, $config, $ctx, function () use ($ctx, $alterInjector) {
                 $injector = new Injector();
                 $injector->alias(Db::class, SingleConnectionDb::class);
+                if ($ctx->auth instanceof MockObject)
+                    $injector->delegate(Authenticator::class, function () use ($ctx) { return $ctx->auth; });
                 if (isset($ctx->fs))
                     $injector->delegate(FileSystem::class, function () use ($ctx) { return $ctx->fs; });
                 if (isset($ctx->crypto))

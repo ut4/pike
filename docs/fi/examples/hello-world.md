@@ -2,7 +2,7 @@
 
 Tässä tiedostossa Hello World -applikaatio joka demonstroi miten:
 
-- Pike-applikaatio laitetaan liikkeelle ([index.php](#index.php))
+- Pike-applikaatio laitetaan liikkeelle ([index.php](#indexphp))
 - HTTP-reittejä rekisteröidään, koodia voi jaotella ryhmiin ([SomeModule.php](#helloworldsomemodulephp))
 - HTTP-pyyntöjen parametreihin ja POST-dataan pääse käsiksi, miten selaimelle lähetetään tietoa takaisin ([SomeController.php](#helloworldsomecontrollerphp))
 - [Auryn\Injector](https://github.com/rdlowrey/auryn) injektoi automaattisesti luokat (SomeClass.php) kontrollereihin type-hinttien perusteella
