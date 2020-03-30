@@ -10,3 +10,4 @@ Minimalistinen dokumentaatio minimalistiselle frameworkille. Työn alla.
 - [Tiedostojen hallinta](filesystem.md)
 - [Datan validointi](validation.md)
 - [Käyttäjäroolit ja oikeudet](acl.md)
+- [Autentikaatio](authentication.md)

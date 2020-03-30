@@ -14,6 +14,7 @@ class ACL {
     // Suurin bit-maskaukseen soveltuva 24-bittinen/mediumint kokonaisluku
     public const ROLE_LAST        = 1 << 23;
     public const ROLE_VIEWER      = self::ROLE_LAST;
+    public const NO_PERMISSIONS   = 0;
     protected $resources;
     protected $permissions;
     protected $compactRules;

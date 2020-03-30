@@ -7,7 +7,7 @@ namespace Pike;
 class DbUtils {
     /**
      * In: ['col1' => 'val1', 'col2' => 'val2']
-     * Out: ['`col1`=?,`col2`=?', ['val1', 'val2']]
+     * Out: ['?,?', ['val1', 'val2'], '`col1`,`col2`']
      *
      * @param object|array $data
      */

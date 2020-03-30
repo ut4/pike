@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike\Auth\Internal;
 
 use Pike\Db;
@@ -18,7 +20,7 @@ class UserRepository {
      * @param \stdClass $user {username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int}
      * @return int $lastInsertId
      */
-    public function putUser(\stdClass $user) {
+    public function putUser(\stdClass $user): int {
         return 0;
     }
     /**
@@ -27,7 +29,8 @@ class UserRepository {
      * @return \stdClass|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
      * @throws \Pike\PikeException
      */
-    public function getUser($wherePlaceholders, $whereVals) {
+    public function getUser(string $wherePlaceholders,
+                            array $whereVals): ?\stdClass {
         try {
             $row = $this->db->fetchOne('SELECT `id`,`username`,`email`,`passwordHash`' .
                                        ',`role`,`resetKey`,`resetRequestedAt`' .
@@ -44,10 +47,12 @@ class UserRepository {
      * @param \stdClass $data {username?: string, email?: string, passwordHash?: string, role?: string, resetKey?: string, resetRequestedAt?: int}, olettaa että validi
      * @param string $wherePlaceholders
      * @param array $whereVals
-     * @return int $numAffectedRows
+     * @return bool
      * @throws \Pike\PikeException
      */
-    public function updateUser(\stdClass $data, $wherePlaceholders, $whereVals) {
+    public function updateUser(\stdClass $data,
+                               string $wherePlaceholders,
+                               array $whereVals): bool {
         try {
             [$placeholders, $vals] = DbUtils::makeUpdateBinders($data);
             return $this->db->exec('UPDATE ${p}users' .
@@ -62,13 +67,13 @@ class UserRepository {
     /**
      * @param \Closure $fn
      */
-    public function runInTransaction($fn) {
+    public function runInTransaction(\Closure $fn): void {
         // @allow \Pike\PikeException
         $this->db->runInTransaction($fn);
     }
 }
 
-function makeUser($row) {
+function makeUser(array $row): \stdClass {
     return (object)[
         'id' => $row['id'],
         'username' => $row['username'],

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike\Auth\Internal;
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -18,7 +20,7 @@ class PhpMailerMailer {
      * @param object $settings {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string}, olettaa että validi
      * @return bool
      */
-    public function sendMail($settings) {
+    public function sendMail(\stdClass $settings): bool {
         try {
             if (property_exists($settings, 'useSMTP'))
                 $this->mailer->isSMTP();
@@ -37,9 +39,9 @@ class PhpMailerMailer {
         }
     }
     /**
-     * @return \PHPMailer\PHPMailer\Exception
+     * @return \PHPMailer\PHPMailer\Exception|null
      */
-    public function getLastError() {
+    public function getLastError(): ?PhpMailerException {
         return $this->lastErr;
     }
 }

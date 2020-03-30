@@ -19,14 +19,14 @@ class FileSystem implements FileSystemInterface {
      * @return string|false
      */
     public function read(string $path) {
-        return @file_get_contents($path);
+        return file_get_contents($path);
     }
     /**
      * @param string $path
      * @return bool
      */
     public function unlink(string $path): bool {
-        return @unlink($path);
+        return unlink($path);
     }
     /**
      * @param string $path
@@ -34,7 +34,7 @@ class FileSystem implements FileSystemInterface {
      * @return bool
      */
     public function copy(string $path, string $destPath): bool {
-        return @copy($path, $destPath);
+        return copy($path, $destPath);
     }
     /**
      * @param string $path
@@ -45,7 +45,7 @@ class FileSystem implements FileSystemInterface {
     public function mkDir(string $path,
                           int $perms = 0755,
                           bool $recursive = true): bool {
-        return @mkdir($path, $perms, $recursive);
+        return mkdir($path, $perms, $recursive);
     }
     /**
      * @param string $path
@@ -53,7 +53,7 @@ class FileSystem implements FileSystemInterface {
      * @return bool
      */
     public function rmDir(string $path, $context = null): bool {
-        return @rmdir($path, $context);
+        return rmdir($path, $context);
     }
     /**
      * @param string $path
@@ -103,7 +103,7 @@ class FileSystem implements FileSystemInterface {
      * @return int|false
      */
     public function lastModTime(string $path) {
-        return @filemtime($path);
+        return filemtime($path);
     }
     /**
      * 'foo/bar\baz/' -> 'foo/bar/baz'

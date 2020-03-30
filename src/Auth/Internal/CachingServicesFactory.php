@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike\Auth\Internal;
 
 use Pike\Db;
 use Pike\NativeSession;
 use Pike\Auth\Crypto;
+use Pike\SessionInterface;
 
 /**
  * Tarjoilee Authenticator-luokalle sen tarvitsemia palveluja.
@@ -25,7 +28,7 @@ class CachingServicesFactory {
     /**
      * @return \Pike\NativeSession
      */
-    public function makeSession() {
+    public function makeSession(): SessionInterface {
         if (!$this->session) {
             $this->session = new NativeSession();
         }
@@ -34,7 +37,7 @@ class CachingServicesFactory {
     /**
      * @return \Pike\Auth\Internal\PhpMailerMailer
      */
-    public function makeMailer() {
+    public function makeMailer(): PhpMailerMailer {
         if (!$this->mailer) {
             $this->mailer = new PhpMailerMailer();
         }
@@ -43,7 +46,7 @@ class CachingServicesFactory {
     /**
      * @return \Pike\Auth\Internal\AuthService
      */
-    public function makeAuthService() {
+    public function makeAuthService(): AuthService {
         if (!$this->authService) {
             $this->authService = new AuthService(new UserRepository($this->db),
                                                  $this->makeCrypto());
@@ -53,7 +56,7 @@ class CachingServicesFactory {
     /**
      * @return \Pike\Auth\Crypto
      */
-    public function makeCrypto() {
+    public function makeCrypto(): Crypto {
         return new Crypto;
     }
 }

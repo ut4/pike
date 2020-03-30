@@ -25,18 +25,12 @@ class Authenticator {
         $this->services = $factory;
     }
     /**
-     * Palauttaa käyttäjän id:n mikäli käyttäjä on kirjautunut, muutoin null.
-     *
      * @return mixed|null
      */
     public function getIdentity() {
         return $this->services->makeSession()->get('user');
     }
     /**
-     * Asettaa käyttäjän $username kirjautuneeksi käyttäjäksi, tai heittää
-     * PikeExceptionin mikäli käyttäjää ei voitu hakea kannasta tai salasana ei
-     * täsmännyt. Olettaa että parametrit on jo validoitu.
-     *
      * @param string $username
      * @param string $password
      * @param callable $serializeUserForSession = null fn(\stdClass $user): mixed
@@ -56,8 +50,6 @@ class Authenticator {
         return false;
     }
     /**
-     * Kirjaa käyttäjän ulos poistamalla käyttäjän tiedot sessiosta.
-     *
      * @return bool
      */
     public function logout(): bool {
@@ -65,8 +57,6 @@ class Authenticator {
         return true;
     }
     /**
-     * ...
-     *
      * @param string $usernameOrEmail
      * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
      * @return bool
@@ -81,8 +71,6 @@ class Authenticator {
                                    $this->services->makeMailer());
     }
     /**
-     * ...
-     *
      * @param string $key
      * @param string $email
      * @param string $newPassword
@@ -97,8 +85,6 @@ class Authenticator {
             ->finalizePasswordReset($key, $email, $newPassword);
     }
     /**
-     * ...
-     *
      * @param mixed $userId
      * @param string $newPassword
      * @return bool

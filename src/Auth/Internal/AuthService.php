@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike\Auth\Internal;
 
 use Pike\Auth\Crypto;
@@ -25,7 +27,7 @@ class AuthService {
      * @return \stdClass
      * @throws \Pike\PikeException
      */
-    public function login($username, $password) {
+    public function login(string $username, string $password): \stdClass {
         // @allow \Pike\PikeException
         $user = $this->persistence->getUser('username = ?', [$username]);
         if (!$user)
@@ -43,9 +45,9 @@ class AuthService {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function requestPasswordReset($usernameOrEmail,
+    public function requestPasswordReset(string $usernameOrEmail,
                                          callable $makeEmailSettings,
-                                         $mailer) {
+                                         PhpMailerMailer $mailer): bool {
         // @allow \Pike\PikeException
         $user = $this->persistence->getUser('username = ? OR email = ?',
                                             [$usernameOrEmail, $usernameOrEmail]);
@@ -87,7 +89,9 @@ class AuthService {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function finalizePasswordReset($key, $email, $newPassword) {
+    public function finalizePasswordReset(string $key,
+                                          string $email,
+                                          string $newPassword): bool {
         // 1. Hae resetointidata tietokannasta
         // @allow \Pike\PikeException
         $user = $this->persistence->getUser('resetKey = ?', [$key]);
@@ -124,7 +128,7 @@ class AuthService {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function updatePassword($userId, $newPassword) {
+    public function updatePassword($userId, string $newPassword): bool {
         // @allow \Pike\PikeException
         $filters = ['`id` = ?', [$userId]];
         if (!($user = $this->persistence->getUser(...$filters)))
@@ -145,9 +149,9 @@ class AuthService {
     /**
      * @throws \Pike\PikeException
      */
-    private function makeResetPassEmailSettings($userDefinedMakeEmailSettings,
-                                                $user,
-                                                $resetKey) {
+    private function makeResetPassEmailSettings(callable $userDefinedMakeEmailSettings,
+                                                \stdClass $user,
+                                                string $resetKey): \stdClass {
         $settings = new \stdClass;
         $settings->fromAddress = '';
         $settings->fromName = '';
@@ -159,9 +163,13 @@ class AuthService {
         //
         $errors = (Validation::makeObjectValidator())
             ->rule('fromAddress', 'type', 'string')
+            ->rule('fromAddress', 'minLength', 3)
             ->rule('toAddress', 'type', 'string')
+            ->rule('toAddress', 'minLength', 3)
             ->rule('subject', 'type', 'string')
+            ->rule('subject', 'minLength', 1)
             ->rule('body', 'type', 'string')
+            ->rule('body', 'minLength', 1)
             ->rule('fromName?', 'type', 'string')
             ->rule('toName?', 'type', 'string')
             ->validate($settings);
