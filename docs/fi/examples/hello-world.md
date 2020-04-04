@@ -44,7 +44,8 @@ abstract class SomeModule {
     /**
      * @param \stdClass $ctx  {\Pike\Router router}
      */
-    public static function init(\stdClass $ctx) {
+    public static function init(\stdClass $ctx): void {
+        // ks. examples/mapping-routes.md
         $ctx->router->map('GET', '/some-route',
             [SomeController::class, 'handleSomeRoute']
         );
@@ -103,7 +104,7 @@ namespace Me\HelloWorld;
 
 class SomeClass {
     /**
-     * @return ?string
+     * @return string|null
      */
     public function doSomething(): ?string {
         return 'Hello';

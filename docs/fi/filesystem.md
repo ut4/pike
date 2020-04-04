@@ -1,6 +1,6 @@
 # Tiedostot
 
-`\Pike\FileSystem` on abstraktio yleisimpien php-natiivien tiedostonhallintafunktioiden (`id_dir()`, `file_get_contents()`) ympärille.
+`\Pike\FileSystem` on abstraktio yleisimpien php-natiivien tiedostonhallintafunktioiden (`is_dir()`, `file_get_contents()`) ympärille.
 
 ```php
 use \Pike\FileSystemInterface;
@@ -76,8 +76,8 @@ else
 ## Kansion luominen
 
 ```php
-$perms = 0755;      // default 0777
-$recursive = false; // default true
+$perms = 0755;      // oletus 0777
+$recursive = false; // oletus true
 $ok = $fs->mkDir(__DIR__ . '/kansio', $perms, $recursive);
 if ($ok)
     ; // ok
@@ -118,8 +118,8 @@ else
 ## Kansion sisällön lukeminen (ei-rekursiivinen)
 
 ```php
-$globPattern = '*.txt'; // default '*',
-$globFlags = null;      // default GLOB_ERR
+$globPattern = '*.txt'; // oletus '*',
+$globFlags = null;      // oletus GLOB_ERR
 $fullFilePaths = $fs->readDir(__DIR__ . '/kansio', $globPattern, $globFlags);
 if ($fullFilePaths !== false)
     echo $fullFilePaths[0]; // /htdocs/projekti/kansio/foo.txt

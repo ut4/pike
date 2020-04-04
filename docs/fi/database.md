@@ -142,7 +142,7 @@ try {
 
 ```php
 try {
-    $numAffectedRows = $db->fetchOne("DELETE FROM Products WHERE `id`=?", [1]);
+    $numAffectedRows = $db->exec("DELETE FROM Products WHERE `id`=?", [1]);
     if ($numAffectedRows)
         ; // ok
     else

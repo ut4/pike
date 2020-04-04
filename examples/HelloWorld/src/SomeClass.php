@@ -6,7 +6,7 @@ namespace Me\HelloWorld;
 
 class SomeClass {
     /**
-     * @return string
+     * @return string|null
      */
     public function doSomething(): ?string {
         return 'Hello';
