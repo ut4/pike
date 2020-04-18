@@ -12,7 +12,7 @@ class Controller {
         $res->json((object) [
             'params' => $req->params,
             'body' => $req->body,
-            'routeCtx' => $req->routeCtx, 
+            'routeInfo' => $req->routeInfo,
         ]);
     }
     public function handleRouteB(Request $req, Response $res): void {

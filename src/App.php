@@ -41,8 +41,8 @@ final class App {
                 $this->validateRouteMatch($match, $request);
             $middlewareLoopState = (object)['req' => $request,
                 'res' => $this->ctx->res ?? new Response()];
-            $middlewareLoopState->req->routeCtx = (object)[
-                'myData' => $usersRouteCtx,
+            $middlewareLoopState->req->routeInfo = (object)[
+                'myCtx' => $usersRouteCtx,
                 'name' => $match['name'],
             ];
             // @allow \Pike\PikeException
