@@ -18,7 +18,7 @@ abstract class DbTestCase extends ConfigProvidingTestCase {
     public static function getDb(array $config = null): Db {
         if (!self::$db) {
             self::$db = new SingleConnectionDb([]);
-            self::createOrOpenTestDb($config ?? static::getAppConfig());
+            self::createOrOpenTestDb($config !== null ? $config : static::getAppConfig());
         }
         return self::$db;
     }

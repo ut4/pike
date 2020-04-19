@@ -14,7 +14,7 @@ A tight set of classes that helps you write killer applications. Does not try to
 
 # Documentation
 
-[Suomeksi](docs/fi/index.md).
+[Suomeksi](https://ut4.github.io/pike/index.html).
 
 # License
 
