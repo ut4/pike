@@ -24,10 +24,10 @@ class AuthService {
     /**
      * @param string $username
      * @param string $password
-     * @return \stdClass
+     * @return object
      * @throws \Pike\PikeException
      */
-    public function login(string $username, string $password): \stdClass {
+    public function login(string $username, string $password): object {
         // @allow \Pike\PikeException
         $user = $this->persistence->getUser('username = ?', [$username]);
         if (!$user)
@@ -150,7 +150,7 @@ class AuthService {
      * @throws \Pike\PikeException
      */
     private function makeResetPassEmailSettings(callable $userDefinedMakeEmailSettings,
-                                                \stdClass $user,
+                                                object $user,
                                                 string $resetKey): \stdClass {
         $settings = new \stdClass;
         $settings->fromAddress = '';

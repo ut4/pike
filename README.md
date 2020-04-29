@@ -6,11 +6,11 @@ A tight set of classes that helps you write killer applications. Does not try to
 
 - PHP ^7.2
 - [altorouter/altorouter ^1.2](https://github.com/dannyvankooten/AltoRouter)
-- [rdlowrey/auryn ^1.4](https://github.com/rdlowrey/auryn) (dependency injection)
+- [rdlowrey/auryn ^1.4](https://github.com/rdlowrey/auryn) (Dependency injection)
 
 # Optional dependencies
 
-- [phpmailer/phpmailer ^6.1](https://github.com/PHPMailer/PHPMailer) (password reset)
+- [phpmailer/phpmailer ^6.1](https://github.com/PHPMailer/PHPMailer) (Password reset)
 
 # Documentation
 

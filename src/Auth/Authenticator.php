@@ -33,7 +33,7 @@ class Authenticator {
     /**
      * @param string $username
      * @param string $password
-     * @param callable $serializeUserForSession = null fn(\stdClass $user): mixed
+     * @param callable $serializeUserForSession = null fn(object $user): mixed
      * @return bool
      * @throws \Pike\PikeException
      */
