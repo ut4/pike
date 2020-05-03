@@ -7,7 +7,7 @@ use Pike\Auth\Authenticator;
 use Pike\Auth\Internal\CachingServicesFactory;
 
 final class App {
-    public const VERSION = '0.3.1';
+    public const VERSION = '0.4.0';
     public const SERVICE_DB = 'db';
     public const SERVICE_AUTH = 'auth';
     public const MAKE_AUTOMATICALLY = '@auto';
