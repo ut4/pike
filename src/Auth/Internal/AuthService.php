@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike\Auth\Internal;
 
 use Pike\Auth\Crypto;
@@ -7,7 +9,7 @@ use Pike\PikeException;
 use Pike\Auth\Authenticator;
 use Pike\Validation;
 
-class UserManager {
+class AuthService {
     private $persistence;
     private $crypto;
     private $lastErrReason;
@@ -22,10 +24,10 @@ class UserManager {
     /**
      * @param string $username
      * @param string $password
-     * @return \stdClass
+     * @return object
      * @throws \Pike\PikeException
      */
-    public function login($username, $password) {
+    public function login(string $username, string $password): object {
         // @allow \Pike\PikeException
         $user = $this->persistence->getUser('username = ?', [$username]);
         if (!$user)
@@ -43,9 +45,9 @@ class UserManager {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function requestPasswordReset($usernameOrEmail,
+    public function requestPasswordReset(string $usernameOrEmail,
                                          callable $makeEmailSettings,
-                                         $mailer) {
+                                         PhpMailerMailer $mailer): bool {
         // @allow \Pike\PikeException
         $user = $this->persistence->getUser('username = ? OR email = ?',
                                             [$usernameOrEmail, $usernameOrEmail]);
@@ -70,7 +72,7 @@ class UserManager {
             $data->resetKey = $key;
             $data->resetRequestedAt = time();
             // @allow \Pike\PikeException
-            if (!$this->persistence->updateUser($data, 'id = ?', [$user->id]))
+            if (!$this->persistence->updateUser($data, '`id` = ?', [$user->id]))
                 throw new PikeException('Failed to insert resetInfo',
                                         PikeException::FAILED_DB_OP);
             if (!$mailer->sendMail($emailSettings))
@@ -87,7 +89,9 @@ class UserManager {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function finalizePasswordReset($key, $email, $newPassword) {
+    public function finalizePasswordReset(string $key,
+                                          string $email,
+                                          string $newPassword): bool {
         // 1. Hae resetointidata tietokannasta
         // @allow \Pike\PikeException
         $user = $this->persistence->getUser('resetKey = ?', [$key]);
@@ -95,7 +99,7 @@ class UserManager {
         // 2. Validoi avain ja email
         if (!$user)
             $this->lastErrReason = 'Reset key didn\'t exist';
-        elseif (time () > $user->resetRequestedAt +
+        elseif (time() > $user->resetRequestedAt +
                           Authenticator::RESET_KEY_EXPIRATION_SECS)
             $this->lastErrReason = 'Reset key had expired';
         elseif ($user->email !== $email)
@@ -113,17 +117,41 @@ class UserManager {
         $data->resetKey = null;
         $data->resetRequestedAt = null;
         // @allow \Pike\PikeException
-        if (!$this->persistence->updateUser($data, 'id = ?', [$user->id]))
+        if (!$this->persistence->updateUser($data, '`id` = ?', [$user->id]))
             throw new PikeException('Failed to clear resetInfo',
+                                    PikeException::FAILED_DB_OP);
+        return true;
+    }
+    /**
+     * @param mixed $userId
+     * @param string $newPassword
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function updatePassword($userId, string $newPassword): bool {
+        // @allow \Pike\PikeException
+        $filters = ['`id` = ?', [$userId]];
+        if (!($user = $this->persistence->getUser(...$filters)))
+            throw new PikeException('User not found',
+                                    Authenticator::INVALID_CREDENTIAL);
+        //
+        if (!($user->passwordHash = $this->crypto->hashPass($newPassword)))
+            throw new PikeException('Failed to hash a password',
+                                    Authenticator::CRYPTO_FAILURE);
+        //
+        $data = (object) ['passwordHash' => $user->passwordHash];
+        // @allow \Pike\PikeException
+        if (!$this->persistence->updateUser($data, ...$filters))
+            throw new PikeException('Failed to update user',
                                     PikeException::FAILED_DB_OP);
         return true;
     }
     /**
      * @throws \Pike\PikeException
      */
-    private function makeResetPassEmailSettings($userDefinedMakeEmailSettings,
-                                                $user,
-                                                $resetKey) {
+    private function makeResetPassEmailSettings(callable $userDefinedMakeEmailSettings,
+                                                object $user,
+                                                string $resetKey): \stdClass {
         $settings = new \stdClass;
         $settings->fromAddress = '';
         $settings->fromName = '';
@@ -135,9 +163,13 @@ class UserManager {
         //
         $errors = (Validation::makeObjectValidator())
             ->rule('fromAddress', 'type', 'string')
+            ->rule('fromAddress', 'minLength', 3)
             ->rule('toAddress', 'type', 'string')
+            ->rule('toAddress', 'minLength', 3)
             ->rule('subject', 'type', 'string')
+            ->rule('subject', 'minLength', 1)
             ->rule('body', 'type', 'string')
+            ->rule('body', 'minLength', 1)
             ->rule('fromName?', 'type', 'string')
             ->rule('toName?', 'type', 'string')
             ->validate($settings);

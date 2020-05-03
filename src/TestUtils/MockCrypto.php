@@ -1,35 +1,37 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike\TestUtils;
 
 use Pike\Auth\Crypto;
 
 class MockCrypto extends Crypto {
-    public function verifyPass($plainPass, $hashedPass) {
-        return $plainPass === $hashedPass;
+    public function verifyPass(string $plainPass, string $hashedPass): bool {
+        return self::mockHashPass($plainPass) === $hashedPass;
     }
-    public function hashPass($plainPass) {
+    public function hashPass(string $plainPass): string {
         return self::mockHashPass($plainPass);
     }
-    public function genRandomToken($_bytes = 16) {
+    public function genRandomToken(int $_bytes = 16): string {
         return self::mockGenRandomToken();
     }
-    public function encrypt($str, $_key) {
+    public function encrypt(string $str, string $_key): string {
         return self::mockEncrypt($str);
     }
-    public function decrypt($str, $_key) {
+    public function decrypt(string $str, string $_key): string {
         return self::mockDecrypt($str);
     }
-    public static function mockHashPass($plainPass) {
+    public static function mockHashPass(string $plainPass): string {
         return 'hashed: ' . $plainPass;
     }
-    public static function mockGenRandomToken() {
+    public static function mockGenRandomToken(): string {
         return 'randomToken';
     }
-    public static function mockEncrypt($str) {
+    public static function mockEncrypt(string $str): string {
         return 'encrypted: ' . $str;
     }
-    public static function mockDecrypt($str) {
+    public static function mockDecrypt(string $str): string {
         return substr($str, strlen('encrypted: '));
     }
 }

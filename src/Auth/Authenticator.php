@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike\Auth;
 
 use Pike\Auth\Internal\CachingServicesFactory;
@@ -23,27 +25,23 @@ class Authenticator {
         $this->services = $factory;
     }
     /**
-     * Palauttaa käyttäjän id:n mikäli käyttäjä on kirjautunut, muutoin null.
-     *
-     * @return string|null
+     * @return mixed|null
      */
     public function getIdentity() {
         return $this->services->makeSession()->get('user');
     }
     /**
-     * Asettaa käyttäjän $username kirjautuneeksi käyttäjäksi, tai heittää
-     * PikeExceptionin mikäli käyttäjää ei voitu hakea kannasta tai salasana ei
-     * täsmännyt. Olettaa että parametrit on jo validoitu.
-     *
      * @param string $username
      * @param string $password
-     * @param callable $serializeUserForSession = null fn(\stdClass $user): mixed
+     * @param callable $serializeUserForSession = null fn(object $user): mixed
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function login($username, $password, callable $serializeUserForSession = null) {
+    public function login(string $username,
+                          string $password,
+                          callable $serializeUserForSession = null): bool {
         // @allow \Pike\PikeException
-        if (($user = $this->services->makeUserManager()->login($username, $password))) {
+        if (($user = $this->services->makeAuthService()->login($username, $password))) {
             $this->services->makeSession()->put('user', $serializeUserForSession
                 ? call_user_func($serializeUserForSession, $user)
                 : $user->id);
@@ -52,41 +50,49 @@ class Authenticator {
         return false;
     }
     /**
-     * Kirjaa käyttäjän ulos poistamalla käyttäjän tiedot sessiosta.
-     *
      * @return bool
      */
-    public function logout() {
+    public function logout(): bool {
         $this->services->makeSession()->destroy();
         return true;
     }
     /**
-     * ...
-     *
      * @param string $usernameOrEmail
      * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function requestPasswordReset($usernameOrEmail, callable $makeEmailSettings) {
+    public function requestPasswordReset(string $usernameOrEmail,
+                                         callable $makeEmailSettings): bool {
         // @allow \Pike\PikeException
-        return $this->services->makeUserManager()
+        return $this->services->makeAuthService()
             ->requestPasswordReset($usernameOrEmail,
                                    $makeEmailSettings,
                                    $this->services->makeMailer());
     }
     /**
-     * ...
-     *
      * @param string $key
      * @param string $email
      * @param string $newPassword
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function finalizePasswordReset($key, $email, $newPassword) {
+    public function finalizePasswordReset(string $key,
+                                          string $email,
+                                          string $newPassword): bool {
         // @allow \Pike\PikeException
-        return $this->services->makeUserManager()
+        return $this->services->makeAuthService()
             ->finalizePasswordReset($key, $email, $newPassword);
+    }
+    /**
+     * @param mixed $userId
+     * @param string $newPassword
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function updatePassword(string $userId, string $newPassword): bool {
+        // @allow \Pike\PikeException
+        return $this->services->makeAuthService()
+            ->updatePassword($userId, $newPassword);
     }
 }

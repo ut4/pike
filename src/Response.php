@@ -91,7 +91,7 @@ class Response {
      * @throws \Pike\PikeException
      */
     public function send() {
-        if (!$this->body)
+        if (!$this->body && !array_key_exists('Location', $this->headers))
             throw new PikeException('Nothing to send', PikeException::BAD_INPUT);
         http_response_code($this->statusCode);
         header('Content-Type: ' .  $this->contentType);
@@ -107,9 +107,12 @@ class Response {
      */
     public function sendIfReady() {
         if ($this->isSent()) return true;
-        if (!$this->contentType || !$this->body) return false;
-        $this->send();
-        return true;
+        if (($this->contentType && $this->body) ||
+            array_key_exists('Location', $this->headers)) {
+            $this->send();
+            return true;
+        }
+        return false;
     }
     /**
      * @return bool

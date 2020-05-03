@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike;
 
 class FileSystem implements FileSystemInterface {
@@ -8,31 +10,31 @@ class FileSystem implements FileSystemInterface {
      * @param string $content
      * @return int|false
      */
-    public function write($path, $content) {
+    public function write(string $path, string $content) {
         return file_put_contents($path, $content, LOCK_EX);
     }
     /**
      * @param string $path
      * @param boolean $che = true
-     * @return string
+     * @return string|false
      */
-    public function read($path) {
-        return @file_get_contents($path);
+    public function read(string $path) {
+        return file_get_contents($path);
     }
     /**
      * @param string $path
-     * @return string|false
+     * @return bool
      */
-    public function unlink($path) {
-        return @unlink($path);
+    public function unlink(string $path): bool {
+        return unlink($path);
     }
     /**
      * @param string $path
      * @param string $destPath
      * @return bool
      */
-    public function copy($path, $destPath) {
-        return @copy($path, $destPath);
+    public function copy(string $path, string $destPath): bool {
+        return copy($path, $destPath);
     }
     /**
      * @param string $path
@@ -40,54 +42,76 @@ class FileSystem implements FileSystemInterface {
      * @param bool $recursive = true
      * @return bool
      */
-    public function mkDir($path, $perms = 0755, $recursive = true) {
-        return @mkdir($path, $perms, $recursive);
+    public function mkDir(string $path,
+                          int $perms = 0755,
+                          bool $recursive = true): bool {
+        return mkdir($path, $perms, $recursive);
     }
     /**
      * @param string $path
      * @param resource $context = null
      * @return bool
      */
-    public function rmDir($path, $context = null) {
-        return @rmdir($path);
+    public function rmDir(string $path, $context = null): bool {
+        return rmdir($path, $context);
     }
     /**
      * @param string $path
      * @return bool
      */
-    public function isFile($path) {
+    public function isFile(string $path): bool {
         return is_file($path);
     }
     /**
      * @param string $path
      * @return bool
      */
-    public function isDir($path) {
+    public function isDir(string $path): bool {
         return is_dir($path);
     }
     /**
      * @param string $path
-     * @param string $filter = '*'
+     * @param string $filterPattern = '*'
      * @param int $flags = GLOB_ERR
      * @return string[]|false
      */
-    public function readDir($path, $filter = '*', $flags = GLOB_ERR) {
-        return glob(rtrim($path, '/') . '/' . $filter, $flags);
+    public function readDir(string $path,
+                            string $filterPattern = '*',
+                            $flags = GLOB_ERR) {
+        return glob(rtrim($path, '/') . '/' . $filterPattern, $flags);
+    }
+    /**
+     * @param string $path
+     * @param string $filterRegexp = '/.<zeroOrMore>/'
+     * @return string[]
+     * @throws \UnexpectedValueException|\InvalidArgumentException
+     */
+    public function readDirRecursive(string $path,
+                                     string $filterRegexp = '/.*/'): array {
+        // @allow \UnexpectedValueException
+        $dir = new \RecursiveDirectoryIterator($path);
+        // @allow \InvalidArgumentException
+        $files = new \RegexIterator(new \RecursiveIteratorIterator($dir),
+                                    $filterRegexp);
+        $out = [];
+        foreach ($files as $file)
+            $out[] = $file->getPathName();
+        return $out;
     }
     /**
      * @param string $path
      * @return int|false
      */
-    public function lastModTime($path) {
-        return @filemtime($path);
+    public function lastModTime(string $path) {
+        return filemtime($path);
     }
     /**
-     * 'foo/bar\baz' -> 'foo/bar/baz/'
+     * 'foo/bar\baz/' -> 'foo/bar/baz'
      *
      * @param string $path
      * @return string
      */
-    public static function normalizePath($path) {
+    public static function normalizePath(string $path): string {
         return rtrim(str_replace('\\', '/', $path), '/');
     }
 }

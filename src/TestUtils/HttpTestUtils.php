@@ -9,14 +9,11 @@ use Pike\Db;
 use Pike\FileSystem;
 use Pike\Auth\Crypto;
 use PHPUnit\Framework\MockObject\MockObject;
+use Pike\App;
+use Pike\Request;
 
 trait HttpTestUtils {
     /**
-     * Luo uuden \Pike\App:n kutsumalla $factoryä passaten sille testiympäistöön
-     * configuroidut $config, ja $ctx -objektit. Luo automaattisesti $ctx->db,
-     * ja $ctx->auth (käytä makeApp(..., ..., ['db' => 'none', 'auth' => 'none'])
-     * mikäli et tarvitse niitä).
-     *
      * @param callable $factory fn(array $config, object $ctx, callable? $makeInjector): \Pike\App
      * @param array|string|null $config = null
      * @param object $ctx = null
@@ -27,21 +24,28 @@ trait HttpTestUtils {
                             $config = null,
                             $ctx = null,
                             \Closure $alterInjector = null) {
-        if (!is_object($ctx)) {
-            if (!is_array($ctx)) $ctx = new \stdClass;
-            else $ctx = $ctx ? (object)$ctx : new \stdClass;
+        if ($config === null && $this instanceof ConfigProvidingTestCase) {
+            $config = $this->getAppConfig();
         }
-        if (!isset($ctx->auth)) {
+        if (!is_object($ctx)) {
+            $defaultCtx = (object) ['db' => App::MAKE_AUTOMATICALLY,
+                                    'auth' => App::MAKE_AUTOMATICALLY];
+            if (!is_array($ctx)) $ctx = $defaultCtx;
+            else $ctx = $ctx ? (object)$ctx : $defaultCtx;
+        }
+        if (($ctx->auth ?? null) === App::MAKE_AUTOMATICALLY) {
             $ctx->auth = $this->createMock(Authenticator::class);
             $ctx->auth->method('getIdentity')->willReturn((object)['id' => '1', 'role' => 1]);
         }
-        if (!isset($ctx->db)) {
+        if (($ctx->db ?? null) === App::MAKE_AUTOMATICALLY) {
             $ctx->db = DbTestCase::getDb(!is_string($config) ? $config : require $config);
         }
         return new AppHolder(
             call_user_func($factory, $config, $ctx, function () use ($ctx, $alterInjector) {
                 $injector = new Injector();
                 $injector->alias(Db::class, SingleConnectionDb::class);
+                if (($ctx->auth ?? null) instanceof MockObject)
+                    $injector->delegate(Authenticator::class, function () use ($ctx) { return $ctx->auth; });
                 if (isset($ctx->fs))
                     $injector->delegate(FileSystem::class, function () use ($ctx) { return $ctx->fs; });
                 if (isset($ctx->crypto))
@@ -97,8 +101,8 @@ trait HttpTestUtils {
      * @param \Pike\Response $res
      * @param \Pike\TestUtils\AppHolder $appHolder
      */
-    public function sendRequest($req,
-                                $res,
+    public function sendRequest(Request $req,
+                                MockObject $res,
                                 AppHolder $appHolder) {
         $appHolder->getAppCtx()->res = $res;
         $appHolder->getApp()->handleRequest($req);
@@ -119,8 +123,8 @@ trait HttpTestUtils {
      * @param \Pike\TestUtils\AppHolder $appHolder
      * @param object $state
      */
-    public function sendResponseBodyCapturingRequest($req,
-                                                     $res,
+    public function sendResponseBodyCapturingRequest(Request $req,
+                                                     MockObject $res,
                                                      AppHolder $appHolder,
                                                      $state) {
         $res->expects($this->once())

@@ -4,11 +4,10 @@ namespace Pike;
 
 use Auryn\Injector;
 use Pike\Auth\Authenticator;
-use Pike\Auth\Crypto;
 use Pike\Auth\Internal\CachingServicesFactory;
 
 final class App {
-    public const VERSION = '0.3.1';
+    public const VERSION = '0.4.0';
     public const SERVICE_DB = 'db';
     public const SERVICE_AUTH = 'auth';
     public const MAKE_AUTOMATICALLY = '@auto';
@@ -42,8 +41,8 @@ final class App {
                 $this->validateRouteMatch($match, $request);
             $middlewareLoopState = (object)['req' => $request,
                 'res' => $this->ctx->res ?? new Response()];
-            $middlewareLoopState->req->routeCtx = (object)[
-                'myData' => $usersRouteCtx,
+            $middlewareLoopState->req->routeInfo = (object)[
+                'myCtx' => $usersRouteCtx,
                 'name' => $match['name'],
             ];
             // @allow \Pike\PikeException
@@ -134,8 +133,7 @@ final class App {
             if (!isset($ctx->db))
                 throw new PikeException('Can\'t make auth without db',
                                         PikeException::BAD_INPUT);
-            $ctx->auth = new Authenticator(new CachingServicesFactory($ctx->db,
-                                                                      new Crypto()));
+            $ctx->auth = new Authenticator(new CachingServicesFactory($ctx->db));
         }
         //
         foreach ($modules as $clsPath) {

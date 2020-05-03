@@ -1,30 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike;
 
 interface SessionInterface {
     /**
      */
-    public function start();
+    public function start(): void;
     /**
      * @param string $key
-     * @param string $value
+     * @param mixed $value
      */
-    public function put($key, $value);
+    public function put(string $key, $value): void;
     /**
      * @param string $key
-     * @param string $default = null
+     * @param mixed $default = null
      * @return mixed
      */
-    public function get($key, $default = null);
+    public function get(string $key, $default = null);
     /**
      * @param string $key
      */
-    public function remove($key);
+    public function remove(string $key): void;
     /**
      */
-    public function commit();
+    public function commit(): void;
     /**
      */
-    public function destroy();
+    public function destroy(): void;
 }

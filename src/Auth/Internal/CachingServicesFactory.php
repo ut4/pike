@@ -1,34 +1,34 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike\Auth\Internal;
 
 use Pike\Db;
 use Pike\NativeSession;
 use Pike\Auth\Crypto;
+use Pike\SessionInterface;
 
 /**
  * Tarjoilee Authenticator-luokalle sen tarvitsemia palveluja.
  */
 class CachingServicesFactory {
     private $db;
-    private $crypto;
     private $session;
     private $mailer;
-    private $userManager;
+    private $authService;
     /**
      * @param \Pike\Db $db
-     * @param \Pike\Auth\Crypto $crypto
      * @param \Pike\Auth\PhpMailerMailer $mailer = null
      */
-    public function __construct(Db $db, Crypto $crypto, PhpMailerMailer $mailer = null) {
+    public function __construct(Db $db, PhpMailerMailer $mailer = null) {
         $this->db = $db;
-        $this->crypto = $crypto;
         $this->mailer = $mailer;
     }
     /**
      * @return \Pike\NativeSession
      */
-    public function makeSession() {
+    public function makeSession(): SessionInterface {
         if (!$this->session) {
             $this->session = new NativeSession();
         }
@@ -37,21 +37,26 @@ class CachingServicesFactory {
     /**
      * @return \Pike\Auth\Internal\PhpMailerMailer
      */
-    public function makeMailer() {
+    public function makeMailer(): PhpMailerMailer {
         if (!$this->mailer) {
             $this->mailer = new PhpMailerMailer();
         }
         return $this->mailer;
     }
     /**
-     * @return \Pike\Auth\Internal\UserManager
+     * @return \Pike\Auth\Internal\AuthService
      */
-    public function makeUserManager() {
-        if (!$this->userManager) {
-            $this->userManager = new UserManager(new UserRepository($this->db),
-                                                 $this->crypto,
-                                                 $this);
+    public function makeAuthService(): AuthService {
+        if (!$this->authService) {
+            $this->authService = new AuthService(new UserRepository($this->db),
+                                                 $this->makeCrypto());
         }
-        return $this->userManager;
+        return $this->authService;
+    }
+    /**
+     * @return \Pike\Auth\Crypto
+     */
+    public function makeCrypto(): Crypto {
+        return new Crypto;
     }
 }
