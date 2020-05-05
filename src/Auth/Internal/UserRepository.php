@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Pike\Auth\Internal;
 
 use Pike\Db;
+use Pike\PikeException;
 
-class UserRepository {
+final class UserRepository {
     private $db;
     /**
      * @param \Pike\Db $db
@@ -22,13 +23,63 @@ class UserRepository {
         return 0;
     }
     /**
+     * @param string $userId
+     * @return object|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
+     * @throws \Pike\PikeException
+     */
+    public function getUserByUserId(string $userId): ?User {
+        return $this->getUser('`id` = ?', [$userId]);
+    }
+    /**
+     * @param string $resetKey
+     * @return object|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
+     * @throws \Pike\PikeException
+     */
+    public function getUserByResetKey(string $resetKey): ?User {
+        return $this->getUser('`resetKey` = ?', [$resetKey]);
+    }
+    /**
+     * @param string $username
+     * @return object|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
+     * @throws \Pike\PikeException
+     */
+    public function getUserByUsername(string $username): ?User {
+        return $this->getUser('`username` = ?', [$username]);
+    }
+    /**
+     * @param string $username
+     * @param string $email
+     * @return object|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
+     * @throws \Pike\PikeException
+     */
+    public function getUserByUsernameOrEmail(string $username, string $email): ?User {
+        return $this->getUser('`username` = ? OR `email` = ?', [$username, $email]);
+    }
+    /**
+     * @param \stdClass $data {username?: string, email?: string, passwordHash?: string, role?: string, resetKey?: string, resetRequestedAt?: int}, olettaa että validi
+     * @param string $wherePlaceholders
+     * @param array $whereVals
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function updateUserByUserId(\stdClass $data, string $userId): bool {
+        return $this->updateUser($data, '`id` = ?', [$userId]);
+    }
+    /**
+     * @param \Closure $fn
+     * @return mixed $retval = $fn()
+     */
+    public function runInTransaction(\Closure $fn) {
+        // @allow \Pike\PikeException
+        return $this->db->runInTransaction($fn);
+    }
+    /**
      * @param string $wherePlaceholders
      * @param array $whereVals
      * @return object|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
      * @throws \Pike\PikeException
      */
-    public function getUser(string $wherePlaceholders,
-                            array $whereVals): ?User {
+    private function getUser(string $wherePlaceholders, array $whereVals): ?User {
         // @allow \Pike\PikeException
         return $this->db->fetchOne('SELECT `id`,`username`,`email`,`passwordHash`' .
                                    ',`role`,`resetKey`,`resetRequestedAt`' .
@@ -45,9 +96,9 @@ class UserRepository {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function updateUser(\stdClass $data,
-                               string $wherePlaceholders,
-                               array $whereVals): bool {
+    private function updateUser(\stdClass $data,
+                                string $wherePlaceholders,
+                                array $whereVals): bool {
         [$placeholders, $vals] = $this->db->makeUpdateBinders($data);
         // @allow \Pike\PikeException
         return $this->db->exec('UPDATE ${p}users' .
@@ -55,17 +106,9 @@ class UserRepository {
                                ' WHERE ' . $wherePlaceholders,
                                array_merge($vals, $whereVals)) === 1;
     }
-    /**
-     * @param \Closure $fn
-     * @return mixed $retval = $fn()
-     */
-    public function runInTransaction(\Closure $fn) {
-        // @allow \Pike\PikeException
-        return $this->db->runInTransaction($fn);
-    }
 }
 
-class User {
+final class User {
     public $id;
     public $username;
     public $email;

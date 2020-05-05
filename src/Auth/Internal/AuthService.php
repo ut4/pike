@@ -9,7 +9,7 @@ use Pike\PikeException;
 use Pike\Auth\Authenticator;
 use Pike\Validation;
 
-class AuthService {
+final class AuthService {
     private $persistence;
     private $crypto;
     private $lastErrReason;
@@ -29,7 +29,7 @@ class AuthService {
      */
     public function login(string $username, string $password): object {
         // @allow \Pike\PikeException
-        $user = $this->persistence->getUser('username = ?', [$username]);
+        $user = $this->persistence->getUserByUsername($username);
         if (!$user)
             throw new PikeException('User not found',
                                     Authenticator::INVALID_CREDENTIAL);
@@ -49,8 +49,8 @@ class AuthService {
                                          callable $makeEmailSettings,
                                          PhpMailerMailer $mailer): bool {
         // @allow \Pike\PikeException
-        $user = $this->persistence->getUser('username = ? OR email = ?',
-                                            [$usernameOrEmail, $usernameOrEmail]);
+        $user = $this->persistence->getUserByUsernameOrEmail($usernameOrEmail,
+                                                             $usernameOrEmail);
         if (!$user)
             throw new PikeException('User not found',
                                     Authenticator::INVALID_CREDENTIAL);
@@ -72,7 +72,7 @@ class AuthService {
             $data->resetKey = $key;
             $data->resetRequestedAt = time();
             // @allow \Pike\PikeException
-            if (!$this->persistence->updateUser($data, '`id` = ?', [$user->id]))
+            if (!$this->persistence->updateUserByUserId($data, $user->id))
                 throw new PikeException('Failed to insert resetInfo',
                                         PikeException::FAILED_DB_OP);
             if (!$mailer->sendMail($emailSettings))
@@ -94,7 +94,7 @@ class AuthService {
                                           string $newPassword): bool {
         // 1. Hae resetointidata tietokannasta
         // @allow \Pike\PikeException
-        $user = $this->persistence->getUser('resetKey = ?', [$key]);
+        $user = $this->persistence->getUserByResetKey($key);
         $this->lastErrReason = null;
         // 2. Validoi avain ja email
         if (!$user)
@@ -117,7 +117,7 @@ class AuthService {
         $data->resetKey = null;
         $data->resetRequestedAt = null;
         // @allow \Pike\PikeException
-        if (!$this->persistence->updateUser($data, '`id` = ?', [$user->id]))
+        if (!$this->persistence->updateUserByUserId($data, $user->id))
             throw new PikeException('Failed to clear resetInfo',
                                     PikeException::FAILED_DB_OP);
         return true;
@@ -128,10 +128,9 @@ class AuthService {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function updatePassword($userId, string $newPassword): bool {
+    public function updatePassword(string $userId, string $newPassword): bool {
         // @allow \Pike\PikeException
-        $filters = ['`id` = ?', [$userId]];
-        if (!($user = $this->persistence->getUser(...$filters)))
+        if (!($user = $this->persistence->getUserByUserId($userId)))
             throw new PikeException('User not found',
                                     Authenticator::INVALID_CREDENTIAL);
         //
@@ -141,7 +140,7 @@ class AuthService {
         //
         $data = (object) ['passwordHash' => $user->passwordHash];
         // @allow \Pike\PikeException
-        if (!$this->persistence->updateUser($data, ...$filters))
+        if (!$this->persistence->updateUserByUserId($data, $userId))
             throw new PikeException('Failed to update user',
                                     PikeException::FAILED_DB_OP);
         return true;

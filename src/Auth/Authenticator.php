@@ -85,7 +85,7 @@ class Authenticator {
             ->finalizePasswordReset($key, $email, $newPassword);
     }
     /**
-     * @param mixed $userId
+     * @param string $userId
      * @param string $newPassword
      * @return bool
      * @throws \Pike\PikeException

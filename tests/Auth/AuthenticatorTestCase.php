@@ -35,7 +35,7 @@ abstract class AuthenticatorTestCase extends DbTestCase {
         $out = $this->getMockBuilder(CachingServicesFactory::class)
             ->setConstructorArgs([self::$db, $mailer])
             ->setMethods(array_merge(['makeCrypto'],
-                                    $mockSession ? ['makeSession'] : []))
+                                     $mockSession ? ['makeSession'] : []))
             ->getMock();
         $out->method('makeCrypto')
             ->willReturn(new MockCrypto);

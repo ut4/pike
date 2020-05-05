@@ -19,7 +19,7 @@ class CachingServicesFactory {
     private $authService;
     /**
      * @param \Pike\Db $db
-     * @param \Pike\Auth\PhpMailerMailer $mailer = null
+     * @param \Pike\Auth\Internal\PhpMailerMailer $mailer = null
      */
     public function __construct(Db $db, PhpMailerMailer $mailer = null) {
         $this->db = $db;
