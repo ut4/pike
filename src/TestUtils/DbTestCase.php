@@ -35,9 +35,13 @@ abstract class DbTestCase extends ConfigProvidingTestCase {
         )) {
             self::$db->exec("USE {$databaseName}");
         } else {
-            if (!file_exists($config['db.schemaInitFilePath'])) {
+            if (!($config['db.schemaInitFilePath'] ?? '')) {
                 throw new \Exception('Can\'t create batabase without $confi' .
                                      'g[\'db.schemaInitFilePath\'].');
+            }
+            if (!file_exists($config['db.schemaInitFilePath'])) {
+                throw new \Exception('Failed to read file `'.
+                                     $config['db.schemaInitFilePath'] .'`.');
             }
             self::$db->exec("CREATE DATABASE {$databaseName}");
             self::$db->exec("USE {$databaseName}");

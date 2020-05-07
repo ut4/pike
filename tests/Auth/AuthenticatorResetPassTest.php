@@ -15,18 +15,18 @@ class AuthenticatorResetPassTest extends AuthenticatorTestCase {
         $this->verifySentEmail($state);
     }
     private function setupTestRequestPasswordTest() {
-        $out = new \stdClass;
-        $out->mockResetKey = MockCrypto::mockGenRandomToken();
-        $out->actualEmailSettings = null;
-        $out->mockMailer = $this->createMock(PhpMailerMailer::class);
-        $out->mockMailer->expects($this->once())
+        $state = new \stdClass;
+        $state->mockResetKey = MockCrypto::mockGenRandomToken();
+        $state->actualEmailSettings = null;
+        $state->mockMailer = $this->createMock(PhpMailerMailer::class);
+        $state->mockMailer->expects($this->once())
             ->method('sendMail')
-            ->with($this->callback(function ($val) use ($out) {
-                $out->actualEmailSettings = $val;
+            ->with($this->callback(function ($val) use ($state) {
+                $state->actualEmailSettings = $val;
                 return true;
             }))
             ->willReturn(true);
-        return $out;
+        return $state;
     }
     private function invokeRequestPasswordResetFeature($s) {
         $auth = new Authenticator($this->makePartiallyMockedServicesFactory(
@@ -50,6 +50,8 @@ class AuthenticatorResetPassTest extends AuthenticatorTestCase {
         $this->assertEquals(self::TEST_USER_EMAIL, $row['email']);
         $this->assertEquals(MockCrypto::mockHashPass(self::TEST_USER_PASS),
                             $row['passwordHash']);
+        $this->assertNull($row['activationKey']);
+        $this->assertEquals(self::TEST_USER_CREATED_AT, $row['accountCreatedAt']);
     }
     private function verifySentEmail($s) {
         $this->assertEquals(true, $s->actualEmailSettings !== null,
@@ -68,13 +70,6 @@ class AuthenticatorResetPassTest extends AuthenticatorTestCase {
                 'passwordHash' => MockCrypto::mockEncrypt('foo'),
                 'role' => 1];
     }
-    private function getTestUserFromDb($userId) {
-        return self::$db->fetchOne('SELECT `username`,`email`,`passwordHash`' .
-                                       ',`resetKey`,`resetRequestedAt`' .
-                                   ' FROM users' .
-                                   ' WHERE `id` = ?',
-                                   [$userId]);
-    }
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -89,11 +84,11 @@ class AuthenticatorResetPassTest extends AuthenticatorTestCase {
         $this->verifyClearedResetPassInfoFromToDb($state);
     }
     private function setupFinalizePasswordResetTest() {
-        $out = new \stdClass;
-        $out->actualUserFromDb = null;
-        $out->testResetKey = 'fus';
-        $out->newPassword = 'ro';
-        return $out;
+        $state = new \stdClass;
+        $state->actualUserFromDb = null;
+        $state->testResetKey = 'fus';
+        $state->newPassword = 'ro';
+        return $state;
     }
     private function insertTestResetInfoToDb($s) {
         if (!self::$db->exec('UPDATE users SET `resetKey`=?,`resetRequestedAt`=?' .

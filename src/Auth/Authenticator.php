@@ -11,6 +11,7 @@ use Pike\Auth\Internal\CachingServicesFactory;
  * getIdentity().
  */
 class Authenticator {
+    public const ACTIVATION_KEY_EXPIRATION_SECS = 60 * 60 * 24;
     public const RESET_KEY_EXPIRATION_SECS = 60 * 60 * 2;
     public const INVALID_CREDENTIAL  = 201010;
     public const USER_ALREADY_EXISTS = 201011;
@@ -57,8 +58,28 @@ class Authenticator {
         return true;
     }
     /**
+     * @param string $username
+     * @param string $email
+     * @param string $password
+     * @param int $role
+     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int} $user, string $activationKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function requestNewAccount(string $username,
+                                      string $email,
+                                      string $password,
+                                      int $role,
+                                      callable $makeEmailSettings): string {
+        // @allow \Pike\PikeException
+        return $this->services->makeAuthService()
+            ->createUnactivatedUser($username, $email, $password, $role,
+                                    $makeEmailSettings,
+                                    $this->services->makeMailer());
+    }
+    /**
      * @param string $usernameOrEmail
-     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
+     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
      * @return bool
      * @throws \Pike\PikeException
      */

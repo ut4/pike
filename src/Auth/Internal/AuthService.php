@@ -39,8 +39,63 @@ final class AuthService {
         return $user;
     }
     /**
+     * @param string $username
+     * @param string $email
+     * @param string $password
+     * @param int $role
+     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int} $user, string $activationKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
+     * @param \Pike\Auth\Internal\PhpMailerMailer $mailer
+     * @return string $insertId
+     * @throws \Pike\PikeException|\Exception
+     */
+    public function createUnactivatedUser(string $username,
+                                          string $email,
+                                          string $password,
+                                          int $role,
+                                          callable $makeEmailSettings,
+                                          PhpMailerMailer $mailer): string {
+        // @allow \Pike\PikeException
+        if ($this->persistence->getUserByUsernameOrEmail($username, $email))
+            throw new PikeException('User already exists',
+                                    Authenticator::USER_ALREADY_EXISTS);
+        //
+        $data = (object) [
+            // @allow \Exception
+            'id' => $this->crypto->guidv4(),
+            'username' => $username,
+            'email' => $email,
+            // @allow \Pike\PikeException
+            'passwordHash' => $this->crypto->hashPass($password),
+            'role' => $role,
+            'activationKey' => '',
+            'accountCreatedAt' => '',
+        ];
+        try {
+            $key = $this->crypto->genRandomToken(32);
+        } catch (\Exception $e) {
+            throw new PikeException("Failed to generate reset key: {$e->getMessage()}",
+                                    Authenticator::CRYPTO_FAILURE);
+        }
+        // @allow \Pike\PikeException
+        $emailSettings = $this->makeEmailSettings($makeEmailSettings, $data, $key);
+        return $this->persistence->runInTransaction(function () use ($key,
+                                                                     $data,
+                                                                     $mailer,
+                                                                     $emailSettings) {
+            $data->activationKey = $key;
+            $data->accountCreatedAt = time();
+            // @allow \Pike\PikeException
+            $insertId = $this->persistence->putUser($data);
+            if (!$mailer->sendMail($emailSettings))
+                throw new PikeException('Failed to send mail: ' .
+                                        $mailer->getLastError()->getMessage(),
+                                        Authenticator::FAILED_TO_SEND_MAIL);
+            return $insertId;
+        });
+    }
+    /**
      * @param string $usernameOrEmail
-     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
+     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
      * @param \Pike\Auth\Internal\PhpMailerMailer $mailer
      * @return bool
      * @throws \Pike\PikeException
@@ -55,13 +110,13 @@ final class AuthService {
             throw new PikeException('User not found',
                                     Authenticator::INVALID_CREDENTIAL);
         try {
-            $key = $this->crypto->genRandomToken();
+            $key = $this->crypto->genRandomToken(32);
         } catch (\Exception $e) {
             throw new PikeException("Failed to generate reset key: {$e->getMessage()}",
                                     Authenticator::CRYPTO_FAILURE);
         }
         // @allow \Pike\PikeException
-        $emailSettings = $this->makeResetPassEmailSettings($makeEmailSettings,
+        $emailSettings = $this->makeEmailSettings($makeEmailSettings,
             $user, $key);
         // @allow \Pike\PikeException
         $this->persistence->runInTransaction(function () use ($key,
@@ -148,9 +203,9 @@ final class AuthService {
     /**
      * @throws \Pike\PikeException
      */
-    private function makeResetPassEmailSettings(callable $userDefinedMakeEmailSettings,
-                                                object $user,
-                                                string $resetKey): \stdClass {
+    private function makeEmailSettings(callable $userDefinedMakeEmailSettings,
+                                       object $user,
+                                       string $resetKey): \stdClass {
         $settings = new \stdClass;
         $settings->fromAddress = '';
         $settings->fromName = '';

@@ -16,15 +16,23 @@ final class UserRepository {
         $this->db = $db;
     }
     /**
-     * @param \stdClass $data {username: string, email: string, passwordHash: string, resetKey: string, resetRequestedAt: int}
+     * @param \stdClass $data {id?: string; username: string, email: string, passwordHash: string, role: int, activationKey?: string; accountCreatedAt?: int;}, olettaa että validi
      * @return int $lastInsertId
+     * @throws \Pike\PikeException
      */
-    public function putUser(\stdClass $data): int {
-        return 0;
+    public function putUser(\stdClass $data): string {
+        [$qs, $params, $columns] = $this->db->makeInsertBinders($data);
+        // @allow \Pike\PikeException
+        $numRows = $this->db->exec("INSERT INTO \${p}users ({$columns}) VALUES ({$qs})",
+                                   $params);
+        if ($numRows > 0)
+            return $data->id ?? $this->db->lastInsertId();
+        throw new PikeException('Expected $numRows to be > 0',
+                                PikeException::FAILED_DB_OP);
     }
     /**
      * @param string $userId
-     * @return object|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
+     * @return User|null
      * @throws \Pike\PikeException
      */
     public function getUserByUserId(string $userId): ?User {
@@ -32,7 +40,7 @@ final class UserRepository {
     }
     /**
      * @param string $resetKey
-     * @return object|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
+     * @return User|null
      * @throws \Pike\PikeException
      */
     public function getUserByResetKey(string $resetKey): ?User {
@@ -40,7 +48,7 @@ final class UserRepository {
     }
     /**
      * @param string $username
-     * @return object|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
+     * @return User|null
      * @throws \Pike\PikeException
      */
     public function getUserByUsername(string $username): ?User {
@@ -49,16 +57,15 @@ final class UserRepository {
     /**
      * @param string $username
      * @param string $email
-     * @return object|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
+     * @return User|null
      * @throws \Pike\PikeException
      */
     public function getUserByUsernameOrEmail(string $username, string $email): ?User {
         return $this->getUser('`username` = ? OR `email` = ?', [$username, $email]);
     }
     /**
-     * @param \stdClass $data {username?: string, email?: string, passwordHash?: string, role?: string, resetKey?: string, resetRequestedAt?: int}, olettaa että validi
-     * @param string $wherePlaceholders
-     * @param array $whereVals
+     * @param \stdClass $data {username?: string, email?: string, passwordHash?: string, role?: int, activationKey?: string, accountCreatedAt?: int, resetKey?: string, resetRequestedAt?: int}, olettaa että validi
+     * @param string $userId
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -74,15 +81,13 @@ final class UserRepository {
         return $this->db->runInTransaction($fn);
     }
     /**
-     * @param string $wherePlaceholders
-     * @param array $whereVals
-     * @return object|null {id: string, username: string, email: string, passwordHash: string, role: string, resetKey: string, resetRequestedAt: int}
-     * @throws \Pike\PikeException
+     * @access private
      */
     private function getUser(string $wherePlaceholders, array $whereVals): ?User {
         // @allow \Pike\PikeException
         return $this->db->fetchOne('SELECT `id`,`username`,`email`,`passwordHash`' .
-                                   ',`role`,`resetKey`,`resetRequestedAt`' .
+                                   ',`role`,`activationKey`,`accountCreatedAt`' .
+                                   ',`resetKey`,`resetRequestedAt`' .
                                    ' FROM ${p}users' .
                                    ' WHERE ' . $wherePlaceholders,
                                    $whereVals,
@@ -90,11 +95,7 @@ final class UserRepository {
                                    User::class);
     }
     /**
-     * @param \stdClass $data {username?: string, email?: string, passwordHash?: string, role?: string, resetKey?: string, resetRequestedAt?: int}, olettaa että validi
-     * @param string $wherePlaceholders
-     * @param array $whereVals
-     * @return bool
-     * @throws \Pike\PikeException
+     * @access private
      */
     private function updateUser(\stdClass $data,
                                 string $wherePlaceholders,
@@ -114,6 +115,8 @@ final class User {
     public $email;
     public $passwordHash;
     public $role;
+    public $activationKey;
+    public $accountCreatedAt;
     public $resetKey;
     public $resetRequestedAt;
     /**
@@ -121,6 +124,10 @@ final class User {
      */
     public function __construct() {
         $this->role = (int) $this->role;
+        $this->activationKey = strlen($this->activationKey ?? '') ? $this->activationKey : null;
+        $this->accountCreatedAt = $this->accountCreatedAt
+            ? (int) $this->accountCreatedAt
+            : null;
         $this->resetKey = strlen($this->resetKey ?? '') ? $this->resetKey : null;
         $this->resetRequestedAt = $this->resetRequestedAt
             ? (int) $this->resetRequestedAt

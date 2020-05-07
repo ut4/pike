@@ -13,6 +13,9 @@ class MockCrypto extends Crypto {
     public function hashPass(string $plainPass): string {
         return self::mockHashPass($plainPass);
     }
+    public function guidv4(): string {
+        return self::mockGuidv4();
+    }
     public function genRandomToken(int $_bytes = 16): string {
         return self::mockGenRandomToken();
     }
@@ -24,6 +27,9 @@ class MockCrypto extends Crypto {
     }
     public static function mockHashPass(string $plainPass): string {
         return 'hashed: ' . $plainPass;
+    }
+    public static function mockGuidv4(): string {
+        return 'here\'s-guid-for-you';
     }
     public static function mockGenRandomToken(): string {
         return 'randomToken';
