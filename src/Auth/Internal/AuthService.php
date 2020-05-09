@@ -43,8 +43,8 @@ final class AuthService {
      * @param string $email
      * @param string $password
      * @param int $role
-     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int} $user, string $activationKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
-     * @param \Pike\Auth\Internal\PhpMailerMailer $mailer
+     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int, accountStatus: int} $user, string $activationKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
+     * @param \Pike\Auth\Internal\AbstractMailer $mailer
      * @return string $insertId
      * @throws \Pike\PikeException|\Exception
      */
@@ -53,7 +53,7 @@ final class AuthService {
                                           string $password,
                                           int $role,
                                           callable $makeEmailSettings,
-                                          PhpMailerMailer $mailer): string {
+                                          AbstractMailer $mailer): string {
         // @allow \Pike\PikeException
         if ($this->persistence->getUserByUsernameOrEmail($username, $email))
             throw new PikeException('User already exists',
@@ -86,23 +86,60 @@ final class AuthService {
             $data->accountCreatedAt = time();
             // @allow \Pike\PikeException
             $insertId = $this->persistence->putUser($data);
-            if (!$mailer->sendMail($emailSettings))
-                throw new PikeException('Failed to send mail: ' .
-                                        $mailer->getLastError()->getMessage(),
-                                        Authenticator::FAILED_TO_SEND_MAIL);
+            try {
+                $mailer->sendMail($emailSettings);
+            } catch (\Exception $e) {
+                throw new PikeException("Failed to send mail: {$e->getMessage()}",
+                                        Authenticator::FAILED_TO_SEND_MAIL,
+                                        $e);
+            }
             return $insertId;
         });
     }
     /**
+     * @param string $activationKey
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function activateUser(string $activationKey): bool {
+        // 1. Hae resetointidata tietokannasta
+        // @allow \Pike\PikeException
+        $user = $this->persistence->getUserByActivationKey($activationKey);
+        // 2. Validoi avain ja käyttäjä
+        if (!$user ||
+            $user->accountStatus !== Authenticator::ACCOUNT_STATUS_UNACTIVATED)
+            throw new PikeException('Invalid reset credential',
+                                    Authenticator::INVALID_CREDENTIAL);
+        elseif (time() > $user->accountCreatedAt +
+                          Authenticator::ACTIVATION_KEY_EXPIRATION_SECS) {
+        // 2.1 Avain vanhentunut, poista käyttäjä
+            // @allow \Pike\PikeException
+            if (!$this->persistence->deleteUserByUserId($user->id))
+                throw new PikeException('Failed to delete stray user',
+                                        PikeException::FAILED_DB_OP);
+            throw new PikeException('Activation key had expired',
+                                    Authenticator::EXPIRED_KEY);
+        }
+        // 3. Ok, aktivoi tili
+        $data = new \stdClass;
+        $data->activationKey = null;
+        $data->accountStatus = Authenticator::ACCOUNT_STATUS_ACTIVATED;
+        // @allow \Pike\PikeException
+        if (!$this->persistence->updateUserByUserId($data, $user->id))
+            throw new PikeException('Failed to clear activation info',
+                                    PikeException::FAILED_DB_OP);
+        return true;
+    }
+    /**
      * @param string $usernameOrEmail
-     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
-     * @param \Pike\Auth\Internal\PhpMailerMailer $mailer
+     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int, accountStatus: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
+     * @param \Pike\Auth\Internal\AbstractMailer $mailer
      * @return bool
      * @throws \Pike\PikeException
      */
     public function requestPasswordReset(string $usernameOrEmail,
                                          callable $makeEmailSettings,
-                                         PhpMailerMailer $mailer): bool {
+                                         AbstractMailer $mailer): bool {
         // @allow \Pike\PikeException
         $user = $this->persistence->getUserByUsernameOrEmail($usernameOrEmail,
                                                              $usernameOrEmail);
@@ -128,12 +165,15 @@ final class AuthService {
             $data->resetRequestedAt = time();
             // @allow \Pike\PikeException
             if (!$this->persistence->updateUserByUserId($data, $user->id))
-                throw new PikeException('Failed to insert resetInfo',
+                throw new PikeException('Failed to insert reset info',
                                         PikeException::FAILED_DB_OP);
-            if (!$mailer->sendMail($emailSettings))
-                throw new PikeException('Failed to send mail: ' .
-                                        $mailer->getLastError()->getMessage(),
-                                        Authenticator::FAILED_TO_SEND_MAIL);
+            try {
+                $mailer->sendMail($emailSettings);
+            } catch (\Exception $e) {
+                throw new PikeException("Failed to send mail: {$e->getMessage()}",
+                                        Authenticator::FAILED_TO_SEND_MAIL,
+                                        $e);
+            }
         });
         return true;
     }
@@ -155,9 +195,10 @@ final class AuthService {
         if (!$user)
             $this->lastErrReason = 'Reset key didn\'t exist';
         elseif (time() > $user->resetRequestedAt +
-                          Authenticator::RESET_KEY_EXPIRATION_SECS)
-            $this->lastErrReason = 'Reset key had expired';
-        elseif ($user->email !== $email)
+                          Authenticator::RESET_KEY_EXPIRATION_SECS) {
+            throw new PikeException('Reset key had expired',
+                                    Authenticator::EXPIRED_KEY);
+        } elseif ($user->email !== $email)
             $this->lastErrReason = 'Email didn\'t match';
         if ($this->lastErrReason)
             throw new PikeException('Invalid reset credential',
@@ -173,7 +214,7 @@ final class AuthService {
         $data->resetRequestedAt = null;
         // @allow \Pike\PikeException
         if (!$this->persistence->updateUserByUserId($data, $user->id))
-            throw new PikeException('Failed to clear resetInfo',
+            throw new PikeException('Failed to clear reset info',
                                     PikeException::FAILED_DB_OP);
         return true;
     }

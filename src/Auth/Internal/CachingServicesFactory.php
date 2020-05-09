@@ -19,9 +19,9 @@ class CachingServicesFactory {
     private $authService;
     /**
      * @param \Pike\Db $db
-     * @param \Pike\Auth\Internal\PhpMailerMailer $mailer = null
+     * @param \Pike\Auth\Internal\AbstractMailer $mailer = null
      */
-    public function __construct(Db $db, PhpMailerMailer $mailer = null) {
+    public function __construct(Db $db, AbstractMailer $mailer = null) {
         $this->db = $db;
         $this->mailer = $mailer;
     }
@@ -35,9 +35,9 @@ class CachingServicesFactory {
         return $this->session;
     }
     /**
-     * @return \Pike\Auth\Internal\PhpMailerMailer
+     * @return \Pike\Auth\Internal\AbstractMailer
      */
-    public function makeMailer(): PhpMailerMailer {
+    public function makeMailer(): AbstractMailer {
         if (!$this->mailer) {
             $this->mailer = new PhpMailerMailer();
         }

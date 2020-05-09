@@ -4,9 +4,55 @@ namespace Pike\Tests\Auth;
 
 use Pike\Auth\Authenticator;
 use Pike\TestUtils\MockCrypto;
-use Pike\Auth\Internal\PhpMailerMailer;
+use Pike\Auth\Internal\AbstractMailer;
+use Pike\PikeException;
 
 class AuthenticatorResetPassTest extends AuthenticatorTestCase {
+    public function testRequestPasswordResetThrowsIfUserWasNotFound() {
+        $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
+        try {
+            $auth->requestPasswordReset('non-existing-user',
+                                        function () {});
+            $this->assertFalse(true, 'Pitäisi heittää poikkeus');
+        } catch (PikeException $e) {
+            $this->assertEquals(Authenticator::INVALID_CREDENTIAL,
+                                $e->getCode());
+        }
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testRequestPasswordResetThrowsIfMailConfigIsNotValid() {
+        $this->insertTestUserToDb();
+        $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
+        try {
+            $auth->requestPasswordReset(self::TEST_USER_NAME,
+                function ($_user, $_resetKey, $mailConfig) {
+                    $mailConfig->toAddress = '';
+                    $mailConfig->fromName = ['not', 'a', 'string'];
+                    $mailConfig->toName = ['not', 'a', 'string'];
+                });
+            $this->assertFalse(true, 'Pitäisi heittää poikkeus');
+        } catch (PikeException $e) {
+            $this->assertEquals(Authenticator::FAILED_TO_FORMAT_MAIL,
+                                $e->getCode());
+            $this->assertEquals(implode(', ', [
+                'The length of fromAddress must be at least 3',
+                'The length of toAddress must be at least 3',
+                'The length of subject must be at least 1',
+                'The length of body must be at least 1',
+                'fromName must be string',
+                'toName must be string',
+            ]), $e->getMessage());
+        }
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testRequestPasswordResetWritesResetKeyToDbAndSendsItViaEmail() {
         $state = $this->setupTestRequestPasswordTest();
         $this->insertTestUserToDb();
@@ -18,7 +64,7 @@ class AuthenticatorResetPassTest extends AuthenticatorTestCase {
         $state = new \stdClass;
         $state->mockResetKey = MockCrypto::mockGenRandomToken();
         $state->actualEmailSettings = null;
-        $state->mockMailer = $this->createMock(PhpMailerMailer::class);
+        $state->mockMailer = $this->createMock(AbstractMailer::class);
         $state->mockMailer->expects($this->once())
             ->method('sendMail')
             ->with($this->callback(function ($val) use ($state) {
@@ -50,8 +96,11 @@ class AuthenticatorResetPassTest extends AuthenticatorTestCase {
         $this->assertEquals(self::TEST_USER_EMAIL, $row['email']);
         $this->assertEquals(MockCrypto::mockHashPass(self::TEST_USER_PASS),
                             $row['passwordHash']);
+        $this->assertEquals(self::TEST_USER_ROLE, $row['role']);
         $this->assertNull($row['activationKey']);
         $this->assertEquals(self::TEST_USER_CREATED_AT, $row['accountCreatedAt']);
+        $this->assertEquals(Authenticator::ACCOUNT_STATUS_ACTIVATED,
+                            $row['accountStatus']);
     }
     private function verifySentEmail($s) {
         $this->assertEquals(true, $s->actualEmailSettings !== null,
@@ -62,13 +111,6 @@ class AuthenticatorResetPassTest extends AuthenticatorTestCase {
         $this->assertEquals('mysite.com | Password reset', $s->actualEmailSettings->subject);
         $this->assertEquals("Please visit /change-password/{$s->mockResetKey}",
                             $s->actualEmailSettings->body);
-    }
-    private function makeTestUser() {
-        return ['id' => 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
-                'username' => 'Test User',
-                'email' => 'testuser@email.com',
-                'passwordHash' => MockCrypto::mockEncrypt('foo'),
-                'role' => 1];
     }
 
 
@@ -110,6 +152,13 @@ class AuthenticatorResetPassTest extends AuthenticatorTestCase {
         // verifyDidNotChangeExistingData
         $this->assertEquals(self::TEST_USER_NAME, $row['username']);
         $this->assertEquals(self::TEST_USER_EMAIL, $row['email']);
+        $this->assertEquals(self::TEST_USER_ROLE, $row['role']);
+        $this->assertNull($row['activationKey']);
+        $this->assertEquals(self::TEST_USER_CREATED_AT, $row['accountCreatedAt']);
+        $this->assertNull($row['resetKey']);
+        $this->assertNull($row['resetRequestedAt']);
+        $this->assertEquals(Authenticator::ACCOUNT_STATUS_ACTIVATED,
+                            $row['accountStatus']);
         $s->actualUserFromDb = $row;
     }
     private function verifyClearedResetPassInfoFromToDb($s) {

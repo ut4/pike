@@ -2,6 +2,8 @@
 
 namespace Pike\Tests\Auth;
 
+use Pike\Auth\Authenticator;
+use Pike\Auth\Internal\AbstractMailer;
 use Pike\Auth\Internal\CachingServicesFactory;
 use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\MockCrypto;
@@ -20,7 +22,8 @@ abstract class AuthenticatorTestCase extends DbTestCase {
             'email' => 'e@mail.com',
             'passwordHash' => MockCrypto::mockHashPass(self::TEST_USER_PASS),
             'role' => self::TEST_USER_ROLE,
-            'accountCreatedAt' => self::TEST_USER_CREATED_AT
+            'accountCreatedAt' => self::TEST_USER_CREATED_AT,
+            'accountStatus' => Authenticator::ACCOUNT_STATUS_ACTIVATED
         ]);
         if (self::$db->exec("INSERT INTO \${p}users ({$columns}) VALUES ({$qs})",
                             $params) < 1)
@@ -30,6 +33,7 @@ abstract class AuthenticatorTestCase extends DbTestCase {
         return self::$db->fetchOne('SELECT `username`,`email`,`passwordHash`' .
                                        ',`role`,`resetKey`,`resetRequestedAt`' .
                                        ',`activationKey`,`accountCreatedAt`' .
+                                       ',`accountStatus`' .
                                    ' FROM users' .
                                    ' WHERE `id` = ?',
                                    [$userId]);
@@ -39,6 +43,7 @@ abstract class AuthenticatorTestCase extends DbTestCase {
      */
     protected function makePartiallyMockedServicesFactory($mockSession = null,
                                                           $mailer = null) {
+        $mailer = $mailer ?? $this->createMock(AbstractMailer::class);
         $out = $this->getMockBuilder(CachingServicesFactory::class)
             ->setConstructorArgs([self::$db, $mailer])
             ->setMethods(array_merge(['makeCrypto'],

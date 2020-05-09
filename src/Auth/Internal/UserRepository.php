@@ -47,6 +47,14 @@ final class UserRepository {
         return $this->getUser('`resetKey` = ?', [$resetKey]);
     }
     /**
+     * @param string $activationKey
+     * @return User|null
+     * @throws \Pike\PikeException
+     */
+    public function getUserByActivationKey(string $activationKey): ?User {
+        return $this->getUser('`activationKey` = ?', [$activationKey]);
+    }
+    /**
      * @param string $username
      * @return User|null
      * @throws \Pike\PikeException
@@ -64,13 +72,24 @@ final class UserRepository {
         return $this->getUser('`username` = ? OR `email` = ?', [$username, $email]);
     }
     /**
-     * @param \stdClass $data {username?: string, email?: string, passwordHash?: string, role?: int, activationKey?: string, accountCreatedAt?: int, resetKey?: string, resetRequestedAt?: int}, olettaa että validi
+     * @param \stdClass $data {username?: string, email?: string, passwordHash?: string, role?: int, activationKey?: string, accountCreatedAt?: int, resetKey?: string, resetRequestedAt?: int, accountStatus?: int}, olettaa että validi
      * @param string $userId
      * @return bool
      * @throws \Pike\PikeException
      */
     public function updateUserByUserId(\stdClass $data, string $userId): bool {
         return $this->updateUser($data, '`id` = ?', [$userId]);
+    }
+    /**
+     * @param string $userId
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function deleteUserByUserId(string $userId): bool {
+        // @allow \Pike\PikeException
+        return $this->db->exec('DELETE FROM ${p}users' .
+                               ' WHERE `id` = ?',
+                               [$userId]) === 1;
     }
     /**
      * @param \Closure $fn
@@ -87,7 +106,7 @@ final class UserRepository {
         // @allow \Pike\PikeException
         return $this->db->fetchOne('SELECT `id`,`username`,`email`,`passwordHash`' .
                                    ',`role`,`activationKey`,`accountCreatedAt`' .
-                                   ',`resetKey`,`resetRequestedAt`' .
+                                   ',`resetKey`,`resetRequestedAt`,`accountStatus`' .
                                    ' FROM ${p}users' .
                                    ' WHERE ' . $wherePlaceholders,
                                    $whereVals,
@@ -119,6 +138,7 @@ final class User {
     public $accountCreatedAt;
     public $resetKey;
     public $resetRequestedAt;
+    public $accountStatus;
     /**
      * Normalisoi \PDO:n asettamat arvot.
      */
@@ -132,5 +152,6 @@ final class User {
         $this->resetRequestedAt = $this->resetRequestedAt
             ? (int) $this->resetRequestedAt
             : null;
+        $this->accountStatus = (int) $this->accountStatus;
     }
 }

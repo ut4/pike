@@ -18,6 +18,10 @@ class Authenticator {
     public const FAILED_TO_SEND_MAIL = 201012;
     public const FAILED_TO_FORMAT_MAIL = 201013;
     public const CRYPTO_FAILURE = 201014;
+    public const EXPIRED_KEY = 201015;
+    public const ACCOUNT_STATUS_ACTIVATED = 0;
+    public const ACCOUNT_STATUS_UNACTIVATED = 1;
+    public const ACCOUNT_STATUS_BANNED = 2;
     private $services;
     /**
      * @param \Pike\Auth\Internal\CachingServicesFactory $factory
@@ -62,7 +66,7 @@ class Authenticator {
      * @param string $email
      * @param string $password
      * @param int $role
-     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int} $user, string $activationKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
+     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int, accountStatus: int} $user, string $activationKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -78,8 +82,17 @@ class Authenticator {
                                     $this->services->makeMailer());
     }
     /**
+     * @param string $activationKey
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function activateAccount(string $activationKey): bool {
+        // @allow \Pike\PikeException
+        return $this->services->makeAuthService()->activateUser($activationKey);
+    }
+    /**
      * @param string $usernameOrEmail
-     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
+     * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int, accountStatus: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
      * @return bool
      * @throws \Pike\PikeException
      */
