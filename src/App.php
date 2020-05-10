@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike;
 
 use Auryn\Injector;
@@ -17,11 +19,11 @@ final class App {
     /**
      * @param object $ctx
      * @param string[] $modules
-     * @param closure|null $makeInjector fn(): \Auryn\Injector
+     * @param callable|null $makeInjector fn(): \Auryn\Injector
      */
-    private function __construct($ctx,
-                                 $modules,
-                                 $makeInjector) {
+    private function __construct(object $ctx,
+                                 array $modules,
+                                 ?callable $makeInjector) {
         $this->ctx = $ctx;
         $this->moduleClsPaths = $modules;
         $this->makeInjector = $makeInjector;
@@ -30,7 +32,7 @@ final class App {
      * @param \Pike\Request|string $request
      * @param string $urlPath = null
      */
-    public function handleRequest($request, $urlPath = null) {
+    public function handleRequest($request, string $urlPath = null): void {
         if (is_string($request))
             $request = Request::createFromGlobals($request, $urlPath);
         if (($match = $this->ctx->router->match($request->path, $request->method))) {
@@ -60,7 +62,7 @@ final class App {
      * @param int $index
      * @param \stdClass $state {req: \Pike\Request, res: \Pike\Response}
      */
-    private function execMiddlewareCallback($index, $state) {
+    private function execMiddlewareCallback(int $index, \stdClass $state): void {
         $ware = $this->ctx->router->middleware[$index] ?? null;
         if (!$ware || $state->res->isSent()) return;
         // @allow \Pike\PikeException
@@ -74,7 +76,7 @@ final class App {
      * @return array [string, string, <usersRouteCtx>|null]
      * @throws \Pike\PikeException
      */
-    private function validateRouteMatch($match, $req) {
+    private function validateRouteMatch(array $match, Request $req): array {
         $routeInfo = $match['target'];
         $numItems = is_array($routeInfo) ? count($routeInfo) : 0;
         if ($numItems < 2 ||
@@ -92,7 +94,7 @@ final class App {
      * @param \stdClass $http {req: \Pike\Request, res: \Pike\Response}
      * @return \Auryn\Injector
      */
-    private function setupIocContainer($http) {
+    private function setupIocContainer(\stdClass $http): Injector {
         $container = !$this->makeInjector
             ? new Injector()
             : call_user_func($this->makeInjector);
@@ -119,7 +121,7 @@ final class App {
     public static function create(array $modules,
                                   $config = null,
                                   $ctx = null,
-                                  callable $makeInjector = null) {
+                                  callable $makeInjector = null): App {
         $ctx = self::makeEmptyCtx($config, $ctx);
         //
         if (!isset($ctx->router)) {
@@ -148,9 +150,9 @@ final class App {
     /**
      * @param array|string|null $confix
      * @param object|array|null $ctx
-     * @return array [\Pike\AppConfig, object]
+     * @return \stdClass
      */
-    private static function makeEmptyCtx($config, $ctx) {
+    private static function makeEmptyCtx($config, $ctx): \stdClass {
         if (!is_object($ctx)) {
             if (is_array($ctx))
                 $ctx = $ctx ? (object)$ctx : new \stdClass;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike;
 
 use Pike\PikeException;
@@ -21,19 +23,19 @@ class AppConfig {
      * @param object|array $vals
      * @throws \Pike\PikeException
      */
-    public function setVals($vals) {
+    public function setVals($vals): void {
         if (is_object($vals))
             $this->vals = $vals;
         elseif (is_array($vals))
             $this->vals = (object) $vals;
         else
-            throw new PikeException('$vals must be object|array',
+            throw new PikeException('$config must be object|array',
                                     PikeException::BAD_INPUT);
     }
     /**
      * @return object
      */
-    public function getVals() {
+    public function getVals(): object {
         return $this->vals;
     }
     /**
@@ -41,7 +43,7 @@ class AppConfig {
      * @param mixed $default = null
      * @return mixed
      */
-    public function get($key, $default = null) {
+    public function get(string $key, $default = null) {
         return $this->vals->$key ?? $default;
     }
 }
