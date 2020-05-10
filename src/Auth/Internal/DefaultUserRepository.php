@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Pike\Auth\Internal;
 
+use Pike\Auth\AbstractUserRepository;
+use Pike\Auth\User;
 use Pike\Db;
 use Pike\PikeException;
 
-final class UserRepository {
+class DefaultUserRepository extends AbstractUserRepository {
     private $db;
     /**
      * @param \Pike\Db $db
@@ -125,33 +127,5 @@ final class UserRepository {
                                ' SET ' . $placeholders .
                                ' WHERE ' . $wherePlaceholders,
                                array_merge($vals, $whereVals)) === 1;
-    }
-}
-
-final class User {
-    public $id;
-    public $username;
-    public $email;
-    public $passwordHash;
-    public $role;
-    public $activationKey;
-    public $accountCreatedAt;
-    public $resetKey;
-    public $resetRequestedAt;
-    public $accountStatus;
-    /**
-     * Normalisoi \PDO:n asettamat arvot.
-     */
-    public function __construct() {
-        $this->role = (int) $this->role;
-        $this->activationKey = strlen($this->activationKey ?? '') ? $this->activationKey : null;
-        $this->accountCreatedAt = $this->accountCreatedAt
-            ? (int) $this->accountCreatedAt
-            : null;
-        $this->resetKey = strlen($this->resetKey ?? '') ? $this->resetKey : null;
-        $this->resetRequestedAt = $this->resetRequestedAt
-            ? (int) $this->resetRequestedAt
-            : null;
-        $this->accountStatus = (int) $this->accountStatus;
     }
 }

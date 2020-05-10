@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pike\Auth\Internal;
 
+use Pike\Auth\AbstractUserRepository;
 use Pike\Auth\Crypto;
 use Pike\PikeException;
 use Pike\Auth\Authenticator;
@@ -13,10 +14,10 @@ final class AuthService {
     private $persistence;
     private $crypto;
     /**
-     * @param \Pike\Auth\Internal\UserRepository $persistence
+     * @param \Pike\Auth\Internal\AbstractUserRepository $persistence
      * @param \Pike\Auth\Crypto $crypto
      */
-    public function __construct(UserRepository $persistence, Crypto $crypto) {
+    public function __construct(AbstractUserRepository $persistence, Crypto $crypto) {
         $this->persistence = $persistence;
         $this->crypto = $crypto;
     }

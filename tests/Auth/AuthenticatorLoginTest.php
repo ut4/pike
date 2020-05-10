@@ -3,7 +3,6 @@
 namespace Pike\Tests\Auth;
 
 use Pike\Auth\Authenticator;
-use Pike\Auth\Internal\CachingServicesFactory;
 use Pike\PikeException;
 use Pike\SessionInterface;
 

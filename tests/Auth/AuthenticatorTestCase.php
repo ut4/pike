@@ -5,6 +5,7 @@ namespace Pike\Tests\Auth;
 use Pike\Auth\Authenticator;
 use Pike\Auth\Internal\AbstractMailer;
 use Pike\Auth\Internal\CachingServicesFactory;
+use Pike\Auth\Internal\DefaultUserRepository;
 use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\MockCrypto;
 
@@ -48,7 +49,9 @@ abstract class AuthenticatorTestCase extends DbTestCase {
                                                           $mailer = null) {
         $mailer = $mailer ?? $this->createMock(AbstractMailer::class);
         $out = $this->getMockBuilder(CachingServicesFactory::class)
-            ->setConstructorArgs([self::$db, $mailer])
+            ->setConstructorArgs([function () {
+                return new DefaultUserRepository(self::$db);
+            }, $mailer])
             ->setMethods(array_merge(['makeCrypto'],
                                      $mockSession ? ['makeSession'] : []))
             ->getMock();

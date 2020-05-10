@@ -7,6 +7,7 @@ namespace Pike;
 use Auryn\Injector;
 use Pike\Auth\Authenticator;
 use Pike\Auth\Internal\CachingServicesFactory;
+use Pike\Auth\Internal\DefaultUserRepository;
 
 final class App {
     public const VERSION = '0.4.0';
@@ -135,7 +136,9 @@ final class App {
             if (!isset($ctx->db))
                 throw new PikeException('Can\'t make auth without db',
                                         PikeException::BAD_INPUT);
-            $ctx->auth = new Authenticator(new CachingServicesFactory($ctx->db));
+            $ctx->auth = new Authenticator(new CachingServicesFactory(function () use ($ctx) {
+                return new DefaultUserRepository($ctx->db);
+            }));
         }
         //
         foreach ($modules as $clsPath) {
