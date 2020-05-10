@@ -7,7 +7,7 @@ use Pike\TestUtils\MockCrypto;
 use Pike\Auth\Internal\AbstractMailer;
 use Pike\PikeException;
 
-class AuthenticatorResetPassTest extends AuthenticatorTestCase {
+class AuthenticatorRequestPassResetTest extends AuthenticatorTestCase {
     public function testRequestPasswordResetThrowsIfUserWasNotFound() {
         $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
         try {
@@ -16,6 +16,23 @@ class AuthenticatorResetPassTest extends AuthenticatorTestCase {
             $this->assertFalse(true, 'Pitäisi heittää poikkeus');
         } catch (PikeException $e) {
             $this->assertEquals(Authenticator::INVALID_CREDENTIAL,
+                                $e->getCode());
+        }
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testRequestPasswordResetThrowsIfAccountIsNotActivated() {
+        $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
+        $this->insertTestUserToDb(Authenticator::ACCOUNT_STATUS_BANNED);
+        try {
+            $auth->requestPasswordReset(self::TEST_USER_NAME,
+                                        function () {});
+            $this->assertFalse(true, 'Pitäisi heittää poikkeus');
+        } catch (PikeException $e) {
+            $this->assertEquals(Authenticator::UNEXPECTED_ACCOUNT_STATUS,
                                 $e->getCode());
         }
     }
@@ -111,59 +128,5 @@ class AuthenticatorResetPassTest extends AuthenticatorTestCase {
         $this->assertEquals('mysite.com | Password reset', $s->actualEmailSettings->subject);
         $this->assertEquals("Please visit /change-password/{$s->mockResetKey}",
                             $s->actualEmailSettings->body);
-    }
-
-
-    ////////////////////////////////////////////////////////////////////////////
-
-
-    public function testFinalizePasswordResetValidatesResetKeyAndWritesNewPasswordToDb() {
-        $state = $this->setupFinalizePasswordResetTest();
-        $this->insertTestUserToDb();
-        $this->insertTestResetInfoToDb($state);
-        $this->invokeFinalizePasswordResetFeature($state);
-        $this->verifyWroteNewPasswordToDb($state);
-        $this->verifyClearedResetPassInfoFromToDb($state);
-    }
-    private function setupFinalizePasswordResetTest() {
-        $state = new \stdClass;
-        $state->actualUserFromDb = null;
-        $state->testResetKey = 'fus';
-        $state->newPassword = 'ro';
-        return $state;
-    }
-    private function insertTestResetInfoToDb($s) {
-        if (!self::$db->exec('UPDATE users SET `resetKey`=?,`resetRequestedAt`=?' .
-                             ' WHERE `id` = ?',
-                             [$s->testResetKey, time()-10, self::TEST_USER_ID]))
-            throw new \Exception('Failed to insert test data');
-    }
-    private function invokeFinalizePasswordResetFeature($s) {
-        $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
-        $auth->finalizePasswordReset($s->testResetKey,
-                                     self::TEST_USER_EMAIL,
-                                     $s->newPassword);
-    }
-    private function verifyWroteNewPasswordToDb($s) {
-        $row = $this->getTestUserFromDb(self::TEST_USER_ID);
-        $this->assertNotNull($row);
-        $this->assertEquals(MockCrypto::mockHashPass($s->newPassword),
-                            $row['passwordHash']);
-        // verifyDidNotChangeExistingData
-        $this->assertEquals(self::TEST_USER_NAME, $row['username']);
-        $this->assertEquals(self::TEST_USER_EMAIL, $row['email']);
-        $this->assertEquals(self::TEST_USER_ROLE, $row['role']);
-        $this->assertNull($row['activationKey']);
-        $this->assertEquals(self::TEST_USER_CREATED_AT, $row['accountCreatedAt']);
-        $this->assertNull($row['resetKey']);
-        $this->assertNull($row['resetRequestedAt']);
-        $this->assertEquals(Authenticator::ACCOUNT_STATUS_ACTIVATED,
-                            $row['accountStatus']);
-        $s->actualUserFromDb = $row;
-    }
-    private function verifyClearedResetPassInfoFromToDb($s) {
-        $row = $s->actualUserFromDb;
-        $this->assertEquals(null, $row['resetKey']);
-        $this->assertEquals(null, $row['resetRequestedAt']);
     }
 }

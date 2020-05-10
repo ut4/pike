@@ -15,7 +15,7 @@ abstract class AuthenticatorTestCase extends DbTestCase {
     protected const TEST_USER_EMAIL = 'e@mail.com';
     protected const TEST_USER_ROLE = 1;
     protected const TEST_USER_CREATED_AT = 12345;
-    protected function insertTestUserToDb() {
+    protected function insertTestUserToDb($accountStatus = Authenticator::ACCOUNT_STATUS_ACTIVATED) {
         [$qs, $params, $columns] = self::$db->makeInsertBinders([
             'id' => self::TEST_USER_ID,
             'username' => self::TEST_USER_NAME,
@@ -23,12 +23,15 @@ abstract class AuthenticatorTestCase extends DbTestCase {
             'passwordHash' => MockCrypto::mockHashPass(self::TEST_USER_PASS),
             'role' => self::TEST_USER_ROLE,
             'accountCreatedAt' => self::TEST_USER_CREATED_AT,
-            'accountStatus' => Authenticator::ACCOUNT_STATUS_ACTIVATED
+            'accountStatus' => $accountStatus
         ]);
         if (self::$db->exec("INSERT INTO \${p}users ({$columns}) VALUES ({$qs})",
                             $params) < 1)
             throw new \Exception('Failed to insert test user to db');
     }
+    /**
+     * @param string $userId
+     */
     protected function getTestUserFromDb($userId) {
         return self::$db->fetchOne('SELECT `username`,`email`,`passwordHash`' .
                                        ',`role`,`resetKey`,`resetRequestedAt`' .

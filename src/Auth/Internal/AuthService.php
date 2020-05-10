@@ -12,7 +12,6 @@ use Pike\Validation;
 final class AuthService {
     private $persistence;
     private $crypto;
-    private $lastErrReason;
     /**
      * @param \Pike\Auth\Internal\UserRepository $persistence
      * @param \Pike\Auth\Crypto $crypto
@@ -31,11 +30,14 @@ final class AuthService {
         // @allow \Pike\PikeException
         $user = $this->persistence->getUserByUsername($username);
         if (!$user)
-            throw new PikeException('User not found',
+            throw new PikeException('User not found or not activated',
                                     Authenticator::INVALID_CREDENTIAL);
         if (!$this->crypto->verifyPass($password, $user->passwordHash))
             throw new PikeException('Invalid password',
                                     Authenticator::INVALID_CREDENTIAL);
+        if ($user->accountStatus !== Authenticator::ACCOUNT_STATUS_ACTIVATED)
+            throw new PikeException('Expected accountStatus to be ACTIVATED',
+                                    Authenticator::UNEXPECTED_ACCOUNT_STATUS);
         return $user;
     }
     /**
@@ -70,12 +72,8 @@ final class AuthService {
             'activationKey' => '',
             'accountCreatedAt' => '',
         ];
-        try {
-            $key = $this->crypto->genRandomToken(32);
-        } catch (\Exception $e) {
-            throw new PikeException("Failed to generate reset key: {$e->getMessage()}",
-                                    Authenticator::CRYPTO_FAILURE);
-        }
+        // @allow \Pike\PikeException
+        $key = $this->crypto->genRandomToken(32);
         // @allow \Pike\PikeException
         $emailSettings = $this->makeEmailSettings($makeEmailSettings, $data, $key);
         return $this->persistence->runInTransaction(function () use ($key,
@@ -106,12 +104,11 @@ final class AuthService {
         // @allow \Pike\PikeException
         $user = $this->persistence->getUserByActivationKey($activationKey);
         // 2. Validoi avain ja käyttäjä
-        if (!$user ||
-            $user->accountStatus !== Authenticator::ACCOUNT_STATUS_UNACTIVATED)
+        if (!$user)
             throw new PikeException('Invalid reset credential',
                                     Authenticator::INVALID_CREDENTIAL);
-        elseif (time() > $user->accountCreatedAt +
-                          Authenticator::ACTIVATION_KEY_EXPIRATION_SECS) {
+        if (time() > $user->accountCreatedAt +
+                     Authenticator::ACTIVATION_KEY_EXPIRATION_SECS) {
         // 2.1 Avain vanhentunut, poista käyttäjä
             // @allow \Pike\PikeException
             if (!$this->persistence->deleteUserByUserId($user->id))
@@ -144,14 +141,13 @@ final class AuthService {
         $user = $this->persistence->getUserByUsernameOrEmail($usernameOrEmail,
                                                              $usernameOrEmail);
         if (!$user)
-            throw new PikeException('User not found',
+            throw new PikeException('User not found or not activated',
                                     Authenticator::INVALID_CREDENTIAL);
-        try {
-            $key = $this->crypto->genRandomToken(32);
-        } catch (\Exception $e) {
-            throw new PikeException("Failed to generate reset key: {$e->getMessage()}",
-                                    Authenticator::CRYPTO_FAILURE);
-        }
+        if ($user->accountStatus !== Authenticator::ACCOUNT_STATUS_ACTIVATED)
+            throw new PikeException('Expected accountStatus to be ACTIVATED',
+                                    Authenticator::UNEXPECTED_ACCOUNT_STATUS);
+        // @allow \Pike\PikeException
+        $key = $this->crypto->genRandomToken(32);
         // @allow \Pike\PikeException
         $emailSettings = $this->makeEmailSettings($makeEmailSettings,
             $user, $key);
@@ -190,26 +186,19 @@ final class AuthService {
         // 1. Hae resetointidata tietokannasta
         // @allow \Pike\PikeException
         $user = $this->persistence->getUserByResetKey($key);
-        $this->lastErrReason = null;
         // 2. Validoi avain ja email
-        if (!$user)
-            $this->lastErrReason = 'Reset key didn\'t exist';
-        elseif (time() > $user->resetRequestedAt +
-                          Authenticator::RESET_KEY_EXPIRATION_SECS) {
-            throw new PikeException('Reset key had expired',
-                                    Authenticator::EXPIRED_KEY);
-        } elseif ($user->email !== $email)
-            $this->lastErrReason = 'Email didn\'t match';
-        if ($this->lastErrReason)
+        if (!$user || $user->email !== $email)
             throw new PikeException('Invalid reset credential',
                                     Authenticator::INVALID_CREDENTIAL);
-        //
-        if (!($user->passwordHash = $this->crypto->hashPass($newPassword)))
-            throw new PikeException('Failed to hash a password',
-                                    Authenticator::CRYPTO_FAILURE);
+        if (time() > $user->resetRequestedAt +
+                     Authenticator::RESET_KEY_EXPIRATION_SECS) {
+            throw new PikeException('Reset key had expired',
+                                    Authenticator::EXPIRED_KEY);
+        }
         // 3. Päivitä uusi salasana + tyhjennä resetointiData
         $data = new \stdClass;
-        $data->passwordHash = $user->passwordHash;
+        // @allow \Pike\PikeException
+        $data->passwordHash = $this->crypto->hashPass($newPassword);
         $data->resetKey = null;
         $data->resetRequestedAt = null;
         // @allow \Pike\PikeException
@@ -230,11 +219,9 @@ final class AuthService {
             throw new PikeException('User not found',
                                     Authenticator::INVALID_CREDENTIAL);
         //
-        if (!($user->passwordHash = $this->crypto->hashPass($newPassword)))
-            throw new PikeException('Failed to hash a password',
-                                    Authenticator::CRYPTO_FAILURE);
-        //
-        $data = (object) ['passwordHash' => $user->passwordHash];
+        $data = new \stdClass;
+        // @allow \Pike\PikeException
+        $data->passwordHash = $this->crypto->hashPass($newPassword);
         // @allow \Pike\PikeException
         if (!$this->persistence->updateUserByUserId($data, $userId))
             throw new PikeException('Failed to update user',

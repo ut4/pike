@@ -19,6 +19,7 @@ class Authenticator {
     public const FAILED_TO_FORMAT_MAIL = 201013;
     public const CRYPTO_FAILURE = 201014;
     public const EXPIRED_KEY = 201015;
+    public const UNEXPECTED_ACCOUNT_STATUS = 201016;
     public const ACCOUNT_STATUS_ACTIVATED = 0;
     public const ACCOUNT_STATUS_UNACTIVATED = 1;
     public const ACCOUNT_STATUS_BANNED = 2;
@@ -88,7 +89,8 @@ class Authenticator {
      */
     public function activateAccount(string $activationKey): bool {
         // @allow \Pike\PikeException
-        return $this->services->makeAuthService()->activateUser($activationKey);
+        return $this->services->makeAuthService()
+            ->activateUser($activationKey);
     }
     /**
      * @param string $usernameOrEmail
