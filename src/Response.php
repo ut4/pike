@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike;
 
 class Response {
@@ -9,18 +11,18 @@ class Response {
     private $headers;
     private $isSent;
     /**
-     * @param integer $statusCode = 200
+     * @param int $statusCode = 200
      */
-    public function __construct($statusCode = 200) {
+    public function __construct(int $statusCode = 200) {
         $this->statusCode = $statusCode;
         $this->headers = [];
         $this->isSent = false;
     }
     /**
-     * @param integer $statusCode
+     * @param int $statusCode
      * @return $this
      */
-    public function status($statusCode) {
+    public function status(int $statusCode): Response {
         $this->statusCode = $statusCode;
         return $this;
     }
@@ -28,7 +30,7 @@ class Response {
      * @param array|object|string $data
      * @return $this
      */
-    public function json($data) {
+    public function json($data): Response {
         $this->body = is_string($data) ? $data : json_encode($data);
         $this->type('json');
         return $this;
@@ -37,7 +39,7 @@ class Response {
      * @param string $body
      * @return $this
      */
-    public function html($body) {
+    public function html(string $body): Response {
         $this->body = $body;
         $this->type('html');
         return $this;
@@ -46,7 +48,7 @@ class Response {
      * @param string $body
      * @return $this
      */
-    public function plain($body) {
+    public function plain(string $body): Response {
         $this->body = $body;
         $this->type('plain');
         return $this;
@@ -57,9 +59,9 @@ class Response {
      * @param string $mime = 'application/zip'
      * @return $this
      */
-    public function attachment($data,
-                               $fileName = 'file.zip',
-                               $mime = 'application/zip') {
+    public function attachment(string $data,
+                               string $fileName = 'file.zip',
+                               string $mime = 'application/zip'): Response {
         $this->contentType = $mime;
         $this->headers['Content-Length'] = [strlen($data)];
         $this->headers['Content-Disposition'] = ["attachment; filename=\"{$fileName}\""];
@@ -71,7 +73,8 @@ class Response {
      * @param bool $isPermanent = true
      * @return $this
      */
-    public function redirect($to, $isPermanent = true) {
+    public function redirect(string $to,
+                             bool $isPermanent = true): Response {
         $this->headers['Location'] = [$to, true, $isPermanent ? 301 : 302];
         return $this;
     }
@@ -81,7 +84,9 @@ class Response {
      * @param bool $replace = true
      * @return $this
      */
-    public function header($name, $value, $replace = true) {
+    public function header(string $name,
+                           string $value,
+                           bool $replace = true): Response {
         $this->headers[$name] = [$value, $replace];
         return $this;
     }
@@ -90,7 +95,7 @@ class Response {
      *
      * @throws \Pike\PikeException
      */
-    public function send() {
+    public function send(): void {
         if (!$this->body && !array_key_exists('Location', $this->headers))
             throw new PikeException('Nothing to send', PikeException::BAD_INPUT);
         http_response_code($this->statusCode);
@@ -105,7 +110,7 @@ class Response {
     /**
      * @return bool $responseIsSent
      */
-    public function sendIfReady() {
+    public function sendIfReady(): bool {
         if ($this->isSent()) return true;
         if (($this->contentType && $this->body) ||
             array_key_exists('Location', $this->headers)) {
@@ -117,13 +122,13 @@ class Response {
     /**
      * @return bool
      */
-    public function isSent() {
+    public function isSent(): bool {
         return $this->isSent;
     }
     /**
      * @param string $type 'html' | 'json' | 'plain'
      */
-    private function type($type) {
+    private function type(string $type): void {
         $this->contentType = [
             'html' => 'text/html',
             'json' => 'application/json',

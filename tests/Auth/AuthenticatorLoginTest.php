@@ -3,20 +3,19 @@
 namespace Pike\Tests\Auth;
 
 use Pike\Auth\Authenticator;
-use Pike\Auth\Internal\CachingServicesFactory;
 use Pike\PikeException;
 use Pike\SessionInterface;
 
 class AuthenticatorLoginTest extends AuthenticatorTestCase {
     public function testLoginThrowsIfUserWasNotFound() {
-        $auth = new Authenticator(new CachingServicesFactory(self::$db));
+        $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
         try {
             $auth->login('username', 'irrelevant');
             $this->assertFalse(true, 'Pitäisi heittää poikkeus');
         } catch (PikeException $e) {
             $this->assertEquals(Authenticator::INVALID_CREDENTIAL,
                                 $e->getCode());
-            $this->assertEquals('User not found',
+            $this->assertEquals('User not found or not activated',
                                 $e->getMessage());
         }
     }
@@ -25,7 +24,7 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testLoginThrowsIfPasswordDidNotMatch() {
+    public function testLoginThrowsIfPasswordDoesNotMatch() {
         $this->insertTestUserToDb();
         $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
         try {
@@ -36,6 +35,38 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
                                 $e->getCode());
             $this->assertEquals('Invalid password',
                                 $e->getMessage());
+        }
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testLoginThrowsIfAccountIsBanned() {
+        $this->insertTestUserToDb(Authenticator::ACCOUNT_STATUS_BANNED);
+        $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
+        try {
+            $auth->login(self::TEST_USER_NAME, self::TEST_USER_PASS);
+            $this->assertFalse(true, 'Pitäisi heittää poikkeus');
+        } catch (PikeException $e) {
+            $this->assertEquals(Authenticator::UNEXPECTED_ACCOUNT_STATUS,
+                                $e->getCode());
+        }
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testLoginThrowsIfAccountIsUnactivated() {
+        $this->insertTestUserToDb(Authenticator::ACCOUNT_STATUS_UNACTIVATED);
+        $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
+        try {
+            $auth->login(self::TEST_USER_NAME, self::TEST_USER_PASS);
+            $this->assertFalse(true, 'Pitäisi heittää poikkeus');
+        } catch (PikeException $e) {
+            $this->assertEquals(Authenticator::UNEXPECTED_ACCOUNT_STATUS,
+                                $e->getCode());
         }
     }
 

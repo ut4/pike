@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike;
 
 class Request {
@@ -26,10 +28,10 @@ class Request {
      * @param object $files = new \stdClass
      * @param array $serverVars = []
      */
-    public function __construct($path,
-                                $method = 'GET',
-                                $body = null,
-                                $files = null,
+    public function __construct(string $path,
+                                string $method = 'GET',
+                                object $body = null,
+                                object $files = null,
                                 array $serverVars = null) {
         $this->path = urldecode($path !== '' ? $path : '/');
         $this->method = $method;
@@ -40,9 +42,9 @@ class Request {
     }
     /**
      * @param string $key e.g. 'SERVER_NAME'
-     * @param mized $default = null
+     * @param mixed $default = null
      */
-    public function attr($key, $default = null) {
+    public function attr(string $key, $default = null) {
         return $this->serverVars[$key] || $default;
     }
 
@@ -54,7 +56,8 @@ class Request {
      * @return \Pike\Request
      * @throws \Pike\PikeException
      */
-    public static function createFromGlobals($BASE_URL, $urlPath = null) {
+    public static function createFromGlobals(string $BASE_URL,
+                                             string $urlPath = null): Request {
         $method = $_SERVER['REQUEST_METHOD'];
         $body = null;
         $files = null;

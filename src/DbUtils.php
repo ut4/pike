@@ -18,7 +18,7 @@ class DbUtils {
         foreach ($data as $key => $val) {
             $qs[] = '?';
             $values[] = $val;
-            $cols[] = "`{$key}`";
+            $cols[] = self::columnify($key);
         }
         return [implode(',', $qs), $values, implode(',', $cols)];
     }
@@ -32,9 +32,19 @@ class DbUtils {
         $colPairs = [];
         $values = [];
         foreach ($data as $key => $val) {
-            $colPairs[] = "`{$key}`=?";
+            $colPairs[] = self::columnify($key) . '=?';
             $values[] = $val;
         }
         return [implode(',', $colPairs), $values];
+    }
+    /**
+     * In: '$foo %&" _bar'
+     * Out: '`$foo_bar`'
+     *
+     * @param string $columnNameCandidate
+     * @return string
+     */
+    public static function columnify(string $columnNameCandidate): string {
+        return '`' . preg_replace('/[^A-Za-z0-9$_]/', '', $columnNameCandidate) . '`';
     }
 }

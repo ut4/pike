@@ -13,16 +13,17 @@ use Pike\SessionInterface;
  * Tarjoilee Authenticator-luokalle sen tarvitsemia palveluja.
  */
 class CachingServicesFactory {
-    private $db;
     private $session;
     private $mailer;
     private $authService;
+    private $makeUserRepositoryFn;
     /**
-     * @param \Pike\Db $db
-     * @param \Pike\Auth\PhpMailerMailer $mailer = null
+     * @param callable $makeUserRepositoryFn
+     * @param \Pike\Auth\Internal\AbstractMailer $mailer = null
      */
-    public function __construct(Db $db, PhpMailerMailer $mailer = null) {
-        $this->db = $db;
+    public function __construct(callable $makeUserRepositoryFn,
+                                AbstractMailer $mailer = null) {
+        $this->makeUserRepositoryFn = $makeUserRepositoryFn;
         $this->mailer = $mailer;
     }
     /**
@@ -35,9 +36,9 @@ class CachingServicesFactory {
         return $this->session;
     }
     /**
-     * @return \Pike\Auth\Internal\PhpMailerMailer
+     * @return \Pike\Auth\Internal\AbstractMailer
      */
-    public function makeMailer(): PhpMailerMailer {
+    public function makeMailer(): AbstractMailer {
         if (!$this->mailer) {
             $this->mailer = new PhpMailerMailer();
         }
@@ -48,7 +49,7 @@ class CachingServicesFactory {
      */
     public function makeAuthService(): AuthService {
         if (!$this->authService) {
-            $this->authService = new AuthService(new UserRepository($this->db),
+            $this->authService = new AuthService(call_user_func($this->makeUserRepositoryFn),
                                                  $this->makeCrypto());
         }
         return $this->authService;

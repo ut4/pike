@@ -13,6 +13,17 @@ final class DbUtilsTest extends TestCase {
         $this->assertEquals($expected, DbUtils::makeInsertBinders((array) $data));
     }
 
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testMakeInsertBindersSanitizesColumns() {
+        $data = (object) ['col_1\' drop table;' => 'val1'];
+        $expected = ['?', array_values((array) $data), '`col_1droptable`'];
+        $this->assertEquals($expected, DbUtils::makeInsertBinders($data));
+    }
+
+
     ////////////////////////////////////////////////////////////////////////////
 
 
@@ -21,5 +32,15 @@ final class DbUtilsTest extends TestCase {
         $expected = ['`col1`=?,`col2`=?', array_values((array) $data)];
         $this->assertEquals($expected, DbUtils::makeUpdateBinders($data));
         $this->assertEquals($expected, DbUtils::makeUpdateBinders((array) $data));
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testMakeUpdateBinderSanitizesColumns() {
+        $data = (object) ['#€%col$_1' => 'val1'];
+        $expected = ['`col$_1`=?', array_values((array) $data)];
+        $this->assertEquals($expected, DbUtils::makeUpdateBinders($data));
     }
 }

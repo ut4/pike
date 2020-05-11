@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike;
 
 class PikeException extends \RuntimeException {

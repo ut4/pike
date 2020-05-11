@@ -1,9 +1,9 @@
 <?php
 
-// Katso myös: /docs/fi/examples/authorizing-routes.md
+// Katso myös: ut4.github.io/pike/examples/authorizing-routes.html
 
-$loader = require dirname(__DIR__) . '/vendor/autoload.php';
-$loader->addPsr4('Me\\AuthorizingRoutes\\', __DIR__ . '/AuthorizingRoutes/src');
+$loader = require dirname(__DIR__, 2) . '/vendor/autoload.php';
+$loader->addPsr4('Me\\AuthorizingRoutes\\', __DIR__ . '/src');
 
 define('LOGGED_IN_USER_ROLE', \Pike\Auth\ACL::ROLE_EDITOR);
 

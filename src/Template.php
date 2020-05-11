@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike;
 
 class Template {
@@ -11,7 +13,7 @@ class Template {
      * @param string $file
      * @param array $vars = null
      */
-    public function __construct($file, array $vars = null) {
+    public function __construct(string $file, array $vars = null) {
         $this->__vars = $vars ?? [];
         $this->__file = $file;
         $this->__dir = dirname($file) . '/';
@@ -20,7 +22,7 @@ class Template {
      * @param array $locals = []
      * @return string
      */
-    public function render(array $locals = []) {
+    public function render(array $locals = []): string {
         $this->__locals = $locals;
         return $this->doRender($this->__file, $locals);
     }
@@ -28,13 +30,13 @@ class Template {
      * @param string $name
      * @return mixed
      */
-    public function __get($name) {
+    public function __get(string $name) {
         return $this->__vars[$name];
     }
     /**
      * @return string
      */
-    protected function doRender($__file, $__locals) {
+    protected function doRender(string $__file, array $__locals): string {
         ob_start();
         extract($__locals);
         include $__file;

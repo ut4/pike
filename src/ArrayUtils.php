@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pike;
 
 class ArrayUtils {
@@ -10,7 +12,10 @@ class ArrayUtils {
      * @param mixed $default = null
      * @return mixed|null
      */
-    public static function findByKey($array, $val, $key, $default = null) {
+    public static function findByKey($array,
+                                     $val,
+                                     string $key,
+                                     $default = null) {
         foreach ($array as $item) {
             if ($item->$key === $val) return $item;
         }
@@ -23,7 +28,7 @@ class ArrayUtils {
      * @return array|\ArrayObject
      * @throws \Pike\PikeException
      */
-    public static function filterByKey($array, $val, $key) {
+    public static function filterByKey($array, $val, string $key) {
         if (is_array($array))
             $out = [];
         elseif ($array instanceof \ArrayObject) {
@@ -43,7 +48,7 @@ class ArrayUtils {
      * @param string $key
      * @return mixed|null
      */
-    public static function findIndexByKey($array, $val, $key) {
+    public static function findIndexByKey($array, $val, string $key): int {
         foreach ($array as $i => $item) {
             if ($item->$key === $val) return $i;
         }
