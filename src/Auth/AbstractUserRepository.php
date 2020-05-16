@@ -12,28 +12,28 @@ abstract class AbstractUserRepository {
     public abstract function putUser(\stdClass $data): string;
     /**
      * @param string $username
-     * @return \Pike\Auth\Internal\User|null
+     * @return \Pike\Auth\User|null
      */
     public abstract function getUserByUsername(string $username): ?User;
     /**
      * @param string $username
      * @param string $email
-     * @return \Pike\Auth\Internal\User|null
+     * @return \Pike\Auth\User|null
      */
     public abstract function getUserByUsernameOrEmail(string $username, string $email): ?User;
     /**
      * @param string $userId
-     * @return \Pike\Auth\Internal\User|null
+     * @return \Pike\Auth\User|null
      */
     public abstract function getUserByUserId(string $userId): ?User;
     /**
      * @param string $activationKey
-     * @return \Pike\Auth\Internal\User|null
+     * @return \Pike\Auth\User|null
      */
     public abstract function getUserByActivationKey(string $activationKey): ?User;
     /**
      * @param string $resetKey
-     * @return \Pike\Auth\Internal\User|null
+     * @return \Pike\Auth\User|null
      */
     public abstract function getUserByResetKey(string $resetKey): ?User;
     /**

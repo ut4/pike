@@ -184,22 +184,25 @@ class Db {
         $this->tablePrefix = $this->config['db.tablePrefix'] ?? '';
     }
     /**
-     * In: ['col1' => 'val1', 'col2' => 'val2']
-     * Out: ['?,?', ['val1', 'val2'], '`col1`,`col2`']
-     *
-     * @param object|array $data
+     * @param object|array $data ['col1' => 'val1', 'col2' => 'val2']
+     * @return array ['?,?', ['val1', 'val2'], '`col1`,`col2`']
      */
-    public static function makeInsertBinders($data): array {
-        return DbUtils::makeInsertBinders($data);
+    public static function makeInsertQParts($data): array {
+        return DbUtils::makeInsertQParts($data);
     }
     /**
-     * In: ['col1' => 'val1', 'col2' => 'val2']
-     * Out: ['`col1`=?,`col2`=?', ['val1', 'val2']]
-     *
-     * @param object|array $data
+     * @param array<object|array> $data [['col1' => 'val11', 'col2' => 'val21'], ['col1' => 'val12', 'col2' => 'val22']]
+     * @return array ['(?,?),(?,?)', ['val1', 'val2', 'val3', 'val4'], '`col1`,`col2`']
      */
-    public static function makeUpdateBinders($data): array {
-        return DbUtils::makeUpdateBinders($data);
+    public static function makeBatchInsertQParts($data): array {
+        return DbUtils::makeBatchInsertQParts($data);
+    }
+    /**
+     * @param object|array $data ['col1' => 'val1', 'col2' => 'val2']
+     * @return array ['`col1`=?,`col2`=?', ['val1', 'val2']]
+     */
+    public static function makeUpdateQParts($data): array {
+        return DbUtils::makeUpdateQParts($data);
     }
     /**
      * @return string
