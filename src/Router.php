@@ -7,6 +7,7 @@ namespace Pike;
 use AltoRouter;
 
 class Router extends AltoRouter {
+    /** @var array<{pattern: string, fn: callable}> */
     public $middleware = [];
     /**
      * @param string $pattern

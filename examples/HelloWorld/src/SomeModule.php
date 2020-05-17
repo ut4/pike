@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Me\HelloWorld;
 
+use Pike\AppContext;
+
 abstract class SomeModule {
     /**
-     * @param \stdClass $ctx {\Pike\Router router}
+     * @param \Pike\AppContext $ctx
      */
-    public static function init(\stdClass $ctx) {
+    public static function init(AppContext $ctx) {
         $ctx->router->map('GET', '/some-route',
             [SomeController::class, 'handleSomeRoute']
         );

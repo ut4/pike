@@ -19,6 +19,8 @@ class Request {
     public $user;
     /** @var {myCtx: mixed, name: string|null} */
     public $routeInfo;
+    /** @var ?string */
+    public $name;
     /** @var array */
     private $serverVars;
     /**
@@ -43,6 +45,7 @@ class Request {
     /**
      * @param string $key e.g. 'SERVER_NAME'
      * @param mixed $default = null
+     * @return mixed
      */
     public function attr(string $key, $default = null) {
         return $this->serverVars[$key] || $default;

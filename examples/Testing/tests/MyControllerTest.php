@@ -6,6 +6,7 @@ namespace Me\Testing\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Me\Testing\MyApp;
+use Pike\AppContext;
 use Pike\Request;
 use Pike\Response;
 use Pike\TestUtils\HttpTestUtils;
@@ -15,7 +16,7 @@ class MyControllerTest extends TestCase {
     public function testSomeRouteReturnsFoo(): void {
     // 2. Luo applikaatio-olio
         $config = [];
-        $ctx = new \stdClass;
+        $ctx = new AppContext;
         $app = $this->makeApp([MyApp::class, 'create'], $config, $ctx);
     // 3. Luo olio testattavalle reitille
         $body = null;
@@ -35,7 +36,7 @@ class MyControllerTest extends TestCase {
     public function testAnotherRouteReturnsBar(): void {
     // 2. Luo applikaatio-olio
         $config = [];
-        $ctx = new \stdClass;
+        $ctx = new AppContext;
         $app = $this->makeApp([MyApp::class, 'create'], $config, $ctx);
     // 3. Luo olio testattavalle reitille
         $req = new Request('/another-route', 'GET');
