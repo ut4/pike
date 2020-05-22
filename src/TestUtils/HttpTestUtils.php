@@ -63,7 +63,7 @@ trait HttpTestUtils {
     }
     /**
      * @param mixed $expectedBody = null
-     * @param string $expectedStatus = 200
+     * @param int $expectedStatus = 200
      * @param string $expectedContentType = 'json'
      * @return \PHPUnit\Framework\MockObject\MockObject
      */
@@ -80,14 +80,39 @@ trait HttpTestUtils {
                 ->with($this->equalTo($expectedStatus))
                 ->willReturn($stub);
         }
-        if ($expectedBody !== null)
-            $stub->expects($this->once())
-                ->method($expectedContentType)
-                ->with(is_string($expectedBody)
-                    ? $this->equalTo($expectedBody)
-                    : $expectedBody)
-                ->willReturn($stub);
+        if (!$expectedBody) return $stub;
+        //
+        $bodyExpection = null;
+        if (is_object($expectedBody) &&
+            property_exists($expectedBody, 'actualResponseBody')) {
+            $state = $expectedBody;
+            $bodyExpection = $this->callback(function ($actualResponse) use ($state, $expectedContentType) {
+                $state->actualResponseBody = $expectedContentType !== 'json'
+                    ? $actualResponse
+                    : json_encode($actualResponse);
+                return true;
+            });
+        } else {
+            $bodyExpection = is_string($expectedBody)
+                ? $this->equalTo($expectedBody)
+                : $expectedBody;
+        }
+        $stub->expects($this->once())
+            ->method($expectedContentType)
+            ->with($bodyExpection)
+            ->willReturn($stub);
         return $stub;
+    }
+    /**
+     * @param object $captureTo
+     * @param int $expectedStatus = 200
+     * @param string $expectedContentType = 'json'
+     * @return \PHPUnit\Framework\MockObject\MockObject
+     */
+    public function createBodyCapturingMockResponse($captureTo,
+                                                    $expectedStatus = 200,
+                                                    $expectedContentType = 'json') {
+        return $this->createMockResponse($captureTo, $expectedStatus, $expectedContentType);
     }
     /**
      * Esimerkki:
@@ -107,34 +132,5 @@ trait HttpTestUtils {
                                 AppHolder $appHolder) {
         $appHolder->getAppCtx()->res = $res;
         $appHolder->getApp()->handleRequest($req);
-    }
-    /**
-     * Esimerkki:
-     * ```
-     * $req = new Request('/api/foo', 'GET');
-     * $res = $this->createMock(\Pike\Response::class);
-     * $app = $this->makeApp('\My\App::create', $this->getAppConfig());
-     * $state = (object)['actualResponseBody' => null];
-     * $this->sendResponseBodyCapturingRequest($req, $res, $app);
-     * $this->assertEquals();
-     * ```
-     *
-     * @param \Pike\Request $req
-     * @param \Pike\Response $res
-     * @param \Pike\TestUtils\AppHolder $appHolder
-     * @param object $state
-     */
-    public function sendResponseBodyCapturingRequest(Request $req,
-                                                     MockObject $res,
-                                                     AppHolder $appHolder,
-                                                     $state) {
-        $res->expects($this->once())
-            ->method('json')
-            ->with($this->callback(function ($actualResponse) use ($state) {
-                $state->actualResponseBody = json_encode($actualResponse);
-                return true;
-            }))
-            ->willReturn($res);
-        $this->sendRequest($req, $res, $appHolder);
     }
 }

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Me\HelloWorld;
+namespace Me\Pike101;
 
 use Pike\Response;
 use Pike\Request;
 
 class SomeController {
     /**
-     * @param \Me\HelloWorld\SomeClass $myClass
+     * @param \Me\Pike101\SomeClass $myClass
      * @param \Pike\Response $res
      */
     public function handleSomeRoute(SomeClass $myClass, Response $res): void {

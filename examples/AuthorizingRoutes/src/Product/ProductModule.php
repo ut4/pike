@@ -10,7 +10,7 @@ abstract class ProductModule {
     /**
      * @param \Pike\AppContext $ctx
      */
-    public static function init(AppContext $ctx) {
+    public static function init(AppContext $ctx): void {
         $ctx->router->map('POST', '/products',
             [ProductController::class, 'handleCreateProduct', 'create:products']
         );

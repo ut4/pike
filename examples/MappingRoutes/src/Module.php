@@ -10,7 +10,7 @@ abstract class Module {
     /**
      * @param \Pike\AppContext $ctx
      */
-    public static function init(AppContext $ctx) {
+    public static function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/route-a',
             [Controller::class, 'handleRouteA']
         );

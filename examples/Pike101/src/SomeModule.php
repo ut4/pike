@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Me\HelloWorld;
+namespace Me\Pike101;
 
 use Pike\AppContext;
 
@@ -10,7 +10,7 @@ abstract class SomeModule {
     /**
      * @param \Pike\AppContext $ctx
      */
-    public static function init(AppContext $ctx) {
+    public static function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/some-route',
             [SomeController::class, 'handleSomeRoute']
         );
