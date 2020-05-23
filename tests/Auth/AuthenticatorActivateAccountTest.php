@@ -89,7 +89,7 @@ class AuthenticatorActivateAccountTest extends AuthenticatorTestCase {
         $this->assertNull($row['activationKey']);
         $this->assertEquals($s->testAccountCreatedAt, $row['accountCreatedAt']);
         $this->assertNull($row['resetKey']);
-        $this->assertNull($row['resetRequestedAt']);
+        $this->assertEquals('0', $row['resetRequestedAt']);
         $s->actualUserFromDb = $row;
     }
     private function verifyClearedActivationInfoFromToDb($s) {

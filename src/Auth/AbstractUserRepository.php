@@ -75,9 +75,7 @@ final class User {
             ? (int) $this->accountCreatedAt
             : null;
         $this->resetKey = strlen($this->resetKey ?? '') ? $this->resetKey : null;
-        $this->resetRequestedAt = $this->resetRequestedAt
-            ? (int) $this->resetRequestedAt
-            : null;
+        $this->resetRequestedAt = (int) $this->resetRequestedAt;
         $this->accountStatus = (int) $this->accountStatus;
     }
 }

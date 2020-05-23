@@ -104,7 +104,7 @@ class AuthenticatorCreateAccountTest extends AuthenticatorTestCase {
         $this->assertEquals(true, $row['accountCreatedAt'] !== null);
         $this->assertEquals(true, $row['accountCreatedAt'] > time() - 20);
         $this->assertNull($row['resetKey']);
-        $this->assertNull($row['resetRequestedAt']);
+        $this->assertEquals('0', $row['resetRequestedAt']);
         $this->assertEquals(Authenticator::ACCOUNT_STATUS_UNACTIVATED,
                             $row['accountStatus']);
     }

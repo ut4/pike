@@ -14,7 +14,7 @@ final class AuthService {
     private $persistence;
     private $crypto;
     /**
-     * @param \Pike\Auth\Internal\AbstractUserRepository $persistence
+     * @param \Pike\Auth\AbstractUserRepository $persistence
      * @param \Pike\Auth\Crypto $crypto
      */
     public function __construct(AbstractUserRepository $persistence, Crypto $crypto) {
@@ -201,7 +201,7 @@ final class AuthService {
         // @allow \Pike\PikeException
         $data->passwordHash = $this->crypto->hashPass($newPassword);
         $data->resetKey = null;
-        $data->resetRequestedAt = null;
+        $data->resetRequestedAt = 0;
         // @allow \Pike\PikeException
         if (!$this->persistence->updateUserByUserId($data, $user->id))
             throw new PikeException('Failed to clear reset info',

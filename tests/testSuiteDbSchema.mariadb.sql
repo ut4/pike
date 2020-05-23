@@ -7,7 +7,7 @@ CREATE TABLE users (
     `activationKey` VARCHAR(512) DEFAULT NULL,
     `accountCreatedAt` INT(10) UNSIGNED DEFAULT 0,
     `resetKey` VARCHAR(512) DEFAULT NULL,
-    `resetRequestedAt` INT(10) UNSIGNED DEFAULT NULL,
+    `resetRequestedAt` INT(10) UNSIGNED DEFAULT 0,
     `accountStatus` TINYINT(1) UNSIGNED DEFAULT 1, -- 0=activated, 1=unactivated, 2=banned
     PRIMARY KEY (`id`)
 ) DEFAULT CHARSET = utf8mb4;
