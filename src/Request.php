@@ -50,6 +50,14 @@ class Request {
     public function attr(string $key, $default = null) {
         return $this->serverVars[$key] || $default;
     }
+    /**
+     * @param string $key
+     * @param mixed $default = null
+     * @return string|null
+     */
+    public function cookie(string $key, ?string $default = null): ?string {
+        return $_COOKIE[$key] ?? $default;
+    }
 
     ////////////////////////////////////////////////////////////////////////////
 
@@ -66,8 +74,8 @@ class Request {
         $files = null;
         if ($method === 'POST' || $method === 'PUT') {
             if ($_SERVER['CONTENT_TYPE'] !== 'application/json') {
-                $body = (object)$_POST;
-                $files = (object)$_FILES;
+                $body = (object) $_POST;
+                $files = (object) $_FILES;
             } else {
                 if (!($json = file_get_contents('php://input')))
                     $body = new \stdClass;
@@ -80,7 +88,7 @@ class Request {
             $method,
             $body,
             $files,
-            $_SERVER
+            $_SERVER,
         );
     }
 }

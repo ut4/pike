@@ -21,6 +21,11 @@ final class ValidatorImplsTest extends TestCase {
         $this->assertNotEmpty($v()->rule('type', 'object')->validate([]));
         $this->assertEmpty($v()->rule('type', 'object')->validate(new \stdClass));
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testMinLengthValidatorValidatesLength() {
         $v = function() { return Validation::makeValueValidator(); };
         $this->assertNotEmpty($v()->rule('minLength', 2)->validate('s'));
@@ -28,6 +33,11 @@ final class ValidatorImplsTest extends TestCase {
         $this->assertNotEmpty($v()->rule('minLength', 2)->validate([1]));
         $this->assertEmpty($v()->rule('minLength', 2)->validate([1,2]));
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testMaxLengthValidatorValidatesLength() {
         $v = function() { return Validation::makeValueValidator(); };
         $this->assertNotEmpty($v()->rule('maxLength', 2)->validate('str'));
@@ -35,6 +45,11 @@ final class ValidatorImplsTest extends TestCase {
         $this->assertNotEmpty($v()->rule('maxLength', 2)->validate([1,2,3]));
         $this->assertEmpty($v()->rule('maxLength', 2)->validate([1,2]));
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testMinValidatorValidatesValue() {
         $v = function() { return Validation::makeValueValidator(); };
         $this->assertNotEmpty($v()->rule('min', 5)->validate(1));
@@ -45,6 +60,11 @@ final class ValidatorImplsTest extends TestCase {
         $this->assertEmpty($v()->rule('min', 5)->validate('6.0'));
         $this->assertEmpty($v()->rule('min', 5)->validate(5));
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testMaxValidatorValidatesValue() {
         $v = function() { return Validation::makeValueValidator(); };
         $this->assertNotEmpty($v()->rule('max', 5)->validate(6));
@@ -55,6 +75,11 @@ final class ValidatorImplsTest extends TestCase {
         $this->assertEmpty($v()->rule('max', 5)->validate('2.0'));
         $this->assertEmpty($v()->rule('max', 5)->validate(5));
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testInValidatorValidatesInclusion() {
         $v = function() { return Validation::makeValueValidator(); };
         $this->assertNotEmpty($v()->rule('in', [1, 2])->validate(6));
@@ -62,7 +87,12 @@ final class ValidatorImplsTest extends TestCase {
         $this->assertNotEmpty($v()->rule('in', [1, 2])->validate('2'));
         $this->assertEmpty($v()->rule('in', [1, 2])->validate(2));
     }
-    public function testIdentifierValidatorValidatesStrings() {
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testIdentifierValidatorValidatesIdentifiers() {
         $v = function() { return Validation::makeValueValidator(); };
         $this->assertNotEmpty($v()->rule('identifier')->validate([]));
         $this->assertNotEmpty($v()->rule('identifier')->validate('Ab#'));
@@ -71,5 +101,19 @@ final class ValidatorImplsTest extends TestCase {
         $this->assertEmpty($v()->rule('identifier')->validate('Abc'));
         $this->assertEmpty($v()->rule('identifier')->validate('Ab_c'));
         $this->assertEmpty($v()->rule('identifier')->validate('Ab5'));
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testMinValidatorValidatesPatterns() {
+        $v = function() { return Validation::makeValueValidator(); };
+        $pattern = '/foo|bar/';
+        $this->assertNotEmpty($v()->rule('regexp', $pattern)->validate('ba'));
+        $this->assertNotEmpty($v()->rule('regexp', $pattern)->validate('baz'));
+        $this->assertNotEmpty($v()->rule('regexp', $pattern)->validate([]));
+        $this->assertEmpty($v()->rule('regexp', $pattern)->validate('foo'));
+        $this->assertEmpty($v()->rule('regexp', $pattern)->validate('bar'));
     }
 }

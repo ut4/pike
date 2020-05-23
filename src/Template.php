@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace Pike;
 
 class Template {
-    protected $__locals;
+    /** @var array<string, mixed> */
+    protected $__vars;
+    /** @var string */
+    protected $__file;
+    /** @var string */
     protected $__dir;
-    private $__vars;
-    private $__file;
+    /** @var array<string, mixed> */
+    protected $__locals;
     /**
      * @param string $file
-     * @param array $vars = null
+     * @param array<string, mixed> $vars = null
      */
     public function __construct(string $file, array $vars = null) {
         $this->__vars = $vars ?? [];
@@ -19,7 +23,7 @@ class Template {
         $this->__dir = dirname($file) . '/';
     }
     /**
-     * @param array $locals = []
+     * @param array<string, mixed> $locals = []
      * @return string
      */
     public function render(array $locals = []): string {
@@ -34,6 +38,8 @@ class Template {
         return $this->__vars[$name];
     }
     /**
+     * @param string $__file
+     * @param array<string, mixed> $__locals
      * @return string
      */
     protected function doRender(string $__file, array $__locals): string {

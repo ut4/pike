@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Pike;
 
 class Db {
+    /** @var string */
     protected $tablePrefix;
+    /** @var array<string, mixed> */
     protected $config;
+    /** @var \PDO */
     private $pdo;
+    /** @var int */
     private $transactionLevel = 0;
     /**
      * @param array|object $config ['db.host' => string, ...]
@@ -50,9 +54,10 @@ class Db {
                              ...$fetchConfig) {
         try {
             $prep = $this->pdo->prepare($this->compileQuery($query));
-            $prep->setFetchMode(...$fetchConfig);
             $prep->execute($params);
-            return $prep->fetchAll($fetchConfig[0] ?? \PDO::FETCH_ASSOC);
+            return $fetchConfig
+                ? $prep->fetchAll(...$fetchConfig)
+                : $prep->fetchAll(\PDO::FETCH_ASSOC);
         } catch (\PDOException $e) {
             throw new PikeException($e->getMessage(),
                                     PikeException::FAILED_DB_OP,
@@ -75,7 +80,7 @@ class Db {
             $prep = $this->pdo->prepare($this->compileQuery($query));
             $prep->setFetchMode(...$fetchConfig);
             $prep->execute($params);
-            $row = $prep->fetch($fetchConfig[0] ?? \PDO::FETCH_ASSOC);
+            $row = $prep->fetch();
             return $row !== false ? $row : null;
         } catch (\PDOException $e) {
             throw new PikeException($e->getMessage(),

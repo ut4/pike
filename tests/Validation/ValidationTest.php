@@ -7,55 +7,93 @@ use Pike\Validation;
 
 final class ValidationTest extends TestCase {
     public function testObjectValidatorHandlesNestedPaths() {
-        $s = $this->setupPathHandlingTest();
-        $this->addSpyRuleForPath('foo.bar', $s);
-        $this->addSpyRuleForPath('foo.baz.bar', $s);
-        $this->addSpyRuleForPath('foo.baz.notThere', $s);
+        $state = $this->setupPathHandlingTest();
+        $this->addSpyRuleForPath('foo.bar', $state);
+        $this->addSpyRuleForPath('foo.baz.bar', $state);
+        $this->addSpyRuleForPath('foo.baz.notThere', $state);
         $this->callValidatorWith((object)[
             'foo' => (object)[
                 'bar' => 'a',
                 'baz' => (object)['bar' => 'b']
             ]
-        ], $s);
-        $this->verifyPassedTheseToSpyRule(['a', 'b', null], $s);
+        ], $state);
+        $this->verifyPassedTheseToSpyRule(['a', 'b', null], $state);
     }
 
+
     ////////////////////////////////////////////////////////////////////////////
+
 
     public function testObjectValidatorHandlesWidlcardsForObjects() {
-        $s = $this->setupPathHandlingTest();
-        $this->addSpyRuleForPath('foo.*', $s);
+        $state = $this->setupPathHandlingTest();
+        $this->addSpyRuleForPath('foo.*', $state);
         $this->callValidatorWith((object)[
             'foo' => (object)['a' => 'a', 'b' => 'b']
-        ], $s);
-        $this->verifyPassedTheseToSpyRule(['a', 'b'], $s);
+        ], $state);
+        $this->verifyPassedTheseToSpyRule(['a', 'b'], $state);
     }
+
 
     ////////////////////////////////////////////////////////////////////////////
 
+
     public function testObjectValidatorHandlesWidlcardsForObjectsInArray() {
-        $s = $this->setupPathHandlingTest();
-        $this->addSpyRuleForPath('foo.*.bar', $s);
-        $this->addSpyRuleForPath('bar.*.bar.baz', $s);
-        $this->addSpyRuleForPath('bar.*.bar.notThere', $s);
+        $state = $this->setupPathHandlingTest();
+        $this->addSpyRuleForPath('foo.*.bar', $state);
+        $this->addSpyRuleForPath('bar.*.bar.baz', $state);
+        $this->addSpyRuleForPath('bar.*.bar.notThere', $state);
         $this->callValidatorWith((object)['foo' => [
             (object)['bar' => 'a'],
             (object)['bar' => 'b'],
         ], 'bar' => [
             (object)['bar' => (object)['baz' => 'c']],
             (object)['bar' => (object)['baz' => 'd']],
-        ]], $s);
-        $this->verifyPassedTheseToSpyRule(['a', 'b', 'c', 'd', null, null], $s);
+        ]], $state);
+        $this->verifyPassedTheseToSpyRule(['a', 'b', 'c', 'd', null, null], $state);
     }
 
+
     ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testObjectValidatorRejectsMissingOrUnlogicalPaths() {
+        $v = Validation::makeObjectValidator();
+        $v->rule('foo.*', 'type', 'int');
+        $this->assertCount(1, $v->validate((object)['']));
+        $this->assertCount(1, $v->validate((object)['foo'=>'not-an-object']));
+        //
+        $v2 = Validation::makeObjectValidator();
+        $v2->rule('foo.*.bar', 'type', 'string');
+        $this->assertCount(1, $v2->validate((object)['']));
+        $this->assertCount(1, $v2->validate((object)['a'=>'b']));
+        $this->assertCount(1, $v2->validate((object)['foo'=>'not-an-array-nor-object']));
+        $this->assertCount(1, $v2->validate((object)['foo'=>['not-an-array-nor-object']]));
+        $this->assertCount(1, $v2->validate((object)['foo'=>[(object)[]]]));
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
 
     public function testObjectValidatorAllowsOptionals() {
         $v = Validation::makeObjectValidator();
         $v->rule('foo?', 'identifier');
         $this->assertCount(0, $v->validate((object)[]));
+        $this->assertCount(0, $v->validate((object)['foo' => null]));
         $this->assertCount(0, $v->validate((object)['foo' => '']));
+        $this->assertCount(0, $v->validate((object)['foo' => []]));
+        $this->assertCount(0, $v->validate((object)['foo' => 'bar']));
         $this->assertCount(1, $v->validate((object)['foo' => new \stdClass]));
+        //
+        $v = Validation::makeObjectValidator();
+        $v->rule('foo.*.bar?', 'identifier');
+        $this->assertCount(0, $v->validate((object)[]));
+        $this->assertCount(0, $v->validate((object)['foo' => [(object)[]]]));
+        $this->assertCount(0, $v->validate((object)['foo' => [(object)['bar' => null]]]));
+        $this->assertCount(0, $v->validate((object)['foo' => [(object)['bar' => '']]]));
+        $this->assertCount(0, $v->validate((object)['foo' => [(object)['bar' => []]]]));
+        $this->assertCount(0, $v->validate((object)['foo' => [(object)['bar' => 'bar']]]));
+        $this->assertCount(1, $v->validate((object)['foo' => [(object)['bar' => new \stdClass]]]));
     }
     private function setupPathHandlingTest() {
         $state = new \stdClass;
