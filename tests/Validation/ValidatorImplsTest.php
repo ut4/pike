@@ -109,11 +109,11 @@ final class ValidatorImplsTest extends TestCase {
 
     public function testMinValidatorValidatesPatterns() {
         $v = function() { return Validation::makeValueValidator(); };
-        $pattern = '/foo|bar/';
-        $this->assertNotEmpty($v()->rule('regexp', $pattern)->validate('ba'));
-        $this->assertNotEmpty($v()->rule('regexp', $pattern)->validate('baz'));
+        $pattern = '/[a-c]+/';
+        $this->assertNotEmpty($v()->rule('regexp', $pattern)->validate('d'));
+        $this->assertNotEmpty($v()->rule('regexp', $pattern)->validate(''));
         $this->assertNotEmpty($v()->rule('regexp', $pattern)->validate([]));
-        $this->assertEmpty($v()->rule('regexp', $pattern)->validate('foo'));
-        $this->assertEmpty($v()->rule('regexp', $pattern)->validate('bar'));
+        $this->assertEmpty($v()->rule('regexp', $pattern)->validate('a'));
+        $this->assertEmpty($v()->rule('regexp', $pattern)->validate('abc'));
     }
 }

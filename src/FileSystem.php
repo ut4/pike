@@ -83,20 +83,18 @@ class FileSystem implements FileSystemInterface {
     /**
      * @param string $path
      * @param string $filterRegexp = '/.<zeroOrMore>/'
-     * @return string[]
+     * @return mixed[]
      * @throws \UnexpectedValueException|\InvalidArgumentException
      */
     public function readDirRecursive(string $path,
-                                     string $filterRegexp = '/.*/'): array {
+                                     string $filterRegexp = '/.*/',
+                                     int $flags = \FilesystemIterator::CURRENT_AS_PATHNAME): array {
         // @allow \UnexpectedValueException
-        $dir = new \RecursiveDirectoryIterator($path);
+        $dir = new \RecursiveDirectoryIterator($path, $flags);
         // @allow \InvalidArgumentException
         $files = new \RegexIterator(new \RecursiveIteratorIterator($dir),
                                     $filterRegexp);
-        $out = [];
-        foreach ($files as $file)
-            $out[] = $file->getPathName();
-        return $out;
+        return iterator_to_array($files, false);
     }
     /**
      * @param string $path
