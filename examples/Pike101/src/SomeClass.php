@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Me\HelloWorld;
+namespace Me\Pike101;
 
 class SomeClass {
     /**

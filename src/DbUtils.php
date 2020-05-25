@@ -6,29 +6,44 @@ namespace Pike;
 
 class DbUtils {
     /**
-     * In: ['col1' => 'val1', 'col2' => 'val2']
-     * Out: ['?,?', ['val1', 'val2'], '`col1`,`col2`']
-     *
-     * @param object|array $data
+     * @param object|array $data ['col1' => 'val1', 'col2' => 'val2']
+     * @return array ['?,?', ['val1', 'val2'], '`col1`,`col2`']
      */
-    public static function makeInsertBinders($data): array {
-        $qs = [];
+    public static function makeInsertQParts($data): array {
+        $qList = [];
         $values = [];
         $cols = [];
         foreach ($data as $key => $val) {
-            $qs[] = '?';
+            $qList[] = '?';
             $values[] = $val;
             $cols[] = self::columnify($key);
         }
-        return [implode(',', $qs), $values, implode(',', $cols)];
+        return [implode(',', $qList), $values, implode(',', $cols)];
     }
     /**
-     * In: ['col1' => 'val1', 'col2' => 'val2']
-     * Out: ['`col1`=?,`col2`=?', ['val1', 'val2']]
-     *
-     * @param object|array $data
+     * @param array<object|array> $data [['col1' => 'val11', 'col2' => 'val21'], ['col1' => 'val12', 'col2' => 'val22']]
+     * @return array ['(?,?),(?,?)', ['val1', 'val2', 'val3', 'val4'], '`col1`,`col2`']
      */
-    public static function makeUpdateBinders($data): array {
+    public static function makeBatchInsertQParts(array $data): array {
+        $qLists = [];
+        $values = [];
+        $cols = '';
+        foreach ($data as $item) {
+            [$qList, $currentValues, $currentCols] = self::makeInsertQParts($item);
+            if ($cols && $currentCols !== $cols)
+                throw new PikeException('Insert items must have identical columns',
+                                        PikeException::BAD_INPUT);
+            $qLists[] = "({$qList})";
+            $values = array_merge($values, $currentValues);
+            $cols = $currentCols;
+        }
+        return [implode(',', $qLists), $values, $cols];
+    }
+    /**
+     * @param object|array $data ['col1' => 'val1', 'col2' => 'val2']
+     * @return array ['`col1`=?,`col2`=?', ['val1', 'val2']]
+     */
+    public static function makeUpdateQParts($data): array {
         $colPairs = [];
         $values = [];
         foreach ($data as $key => $val) {

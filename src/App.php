@@ -10,19 +10,20 @@ use Pike\Auth\Internal\CachingServicesFactory;
 use Pike\Auth\Internal\DefaultUserRepository;
 
 final class App {
-    public const VERSION = '0.5.0';
-    public const SERVICE_DB = 'db';
-    public const SERVICE_AUTH = 'auth';
+    public const VERSION = '0.6.0';
     public const MAKE_AUTOMATICALLY = '@auto';
+    /** @var \Pike\AppContext */
     private $ctx;
+    /** @var class-string[] */
     private $moduleClsPaths;
+    /** @var callable|null */
     private $makeInjector;
     /**
-     * @param object $ctx
-     * @param string[] $modules
+     * @param \Pike\AppContext $ctx
+     * @param class-string[] $modules
      * @param callable|null $makeInjector fn(): \Auryn\Injector
      */
-    private function __construct(object $ctx,
+    private function __construct(AppContext $ctx,
                                  array $modules,
                                  ?callable $makeInjector) {
         $this->ctx = $ctx;
@@ -102,8 +103,8 @@ final class App {
         $container->share($http->req);
         $container->share($http->res);
         $container->share($this->ctx->appConfig);
-        if (isset($this->ctx->db)) $container->share($this->ctx->db);
-        if (isset($this->ctx->auth)) $container->share($this->ctx->auth);
+        if ($this->ctx->db) $container->share($this->ctx->db);
+        if ($this->ctx->auth) $container->share($this->ctx->auth);
         $container->alias(FileSystemInterface::class, FileSystem::class);
         $container->alias(SessionInterface::class, NativeSession::class);
         foreach ($this->moduleClsPaths as $clsPath) {
@@ -113,26 +114,28 @@ final class App {
         return $container;
     }
     /**
-     * @param callable[] $modules
+     * @param class-string[] $modules
      * @param string|array|\Pike\AppConfig $config = null
-     * @param object|array $ctx = null
+     * @param \Pike\AppContext $ctx = null
      * @param callable $makeInjector = null fn(): \Auryn\Injector
      * @return \Pike\App
      */
     public static function create(array $modules,
                                   $config = null,
-                                  $ctx = null,
+                                  AppContext $ctx = null,
                                   callable $makeInjector = null): App {
         $ctx = self::makeEmptyCtx($config, $ctx);
         //
-        if (!isset($ctx->router)) {
+        if (!$ctx->router) {
             $ctx->router = new Router();
             $ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_-]++']);
         }
-        if (($ctx->{self::SERVICE_DB} ?? null) === self::MAKE_AUTOMATICALLY) {
+        if (!$ctx->db &&
+            ($ctx->serviceHints['db'] ?? '') === self::MAKE_AUTOMATICALLY) {
             $ctx->db = new Db($ctx->appConfig->getVals());
         }
-        if (($ctx->{self::SERVICE_AUTH} ?? '') === self::MAKE_AUTOMATICALLY) {
+        if (!$ctx->auth &&
+            ($ctx->serviceHints['auth'] ?? '') === self::MAKE_AUTOMATICALLY) {
             if (!isset($ctx->db))
                 throw new PikeException('Can\'t make auth without db',
                                         PikeException::BAD_INPUT);
@@ -151,19 +154,13 @@ final class App {
         return new static($ctx, $modules, $makeInjector);
     }
     /**
-     * @param array|string|null $confix
-     * @param object|array|null $ctx
-     * @return \stdClass
+     * @param array|string|null $config
+     * @param \Pike\AppContext|null $ctx
+     * @return \Pike\AppContext
      */
-    private static function makeEmptyCtx($config, $ctx): \stdClass {
-        if (!is_object($ctx)) {
-            if (is_array($ctx))
-                $ctx = $ctx ? (object)$ctx : new \stdClass;
-            elseif ($ctx === null)
-                $ctx = new \stdClass;
-            else
-                throw new PikeException('ctx must be object|array');
-        }
+    private static function makeEmptyCtx($config, ?AppContext $ctx): AppContext {
+        if (!$ctx)
+            $ctx = new AppContext;
         if (is_string($config) && strlen($config))
             $config = require $config;
         $ctx->appConfig = !($config instanceof AppConfig)

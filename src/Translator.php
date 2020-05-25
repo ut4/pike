@@ -5,34 +5,35 @@ declare(strict_types=1);
 namespace Pike;
 
 class Translator {
-    private $stringMap;
-    private $loadStringsFn;
+    private $strings;
     /**
-     * @param \Closure $fn Function<(): ['key' => 'Foo', 'another' => 'Bar %s' ...]>
+     * @param array<string, string> $strings = []
      */
-    public function __construct(\Closure $stringLoaderFn = null) {
-        $this->stringMap = [];
-        if ($stringLoaderFn) $this->setOneTimeStringLoader($stringLoaderFn);
+    public function __construct(array $strings = []) {
+        $this->strings = $strings;
     }
     /**
-     * @param \Closure $fn Function<(): ['key' => 'Foo', 'another' => 'Bar %s' ...]>
+     * @param array<string, string> $strings
      */
-    public function setOneTimeStringLoader(\Closure $fn): void {
-        $this->loadStringsFn = $fn;
+    public function addStrings(array $strings): void {
+        $this->strings = array_merge($this->strings, $strings);
     }
     /**
      * @param string $key
-     * @param array $args = null
+     * @param mixed[] $args
      * @return string
      */
-    public function t(string $key, array $args = null): string {
-        if (!$this->loadStringsFn) {
-            $this->stringMap += $this->loadStringsFn->__invoke();
-            $this->loadStringsFn = null;
-        }
-        if (($tmpl = $this->stringMap[$key] ?? null)) {
-            return !$args ? $tmpl : vsprintf($tmpl, $args);
+    public function t(string $key, ...$args): string {
+        if (($tmpl = $this->strings[$key] ?? null)) {
+            return !$args ? $tmpl : vsprintf($tmpl, ...$args);
         }
         return $key;
+    }
+    /**
+     * @param string $key
+     * @return bool
+     */
+    public function hasKey(string $key): bool {
+        return array_key_exists($key, $this->strings);
     }
 }

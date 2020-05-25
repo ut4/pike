@@ -19,14 +19,14 @@ class DefaultUserRepository extends AbstractUserRepository {
     }
     /**
      * @param \stdClass $data {id?: string; username: string, email: string, passwordHash: string, role: int, activationKey?: string; accountCreatedAt?: int;}, olettaa että validi
-     * @return int $lastInsertId
+     * @return string $lastInsertId
      * @throws \Pike\PikeException
      */
     public function putUser(\stdClass $data): string {
-        [$qs, $params, $columns] = $this->db->makeInsertBinders($data);
+        [$qList, $values, $columns] = $this->db->makeInsertQParts($data);
         // @allow \Pike\PikeException
-        $numRows = $this->db->exec("INSERT INTO \${p}users ({$columns}) VALUES ({$qs})",
-                                   $params);
+        $numRows = $this->db->exec("INSERT INTO \${p}users ({$columns}) VALUES ({$qList})",
+                                   $values);
         if ($numRows > 0)
             return $data->id ?? $this->db->lastInsertId();
         throw new PikeException('Expected $numRows to be > 0',
@@ -34,7 +34,7 @@ class DefaultUserRepository extends AbstractUserRepository {
     }
     /**
      * @param string $userId
-     * @return User|null
+     * @return \Pike\Auth\User|null
      * @throws \Pike\PikeException
      */
     public function getUserByUserId(string $userId): ?User {
@@ -42,7 +42,7 @@ class DefaultUserRepository extends AbstractUserRepository {
     }
     /**
      * @param string $resetKey
-     * @return User|null
+     * @return \Pike\Auth\User|null
      * @throws \Pike\PikeException
      */
     public function getUserByResetKey(string $resetKey): ?User {
@@ -50,7 +50,7 @@ class DefaultUserRepository extends AbstractUserRepository {
     }
     /**
      * @param string $activationKey
-     * @return User|null
+     * @return \Pike\Auth\User|null
      * @throws \Pike\PikeException
      */
     public function getUserByActivationKey(string $activationKey): ?User {
@@ -58,7 +58,7 @@ class DefaultUserRepository extends AbstractUserRepository {
     }
     /**
      * @param string $username
-     * @return User|null
+     * @return \Pike\Auth\User|null
      * @throws \Pike\PikeException
      */
     public function getUserByUsername(string $username): ?User {
@@ -67,7 +67,7 @@ class DefaultUserRepository extends AbstractUserRepository {
     /**
      * @param string $username
      * @param string $email
-     * @return User|null
+     * @return \Pike\Auth\User|null
      * @throws \Pike\PikeException
      */
     public function getUserByUsernameOrEmail(string $username, string $email): ?User {
@@ -121,7 +121,7 @@ class DefaultUserRepository extends AbstractUserRepository {
     private function updateUser(\stdClass $data,
                                 string $wherePlaceholders,
                                 array $whereVals): bool {
-        [$placeholders, $vals] = $this->db->makeUpdateBinders($data);
+        [$placeholders, $vals] = $this->db->makeUpdateQParts($data);
         // @allow \Pike\PikeException
         return $this->db->exec('UPDATE ${p}users' .
                                ' SET ' . $placeholders .

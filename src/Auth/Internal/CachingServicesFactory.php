@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Pike\Auth\Internal;
 
-use Pike\Db;
 use Pike\NativeSession;
 use Pike\Auth\Crypto;
 use Pike\SessionInterface;

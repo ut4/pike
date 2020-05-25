@@ -65,7 +65,7 @@ interface FileSystemInterface {
     /**
      * @param string $path
      * @param string $filterRegexp = '/.<zeroOrMore>/'
-     * @return string[]
+     * @return mixed[]
      * @throws \UnexpectedValueException|\InvalidArgumentException
      */
     public function readDirRecursive(string $path,

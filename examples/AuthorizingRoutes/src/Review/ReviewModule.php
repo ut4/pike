@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Me\AuthorizingRoutes\Review;
 
+use Pike\AppContext;
+
 abstract class ReviewModule {
     /**
-     * @param \stdClass $ctx {\Pike\Router router}
+     * @param \Pike\AppContext $ctx
      */
-    public static function init(\stdClass $ctx) {
+    public static function init(AppContext $ctx) {
         $ctx->router->map('POST', '/reviews',
             [ReviewController::class, 'handleCreateReview', 'post:reviews']
         );

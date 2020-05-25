@@ -17,7 +17,7 @@ abstract class AuthenticatorTestCase extends DbTestCase {
     protected const TEST_USER_ROLE = 1;
     protected const TEST_USER_CREATED_AT = 12345;
     protected function insertTestUserToDb($accountStatus = Authenticator::ACCOUNT_STATUS_ACTIVATED) {
-        [$qs, $params, $columns] = self::$db->makeInsertBinders([
+        [$qList, $values, $columns] = self::$db->makeInsertQParts([
             'id' => self::TEST_USER_ID,
             'username' => self::TEST_USER_NAME,
             'email' => 'e@mail.com',
@@ -26,8 +26,8 @@ abstract class AuthenticatorTestCase extends DbTestCase {
             'accountCreatedAt' => self::TEST_USER_CREATED_AT,
             'accountStatus' => $accountStatus
         ]);
-        if (self::$db->exec("INSERT INTO \${p}users ({$columns}) VALUES ({$qs})",
-                            $params) < 1)
+        if (self::$db->exec("INSERT INTO \${p}users ({$columns}) VALUES ({$qList})",
+                            $values) < 1)
             throw new \Exception('Failed to insert test user to db');
     }
     /**

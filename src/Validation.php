@@ -8,6 +8,7 @@ namespace Pike;
  * Validaatiomoduulin julkinen API.
  */
 abstract class Validation {
+    /** @var array<string, array> */
     private static $ruleImpls = [];
     /**
      * @return \Pike\ValueValidator
@@ -47,6 +48,7 @@ abstract class Validation {
                 'max'        => ["{$cls}isEqualOrLessThan", 'The value of %s must be %d or less'],
                 'in'         => ["{$cls}isOneOf", 'The value of %s was not in the list'],
                 'identifier' => ["{$cls}isIdentifier", '%s must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]'],
+                'regexp'     => ["{$cls}doesMatchRegexp", 'The value of %s did not pass the regexp']
             ]);
         }
         if (!array_key_exists($name, self::$ruleImpls))
@@ -90,9 +92,16 @@ abstract class Validation {
                (ctype_alpha($str[0]) || $str[0] === '_') &&
                ctype_alnum(\str_replace('_', '', $str));
     }
+    public static function doesMatchRegexp($str, string $pattern): bool {
+        $result = is_string($str) ? preg_match($pattern, $str) : 0;
+        if ($result === false) throw new PikeException("Invalid regexp {$pattern}",
+                                                       PikeException::BAD_INPUT);
+        return $result === 1;
+    }
 }
 
 abstract class BaseValidator {
+    /** @var array<string, array> */
     protected $oneTimeRuleImpls = [];
     /**
      * @param string $name
@@ -119,6 +128,7 @@ abstract class BaseValidator {
 }
 
 class ValueValidator extends BaseValidator {
+    /** @var array[] */
     private $rules = [];
     /**
      * @param string $ruleName
@@ -145,6 +155,7 @@ class ValueValidator extends BaseValidator {
 }
 
 class ObjectValidator extends BaseValidator {
+    /** @var \stdClass[] */
     private $rules = [];
     /**
      * @param string $propPath
@@ -191,6 +202,8 @@ class ObjectValidator extends BaseValidator {
                 } else {
                     $wildcardPos = strpos($r->propPath, '*');
                     foreach ($val as $k => $v) {
+                        if ($r->isOptional && !$v)
+                            continue;
                         if (!call_user_func($r->validator[0], $v, ...$r->args))
                             $errors[] = sprintf(
                                 $r->validator[1],
@@ -214,18 +227,18 @@ class ObjectValidator extends BaseValidator {
     }
     /**
      * @param string[] $pathPieces
-     * @param object $object
+     * @param mixed $object
      * @return array [mixed, bool]
      */
-    private static function getValFor(array $pathPieces,
-                                      object $object): array {
+    private static function getValFor(array $pathPieces, $object): array {
         $end = count($pathPieces) - 1;
         $cur = $object;
         foreach ($pathPieces as $i => $p) {
             if ($i < $end) {
-                if ($p !== '*' && property_exists($cur, $p))
+                if ($p !== '*' && is_object($cur) && property_exists($cur, $p))
                     $cur = $cur->$p;
                 elseif ($p === '*') {
+                    if (!self::isIterable($cur)) return [null, false];
                     $vls = [];
                     foreach ($cur as $item) {
                         [$v, $isIterable] =  self::getValFor(array_slice($pathPieces, $i + 1), $item);
@@ -237,8 +250,15 @@ class ObjectValidator extends BaseValidator {
                 else return [null, false];
             } else {
                 if ($p !== '*') return [$cur->$p ?? null, false];
-                else return [$cur, true];
+                else return self::isIterable($cur) ? [$cur, true] : [null, false];
             }
         }
+    }
+    /**
+     * @param mixed $val
+     * @return bool
+     */
+    private static function isIterable($val): bool {
+        return is_array($val) || is_object($val);
     }
 }

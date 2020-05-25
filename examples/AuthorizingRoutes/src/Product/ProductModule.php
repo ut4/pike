@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Me\AuthorizingRoutes\Product;
 
+use Pike\AppContext;
+
 abstract class ProductModule {
     /**
-     * @param \stdClass $ctx {\Pike\Router router}
+     * @param \Pike\AppContext $ctx
      */
-    public static function init(\stdClass $ctx) {
+    public static function init(AppContext $ctx): void {
         $ctx->router->map('POST', '/products',
             [ProductController::class, 'handleCreateProduct', 'create:products']
         );

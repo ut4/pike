@@ -6,8 +6,8 @@ namespace Me\Testing\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Me\Testing\MyApp;
+use Pike\AppContext;
 use Pike\Request;
-use Pike\Response;
 use Pike\TestUtils\HttpTestUtils;
 
 class MyControllerTest extends TestCase {
@@ -15,7 +15,7 @@ class MyControllerTest extends TestCase {
     public function testSomeRouteReturnsFoo(): void {
     // 2. Luo applikaatio-olio
         $config = [];
-        $ctx = new \stdClass;
+        $ctx = new AppContext;
         $app = $this->makeApp([MyApp::class, 'create'], $config, $ctx);
     // 3. Luo olio testattavalle reitille
         $body = null;
@@ -35,15 +35,15 @@ class MyControllerTest extends TestCase {
     public function testAnotherRouteReturnsBar(): void {
     // 2. Luo applikaatio-olio
         $config = [];
-        $ctx = new \stdClass;
+        $ctx = new AppContext;
         $app = $this->makeApp([MyApp::class, 'create'], $config, $ctx);
     // 3. Luo olio testattavalle reitille
         $req = new Request('/another-route', 'GET');
     // 4. Luo olio tulokselle
-        $res = $this->createMock(Response::class);
-    // 5. Suorita pyyntö
         $state = (object) ['actualResponseBody' => null];
-        $this->sendResponseBodyCapturingRequest($req, $res, $app, $state);
+        $res = $this->createBodyCapturingMockResponse($state);
+    // 5. Suorita pyyntö
+        $this->sendRequest($req, $res, $app);
     // 6. Assertoi
         $this->assertIsString($state->actualResponseBody);
         $expected = json_encode((object) ['message' => 'bar']);

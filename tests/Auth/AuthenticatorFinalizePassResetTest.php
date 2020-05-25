@@ -119,6 +119,6 @@ class AuthenticatorFinalizePassResetTest extends AuthenticatorTestCase {
     private function verifyClearedResetPassInfoFromToDb($s) {
         $row = $s->actualUserFromDb;
         $this->assertNull($row['resetKey']);
-        $this->assertNull($row['resetRequestedAt']);
+        $this->assertEquals('0', $row['resetRequestedAt']);
     }
 }

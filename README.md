@@ -1,5 +1,7 @@
 # Pike
 
+![Pike logo](https://ut4.github.io/img/pike-logo.png)
+
 A tight set of classes that helps you write killer applications. Does not try to build everything from scratch, but uses existing, high-quality, bloat-free libraries instead.
 
 # Dependencies
@@ -10,7 +12,7 @@ A tight set of classes that helps you write killer applications. Does not try to
 
 # Optional dependencies
 
-- [phpmailer/phpmailer ^6.1](https://github.com/PHPMailer/PHPMailer) (Password reset)
+- [phpmailer/phpmailer ^6.1](https://github.com/PHPMailer/PHPMailer) (Authenticator)
 
 # Documentation
 
