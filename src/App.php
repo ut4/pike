@@ -10,7 +10,7 @@ use Pike\Auth\Internal\CachingServicesFactory;
 use Pike\Auth\Internal\DefaultUserRepository;
 
 final class App {
-    public const VERSION = '0.5.0';
+    public const VERSION = '0.6.0';
     public const MAKE_AUTOMATICALLY = '@auto';
     /** @var \Pike\AppContext */
     private $ctx;
