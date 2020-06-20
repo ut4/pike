@@ -14,7 +14,7 @@ class Db {
     /** @var int */
     private $transactionLevel = 0;
     /**
-     * @param array|object $config ['db.host' => string, ...]
+     * @param object|array $config ['db.host' => string, ...]
      */
     public function __construct($config) {
         $this->setConfig($config);
@@ -43,7 +43,7 @@ class Db {
     /**
      * @param string $query
      * @param array $params = null
-     * @param int $fetchStyle = \PDO:FETCH_ASSOC
+     * @param int $fetchStyle = \PDO::FETCH_ASSOC
      * @param mixed $fetchArgument = null
      * @param array $fetchCtorArgs = []
      * @return array
@@ -67,10 +67,10 @@ class Db {
     /**
      * @param string $query
      * @param array $params = null
-     * @param int $fetchStyle = \PDO:FETCH_ASSOC
+     * @param int $fetchStyle = \PDO::FETCH_ASSOC
      * @param mixed $fetchArgument = null
      * @param array $fetchCtorArgs = []
-     * @return array|object|null
+     * @return object|array|null
      * @throws \Pike\PikeException
      */
     public function fetchOne(string $query,
@@ -133,7 +133,7 @@ class Db {
      * @return int $this->transactionLevel or -1 on failure
      * @throws \PDOException
      */
-    public function rollback(): int {
+    public function rollBack(): int {
         if ($this->transactionLevel > 0 && --$this->transactionLevel === 0) {
             // @allow \PDOException
             if (!$this->pdo->rollBack()) return -1;
@@ -161,7 +161,7 @@ class Db {
             return $result;
         } catch (\Exception $e) {
             // @allow \PDOException
-            $this->rollback();
+            $this->rollBack();
             throw $e;
         }
     }
@@ -182,7 +182,7 @@ class Db {
             : $this->pdo->setAttribute($attr, $value);
     }
     /**
-     * @param array|object $config ['db.host' => string, ...]
+     * @param object|array $config ['db.host' => string, ...]
      */
     public function setConfig($config): void {
         $this->config = is_array($config) ? $config : (array) $config;

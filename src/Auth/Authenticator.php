@@ -31,12 +31,6 @@ class Authenticator {
         $this->services = $factory;
     }
     /**
-     * @return mixed|null
-     */
-    public function getIdentity() {
-        return $this->services->makeSession()->get('user');
-    }
-    /**
      * @param string $username
      * @param string $password
      * @param callable $serializeUserForSession = null fn(object $user): mixed
@@ -56,6 +50,12 @@ class Authenticator {
         return false;
     }
     /**
+     * @return mixed|null
+     */
+    public function getIdentity() {
+        return $this->services->makeSession()->get('user');
+    }
+    /**
      * @return bool
      */
     public function logout(): bool {
@@ -68,7 +68,7 @@ class Authenticator {
      * @param string $password
      * @param int $role
      * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int, accountStatus: int} $user, string $activationKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
-     * @return bool
+     * @return string
      * @throws \Pike\PikeException
      */
     public function requestNewAccount(string $username,

@@ -67,15 +67,15 @@ abstract class Validation {
         throw new PikeException("is_{$type}() not supported",
                                 PikeException::BAD_INPUT);
     }
-    public static function isMoreOrEqualLength($strOrArray, int $min): bool {
-        return (is_string($strOrArray) && mb_strlen($strOrArray) >= $min) ||
-               ((is_array($strOrArray) || $strOrArray instanceof \Countable) &&
-                count($strOrArray) >= $min);
+    public static function isMoreOrEqualLength($value, int $min, string $expectedType = 'string'): bool {
+        return ($expectedType === 'string' && is_string($value) && mb_strlen($value) >= $min) ||
+               ($expectedType === 'array' && (is_array($value) || $value instanceof \Countable) &&
+                count($value) >= $min);
     }
-    public static function isLessOrEqualLength($strOrArray, int $max): bool {
-        return (is_string($strOrArray) && mb_strlen($strOrArray) <= $max) ||
-               ((is_array($strOrArray) || $strOrArray instanceof \Countable) &&
-                count($strOrArray) <= $max);
+    public static function isLessOrEqualLength($value, int $max, string $expectedType = 'string'): bool {
+        return ($expectedType === 'string' && is_string($value) && mb_strlen($value) <= $max) ||
+               ($expectedType === 'array' && (is_array($value) || $value instanceof \Countable) &&
+                count($value) <= $max);
     }
     public static function isEqualOrGreaterThan($value, int $min): bool {
         return is_numeric($value) && $value >= $min;
