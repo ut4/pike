@@ -133,4 +133,13 @@ trait HttpTestUtils {
         $appHolder->getAppCtx()->res = $res;
         $appHolder->getApp()->handleRequest($req);
     }
+    /**
+     * @param string|object|array $expected
+     * @param string|\stdClass $actual
+     */
+    public function verifyResponseBodyEquals($expected, $actual): void {
+        $expected = is_string($expected) ? $expected : json_encode($expected);
+        $actual = is_string($actual) ? $actual : $actual->actualResponseBody;
+        $this->assertEquals($expected, $actual);
+    }
 }

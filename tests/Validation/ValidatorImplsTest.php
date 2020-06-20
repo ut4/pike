@@ -12,6 +12,9 @@ final class ValidatorImplsTest extends TestCase {
         $this->assertEmpty($v()->rule('type', 'string')->validate('str'));
         $this->assertNotEmpty($v()->rule('type', 'int')->validate([]));
         $this->assertEmpty($v()->rule('type', 'int')->validate(1));
+        $this->assertNotEmpty($v()->rule('type', 'number')->validate([]));
+        $this->assertEmpty($v()->rule('type', 'number')->validate('1'));
+        $this->assertEmpty($v()->rule('type', 'number')->validate('1.2'));
         $this->assertNotEmpty($v()->rule('type', 'array')->validate(1));
         $this->assertEmpty($v()->rule('type', 'array')->validate([]));
         $this->assertNotEmpty($v()->rule('type', 'bool')->validate([]));
@@ -31,7 +34,7 @@ final class ValidatorImplsTest extends TestCase {
         $this->assertNotEmpty($v()->rule('minLength', 2)->validate('s'));
         $this->assertEmpty($v()->rule('minLength', 2)->validate('st'));
         $this->assertNotEmpty($v()->rule('minLength', 2)->validate([1]));
-        $this->assertEmpty($v()->rule('minLength', 2)->validate([1,2]));
+        $this->assertEmpty($v()->rule('minLength', 2, 'array')->validate([1,2]));
     }
 
 
@@ -43,7 +46,7 @@ final class ValidatorImplsTest extends TestCase {
         $this->assertNotEmpty($v()->rule('maxLength', 2)->validate('str'));
         $this->assertEmpty($v()->rule('maxLength', 2)->validate('st'));
         $this->assertNotEmpty($v()->rule('maxLength', 2)->validate([1,2,3]));
-        $this->assertEmpty($v()->rule('maxLength', 2)->validate([1,2]));
+        $this->assertEmpty($v()->rule('maxLength', 2, 'array')->validate([1,2]));
     }
 
 

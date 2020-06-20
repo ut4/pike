@@ -60,6 +60,7 @@ abstract class Validation {
     public static function is($value, string $type): bool {
         if ($type === 'string') return is_string($value);
         if ($type === 'int') return is_int($value);
+        if ($type === 'number') return is_numeric($value);
         if ($type === 'array') return is_array($value);
         if ($type === 'bool') return is_bool($value);
         if ($type === 'float') return is_float($value);

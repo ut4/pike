@@ -24,10 +24,8 @@ class Translator {
      * @return string
      */
     public function t(string $key, ...$args): string {
-        if (($tmpl = $this->strings[$key] ?? null)) {
-            return !$args ? $tmpl : vsprintf($tmpl, ...$args);
-        }
-        return $key;
+        $tmpl = $this->strings[$key] ?? $key;
+        return !$args ? $tmpl : sprintf($tmpl, ...$args);
     }
     /**
      * @param string $key
