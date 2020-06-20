@@ -13,7 +13,7 @@ abstract class DbTestCase extends ConfigProvidingTestCase {
         self::$db->beginTransaction();
     }
     protected function tearDown(): void {
-        self::$db->rollback();
+        self::$db->rollBack();
     }
     public static function getDb(array $config = null): Db {
         if (!self::$db) {

@@ -61,7 +61,7 @@ interface FileSystemInterface {
      */
     public function readDir(string $path,
                             string $filterPattern = '*',
-                            $flags = GLOB_ERR);
+                            int $flags = GLOB_ERR);
     /**
      * @param string $path
      * @param string $filterRegexp = '/.<zeroOrMore>/'

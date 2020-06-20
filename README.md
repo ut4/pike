@@ -2,7 +2,7 @@
 
 ![Pike logo](https://ut4.github.io/img/pike-logo.png)
 
-A tight set of classes that helps you write killer applications. Does not try to build everything from scratch, but uses existing, high-quality, bloat-free libraries instead.
+A tight set of classes that helps you write killer applications. Does not try to build everything from scratch, but uses existing, high-quality, bloat-free libraries for heavy lifting.
 
 # Dependencies
 

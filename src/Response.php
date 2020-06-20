@@ -27,7 +27,7 @@ class Response {
         return $this;
     }
     /**
-     * @param array|object|string $data
+     * @param object|array|string $data
      * @return $this
      */
     public function json($data): Response {
