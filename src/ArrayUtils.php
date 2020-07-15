@@ -46,7 +46,7 @@ class ArrayUtils {
      * @param array|\ArrayObject $array
      * @param mixed $val
      * @param string $key
-     * @return int
+     * @return int $index tai -1
      */
     public static function findIndexByKey($array, $val, string $key): int {
         foreach ($array as $i => $item) {
