@@ -6,7 +6,7 @@ namespace Pike;
 
 class ArrayUtils {
     /**
-     * @param array|\ArrayObject $array
+     * @param array<mixed, object|array>|\ArrayObject<mixed, object|array> $array
      * @param mixed $val
      * @param string $key
      * @param mixed $default = null
@@ -17,12 +17,12 @@ class ArrayUtils {
                                      string $key,
                                      $default = null) {
         foreach ($array as $item) {
-            if ($item->$key === $val) return $item;
+            if (($item->$key ?? $item[$key]) === $val) return $item;
         }
         return $default;
     }
     /**
-     * @param array|\ArrayObject $array
+     * @param array<mixed, object|array>|\ArrayObject<mixed, object|array> $array
      * @param mixed $val
      * @param string $key
      * @return array|\ArrayObject
@@ -38,19 +38,19 @@ class ArrayUtils {
             throw new PikeException('$array must be array or (subclass of) \ArrayObject',
                                     PikeException::BAD_INPUT);
         foreach ($array as $item) {
-            if ($item->$key === $val) $out[] = $item;
+            if (($item->$key ?? $item[$key]) === $val) $out[] = $item;
         }
         return $out;
     }
     /**
-     * @param array|\ArrayObject $array
+     * @param array<mixed, object|array>|\ArrayObject<mixed, object|array> $array
      * @param mixed $val
      * @param string $key
      * @return int $index tai -1
      */
     public static function findIndexByKey($array, $val, string $key): int {
         foreach ($array as $i => $item) {
-            if ($item->$key === $val) return $i;
+            if (($item->$key ?? $item[$key]) === $val) return $i;
         }
         return -1;
     }
