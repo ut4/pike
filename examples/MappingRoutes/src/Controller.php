@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Me\MappingRoutes;
 
-use Pike\Response;
-use Pike\Request;
+use Pike\{Request, Response};
 
 class Controller {
     public function handleRouteA(Request $req, Response $res): void {

@@ -5,18 +5,23 @@ declare(strict_types=1);
 namespace Pike;
 
 class Response {
-    private $contentType;
-    private $statusCode;
-    private $body;
-    private $headers;
-    private $isSent;
+    /** @var ?string */
+    protected $contentType;
+    /** @var int */
+    protected $statusCode;
+    /** @var ?string */
+    protected $body;
+    /** @var array<string, mixed[]> */
+    protected $headers;
+    /** @var bool */
+    protected $responseIsSent;
     /**
      * @param int $statusCode = 200
      */
     public function __construct(int $statusCode = 200) {
         $this->statusCode = $statusCode;
         $this->headers = [];
-        $this->isSent = false;
+        $this->responseIsSent = false;
     }
     /**
      * @param int $statusCode
@@ -98,14 +103,8 @@ class Response {
     public function send(): void {
         if (!$this->body && !array_key_exists('Location', $this->headers))
             throw new PikeException('Nothing to send', PikeException::BAD_INPUT);
-        http_response_code($this->statusCode);
-        header('Content-Type: ' .  $this->contentType);
-        foreach ($this->headers as $name => $vals) {
-            $vals[0] = "{$name}: {$vals[0]}";
-            header(...$vals);
-        }
-        echo $this->body;
-        $this->isSent = true;
+        $this->sendOutput();
+        $this->responseIsSent = true;
     }
     /**
      * @return bool $responseIsSent
@@ -123,7 +122,18 @@ class Response {
      * @return bool
      */
     public function isSent(): bool {
-        return $this->isSent;
+        return $this->responseIsSent;
+    }
+    /**
+     */
+    protected function sendOutput(): void {
+        http_response_code($this->statusCode);
+        header("Content-Type: {$this->contentType}");
+        foreach ($this->headers as $name => $vals) {
+            $vals[0] = "{$name}: {$vals[0]}";
+            header(...$vals);
+        }
+        echo $this->body;
     }
     /**
      * @param string $type 'html' | 'json' | 'plain'

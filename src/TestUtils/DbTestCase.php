@@ -7,6 +7,7 @@ namespace Pike\TestUtils;
 use Pike\Db;
 
 abstract class DbTestCase extends ConfigProvidingTestCase {
+    /** @var ?\Pike\Db */
     protected static $db = null;
     protected function setUp(): void {
         if (!self::$db) self::getDb();

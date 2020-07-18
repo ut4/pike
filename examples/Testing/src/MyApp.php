@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Me\Testing;
 
-use Pike\App;
-use Pike\AppContext;
+use Pike\{App, AppContext};
 
 abstract class MyApp {
     /**

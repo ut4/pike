@@ -38,17 +38,17 @@ final class App {
         if (is_string($request))
             $request = Request::createFromGlobals($request, $urlPath);
         if (($match = $this->ctx->router->match($request->path, $request->method))) {
-            $request->params = (object)$match['params'];
-            $request->name = $match['name'];
             // @allow \Pike\PikeException
             [$ctrlClassPath, $ctrlMethodName, $usersRouteCtx] =
                 $this->validateRouteMatch($match, $request);
+            $request->params = (object)$match['params'];
+            $request->name = $match['name'];
+            $request->routeInfo = (object)[
+                'myCtx' => $usersRouteCtx,
+                'name' => $request->name,
+            ];
             $middlewareLoopState = (object)['req' => $request,
                 'res' => $this->ctx->res ?? new Response()];
-            $middlewareLoopState->req->routeInfo = (object)[
-                'myCtx' => $usersRouteCtx,
-                'name' => $match['name'],
-            ];
             // @allow \Pike\PikeException
             $this->execMiddlewareCallback(0, $middlewareLoopState);
             if ($middlewareLoopState->res->sendIfReady())
@@ -73,7 +73,7 @@ final class App {
         });
     }
     /**
-     * @param array $match
+     * @param array<string, mixed> $match
      * @param \Pike\Request $req
      * @return array [string, string, <usersRouteCtx>|null]
      * @throws \Pike\PikeException
