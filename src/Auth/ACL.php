@@ -15,9 +15,13 @@ class ACL {
     public const ROLE_LAST        = 1 << 23;
     public const ROLE_VIEWER      = self::ROLE_LAST;
     public const NO_PERMISSIONS   = 0;
+    /** @var ?object */
     protected $resources;
+    /** @var ?object */
     protected $permissions;
+    /** @var ?object */
     protected $compactRules;
+    /** @var bool */
     protected $doThrowDevWarnings;
     /**
      * @param bool $doThrowDevWarnings = false

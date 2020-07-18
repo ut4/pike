@@ -15,7 +15,7 @@
         "phpunit/phpunit": "8.*"
     },
     "suggest": {
-        "phpmailer/phpmailer": "To use Authenticator->requestPasswordReset()."
+        "phpmailer/phpmailer": "To use PhpMailerMailer or Authenticator->requestPasswordReset()."
     },
     "autoload": {
         "psr-4": {"Pike\\": "src/"}

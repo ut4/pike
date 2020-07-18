@@ -10,6 +10,7 @@ use Pike\Db;
 use Pike\PikeException;
 
 class DefaultUserRepository extends AbstractUserRepository {
+    /** @var \Pike\Db */
     private $db;
     /**
      * @param \Pike\Db $db

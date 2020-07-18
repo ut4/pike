@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Pike\Auth\Internal;
 
+use Pike\AbstractMailer;
+use Pike\Auth\Authenticator;
 use Pike\NativeSession;
 use Pike\Auth\Crypto;
 use Pike\SessionInterface;
@@ -12,13 +14,17 @@ use Pike\SessionInterface;
  * Tarjoilee Authenticator-luokalle sen tarvitsemia palveluja.
  */
 class CachingServicesFactory {
+    /** @var ?\Pike\SessionInterface */
     private $session;
+    /** @var ?\Pike\AbstractMailer */
     private $mailer;
+    /** @var ?\Pike\Auth\Internal\AuthService */
     private $authService;
+    /** @var callable */
     private $makeUserRepositoryFn;
     /**
      * @param callable $makeUserRepositoryFn
-     * @param \Pike\Auth\Internal\AbstractMailer $mailer = null
+     * @param \Pike\AbstractMailer $mailer = null
      */
     public function __construct(callable $makeUserRepositoryFn,
                                 AbstractMailer $mailer = null) {
@@ -35,7 +41,7 @@ class CachingServicesFactory {
         return $this->session;
     }
     /**
-     * @return \Pike\Auth\Internal\AbstractMailer
+     * @return \Pike\AbstractMailer
      */
     public function makeMailer(): AbstractMailer {
         if (!$this->mailer) {
