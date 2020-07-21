@@ -48,7 +48,7 @@ class Request {
      * @return mixed
      */
     public function attr(string $key, $default = null) {
-        return $this->serverVars[$key] || $default;
+        return $this->serverVars[$key] ?? $default;
     }
     /**
      * @param string $key

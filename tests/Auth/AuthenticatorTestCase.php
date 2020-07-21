@@ -2,8 +2,8 @@
 
 namespace Pike\Tests\Auth;
 
+use Pike\AbstractMailer;
 use Pike\Auth\Authenticator;
-use Pike\Auth\Internal\AbstractMailer;
 use Pike\Auth\Internal\CachingServicesFactory;
 use Pike\Auth\Internal\DefaultUserRepository;
 use Pike\TestUtils\DbTestCase;

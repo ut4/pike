@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Me\Pike101;
 
-use Pike\Response;
-use Pike\Request;
+use Pike\{Request, Response};
 
 class SomeController {
     /**

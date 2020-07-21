@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pike\Auth\Internal;
 
+use Pike\AbstractMailer;
 use Pike\Auth\AbstractUserRepository;
 use Pike\Auth\Crypto;
 use Pike\PikeException;
@@ -11,7 +12,9 @@ use Pike\Auth\Authenticator;
 use Pike\Validation;
 
 final class AuthService {
+    /** @var \Pike\Auth\AbstractUserRepository */
     private $persistence;
+    /** @var \Pike\Auth\Crypto */
     private $crypto;
     /**
      * @param \Pike\Auth\AbstractUserRepository $persistence
@@ -47,7 +50,7 @@ final class AuthService {
      * @param string $password
      * @param int $role
      * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int, accountStatus: int} $user, string $activationKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
-     * @param \Pike\Auth\Internal\AbstractMailer $mailer
+     * @param \Pike\AbstractMailer $mailer
      * @return string $insertId
      * @throws \Pike\PikeException|\Exception
      */
@@ -131,7 +134,7 @@ final class AuthService {
     /**
      * @param string $usernameOrEmail
      * @param callable $makeEmailSettings fn({id: string, username: string, email: string, passwordHash: string, role: int, activationKey: string, accountCreatedAt: int, resetKey: string, resetRequestedAt: int, accountStatus: int} $user, string $resetKey, {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string} $settingsOut): void
-     * @param \Pike\Auth\Internal\AbstractMailer $mailer
+     * @param \Pike\AbstractMailer $mailer
      * @return bool
      * @throws \Pike\PikeException
      */

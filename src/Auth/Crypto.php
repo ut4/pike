@@ -11,14 +11,6 @@ class Crypto {
     private const SECRETBOX_NONCEBYTES = SODIUM_CRYPTO_SECRETBOX_NONCEBYTES;
     /**
      * @param string $plainPass
-     * @param string $hashedPass
-     * @return bool
-     */
-    public function verifyPass(string $plainPass, string $hashedPass): bool {
-        return password_verify($plainPass, $hashedPass);
-    }
-    /**
-     * @param string $plainPass
      * @return string
      * @throws \Pike\PikeException
      */
@@ -28,6 +20,14 @@ class Crypto {
             return $out;
         throw new PikeException('Failed to hash password',
                                 Authenticator::CRYPTO_FAILURE);
+    }
+    /**
+     * @param string $plainPass
+     * @param string $hashedPass
+     * @return bool
+     */
+    public function verifyPass(string $plainPass, string $hashedPass): bool {
+        return password_verify($plainPass, $hashedPass);
     }
     /**
      * https://stackoverflow.com/a/15875555

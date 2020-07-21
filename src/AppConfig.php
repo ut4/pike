@@ -20,14 +20,14 @@ class AppConfig {
         $this->setVals($vals);
     }
     /**
-     * @param object|array $vals
+     * @param object|array $config
      * @throws \Pike\PikeException
      */
-    public function setVals($vals): void {
-        if (is_object($vals))
-            $this->vals = $vals;
-        elseif (is_array($vals))
-            $this->vals = (object) $vals;
+    public function setVals($config): void {
+        if (is_object($config))
+            $this->vals = $config;
+        elseif (is_array($config))
+            $this->vals = (object) $config;
         else
             throw new PikeException('$config must be object|array',
                                     PikeException::BAD_INPUT);
@@ -41,7 +41,7 @@ class AppConfig {
     /**
      * @param string $key
      * @param mixed $default = null
-     * @return mixed
+     * @return mixed|null
      */
     public function get(string $key, $default = null) {
         return $this->vals->$key ?? $default;

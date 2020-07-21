@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Me\AuthorizingRoutes;
 
-use Pike\Auth\ACL;
 use Auryn\Injector;
-use Pike\AppContext;
+use Pike\{AppContext, Auth\ACL};
 
 abstract class MyAuthModule {
     /** @var \Pike\AppContext */
@@ -15,7 +14,7 @@ abstract class MyAuthModule {
      * @param \Pike\AppContext $ctx
      */
     public static function init(AppContext $ctx): void {
-        $ctx->acl = new ACL;
+        $ctx->acl = new ACL();
         $ctx->acl->setRules(self::makeMyAclRules());
         //
         $ctx->router->on('*', function ($req, $res, $next) use ($ctx) {

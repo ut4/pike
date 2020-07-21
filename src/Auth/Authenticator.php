@@ -23,6 +23,7 @@ class Authenticator {
     public const ACCOUNT_STATUS_ACTIVATED = 0;
     public const ACCOUNT_STATUS_UNACTIVATED = 1;
     public const ACCOUNT_STATUS_BANNED = 2;
+    /** @var \Pike\Auth\Internal\CachingServicesFactory */
     private $services;
     /**
      * @param \Pike\Auth\Internal\CachingServicesFactory $factory

@@ -7,8 +7,10 @@ namespace Pike\TestUtils;
 use \Pike\Db;
 
 class SingleConnectionDb extends Db {
+    /** @var bool */
     private $connectionOpened = false;
-    private $currentDatabaseName;
+    /** @var string */
+    private $currentDatabaseName = '';
     public function open(): bool {
         if ($this->connectionOpened) return true;
         $ok = parent::open();

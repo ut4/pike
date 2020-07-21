@@ -2,8 +2,7 @@
 
 namespace Pike\TestUtils;
 
-use Pike\App;
-use Pike\AppContext;
+use Pike\{App, AppContext};
 
 class AppHolder {
     /** @var \Pike\App */
@@ -12,7 +11,7 @@ class AppHolder {
     private $ctx;
     /**
      * @param \Pike\App $app
-     * @param object $appCtx {router: \Pike\Router, ...}
+     * @param \Pike\AppContext $appCtx
      */
     public function __construct(App $app, AppContext $appCtx) {
         $this->app = $app;

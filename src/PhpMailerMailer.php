@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Pike\Auth\Internal;
+namespace Pike;
 
 use PHPMailer\PHPMailer\PHPMailer;
 
 class PhpMailerMailer extends AbstractMailer {
+    /** @var \PHPMailer\PHPMailer\PHPMailer */
     private $mailer;
     /**
      * @param \PHPMailer\PHPMailer\PHPMailer $mailer = null
@@ -15,10 +16,10 @@ class PhpMailerMailer extends AbstractMailer {
         $this->mailer = $mailer ?? new PHPMailer(true);
     }
     /**
-     * @param object $settings {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string, configureMailer?: fn(\Pike\Auth\Internal\PhpMailerMailer $mailer): void}, olettaa että validi
+     * @param object $settings {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string, configureMailer?: fn(\Pike\PhpMailerMailer $mailer): void}, olettaa että validi
      * @return bool
      */
-    public function sendMail(\stdClass $settings): bool {
+    public function sendMail(object $settings): bool {
         $this->mailer->CharSet = PHPMailer::CHARSET_UTF8;
         $this->mailer->setFrom($settings->fromAddress, $settings->fromName ?? '');
         $this->mailer->addAddress($settings->toAddress, $settings->toName ?? '');

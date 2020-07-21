@@ -3,15 +3,9 @@
 namespace Pike\TestUtils;
 
 use Auryn\Injector;
-use Pike\Response;
-use Pike\Auth\Authenticator;
-use Pike\Db;
-use Pike\FileSystem;
-use Pike\Auth\Crypto;
 use PHPUnit\Framework\MockObject\MockObject;
-use Pike\App;
-use Pike\AppContext;
-use Pike\Request;
+use Pike\{App, AppContext, Db, FileSystem, Request, Response};
+use Pike\Auth\{Authenticator, Crypto};
 
 trait HttpTestUtils {
     /**
@@ -51,7 +45,8 @@ trait HttpTestUtils {
                 if (isset($ctx->crypto))
                     $injector->delegate(Crypto::class, function () use ($ctx) { return $ctx->crypto; });
                 if (isset($ctx->res) &&
-                    ($ctx->res instanceof MutedResponse ||
+                    ($ctx->res instanceof MutedSpyingResponse ||
+                     $ctx->res instanceof MutedResponse ||
                      $ctx->res instanceof MockObject))
                     $injector->delegate(Response::class, function () use ($ctx) { return $ctx->res; });
                 if ($alterInjector)
@@ -62,6 +57,13 @@ trait HttpTestUtils {
         );
     }
     /**
+     * @return \Pike\TestUtils\MutedSpyingResponse
+     */
+    public function makeSpyingResponse() {
+        return new MutedSpyingResponse;
+    }
+    /**
+     * @deprecated
      * @param mixed $expectedBody = null
      * @param int $expectedStatus = 200
      * @param string $expectedContentType = 'json'
@@ -104,6 +106,7 @@ trait HttpTestUtils {
         return $stub;
     }
     /**
+     * @deprecated
      * @param object $captureTo
      * @param int $expectedStatus = 200
      * @param string $expectedContentType = 'json'
@@ -118,9 +121,11 @@ trait HttpTestUtils {
      * Esimerkki:
      * ```
      * $req = new Request('/api/foo', 'GET');
-     * $res = $this->createMockResponse(['expected response'], 200);
+     * $res = $this->makeSpyingResponse();
      * $app = $this->makeApp('\My\App::create', $this->getAppConfig());
      * $this->sendRequest($req, $res, $app);
+     * $this->assertEquals(200, $res->getActualStatusCode());
+     * $this->assertEquals(json_encode(['expected response']), $res->getActualBody());
      * ```
      *
      * @param \Pike\Request $req
@@ -128,18 +133,21 @@ trait HttpTestUtils {
      * @param \Pike\TestUtils\AppHolder $appHolder
      */
     public function sendRequest(Request $req,
-                                MockObject $res,
+                                $res,
                                 AppHolder $appHolder) {
         $appHolder->getAppCtx()->res = $res;
         $appHolder->getApp()->handleRequest($req);
     }
     /**
      * @param string|object|array $expected
-     * @param string|\stdClass $actual
+     * @param \Pike\TestUtils\SpyingResponse|string|\stdClass $actual
      */
     public function verifyResponseBodyEquals($expected, $actual): void {
         $expected = is_string($expected) ? $expected : json_encode($expected);
-        $actual = is_string($actual) ? $actual : $actual->actualResponseBody;
+        if ($actual instanceof MutedSpyingResponse)
+            $actual = $actual->getActualBody();
+        elseif (is_object($actual))
+            $actual = $actual->actualResponseBody;
         $this->assertEquals($expected, $actual);
     }
 }

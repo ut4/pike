@@ -2,10 +2,10 @@
 
 namespace Pike\Tests\Auth;
 
+use Pike\AbstractMailer;
 use Pike\Auth\ACL;
 use Pike\Auth\Authenticator;
 use Pike\TestUtils\MockCrypto;
-use Pike\Auth\Internal\AbstractMailer;
 use Pike\PikeException;
 
 class AuthenticatorCreateAccountTest extends AuthenticatorTestCase {

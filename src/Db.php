@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Pike;
 
-class Db {
+class Db extends DbUtils {
     /** @var string */
     protected $tablePrefix;
     /** @var array<string, mixed> */
@@ -42,7 +42,7 @@ class Db {
     }
     /**
      * @param string $query
-     * @param array $params = null
+     * @param mixed[] $params = null
      * @param int $fetchStyle = \PDO::FETCH_ASSOC
      * @param mixed $fetchArgument = null
      * @param array $fetchCtorArgs = []
@@ -51,7 +51,7 @@ class Db {
      */
     public function fetchAll(string $query,
                              array $params = null,
-                             ...$fetchConfig) {
+                             ...$fetchConfig): array {
         try {
             $prep = $this->pdo->prepare($this->compileQuery($query));
             $prep->execute($params);
@@ -66,7 +66,7 @@ class Db {
     }
     /**
      * @param string $query
-     * @param array $params = null
+     * @param mixed[] $params = null
      * @param int $fetchStyle = \PDO::FETCH_ASSOC
      * @param mixed $fetchArgument = null
      * @param array $fetchCtorArgs = []
@@ -90,7 +90,7 @@ class Db {
     }
     /**
      * @param string $query
-     * @param array $params = null
+     * @param mixed[] $params = null
      * @return int
      * @throws \Pike\PikeException
      */
@@ -187,27 +187,6 @@ class Db {
     public function setConfig($config): void {
         $this->config = is_array($config) ? $config : (array) $config;
         $this->tablePrefix = $this->config['db.tablePrefix'] ?? '';
-    }
-    /**
-     * @param object|array $data ['col1' => 'val1', 'col2' => 'val2']
-     * @return array ['?,?', ['val1', 'val2'], '`col1`,`col2`']
-     */
-    public static function makeInsertQParts($data): array {
-        return DbUtils::makeInsertQParts($data);
-    }
-    /**
-     * @param array<object|array> $data [['col1' => 'val11', 'col2' => 'val21'], ['col1' => 'val12', 'col2' => 'val22']]
-     * @return array ['(?,?),(?,?)', ['val1', 'val2', 'val3', 'val4'], '`col1`,`col2`']
-     */
-    public static function makeBatchInsertQParts($data): array {
-        return DbUtils::makeBatchInsertQParts($data);
-    }
-    /**
-     * @param object|array $data ['col1' => 'val1', 'col2' => 'val2']
-     * @return array ['`col1`=?,`col2`=?', ['val1', 'val2']]
-     */
-    public static function makeUpdateQParts($data): array {
-        return DbUtils::makeUpdateQParts($data);
     }
     /**
      * @return string
