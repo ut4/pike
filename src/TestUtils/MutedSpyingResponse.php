@@ -14,6 +14,9 @@ class MutedSpyingResponse extends Response {
     public function getActualBody(): ?string {
         return $this->body;
     }
+    public function getActualHeaders(): array {
+        return $this->headers;
+    }
     protected function sendOutput(): void {
         // Muted.
     }

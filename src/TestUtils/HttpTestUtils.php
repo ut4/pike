@@ -150,4 +150,15 @@ trait HttpTestUtils {
             $actual = $actual->actualResponseBody;
         $this->assertEquals($expected, $actual);
     }
+    /**
+     * @param int $expectedStatusCode 200 etc.
+     * @param string $expectedContentType 'application/json' etc.
+     * @param \Pike\TestUtils\SpyingResponse $spyingResponse
+     */
+    public function verifyResponseMetaEquals(int $expectedStatusCode,
+                                             string $expectedContentType,
+                                             MutedSpyingResponse $spyingResponse): void {
+        $this->assertEquals($expectedStatusCode, $spyingResponse->getActualStatusCode());
+        $this->assertEquals($expectedContentType, $spyingResponse->getActualContentType());
+    }
 }

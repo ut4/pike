@@ -17,7 +17,7 @@ class Request {
     public $params;
     /** @var mixed */
     public $user;
-    /** @var {myCtx: mixed, name: string|null} */
+    /** @var ?object {myCtx: mixed, name: string|null} */
     public $routeInfo;
     /** @var ?string */
     public $name;
@@ -43,6 +43,14 @@ class Request {
         $this->serverVars = $serverVars ?? [];
     }
     /**
+     * @param string $key
+     * @param ?string $default = null
+     * @return string|null
+     */
+    public function queryVar(string $key, ?string $default = null): ?string {
+        return $_GET[$key] ?? $default;
+    }
+    /**
      * @param string $key e.g. 'SERVER_NAME'
      * @param mixed $default = null
      * @return mixed
@@ -52,7 +60,7 @@ class Request {
     }
     /**
      * @param string $key
-     * @param mixed $default = null
+     * @param ?string $default = null
      * @return string|null
      */
     public function cookie(string $key, ?string $default = null): ?string {

@@ -2,7 +2,7 @@
 
 ![Pike logo](https://ut4.github.io/img/pike-logo.png)
 
-A tight set of classes that helps you write killer applications. Does not try to build everything from scratch, but uses existing, high-quality, bloat-free libraries for heavy lifting.
+Minimalistic but not entirely useless php application framework. Does not self-roll everything, but uses existing, high-quality (and bloat-free) libraries for heavy lifting. Relatively low-level, extremely lightweight.
 
 # Dependencies
 
