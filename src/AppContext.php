@@ -9,18 +9,22 @@ namespace Pike;
  * Auryn\Containeriin asetettavat palvelut (db, auth jne.).
  */
 class AppContext {
+    /** @var array<string, string> */
+    public $serviceHints;
     /** @var \Pike\Router */
     public $router;
     /** @var \Pike\AppConfig */
     public $appConfig;
-    /** @var \Pike\Db|null */
+    /** @var \Pike\Db */
     public $db;
-    /** @var \Pike\Auth\Authenticator|null */
+    /** @var \Pike\Request */
+    public $req;
+    /** @var \Pike\Response */
+    public $res;
+    /** @var ?\Pike\Auth\Authenticator */
     public $auth;
-    /** @var \Pike\Auth\ACL|null */
+    /** @var ?\Pike\Auth\ACL */
     public $acl;
-    /** @var array<string, string> */
-    public $serviceHints;
     /**
      * @param array<string, string> $serviceHints = []
      */

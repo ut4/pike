@@ -7,7 +7,6 @@ namespace Pike;
 use Auryn\Injector;
 use Pike\Auth\Authenticator;
 use Pike\Auth\Internal\CachingServicesFactory;
-use Pike\Auth\Internal\DefaultUserRepository;
 
 final class App {
     public const VERSION = '0.6.4-dev';
@@ -47,29 +46,29 @@ final class App {
                 'myCtx' => $usersRouteCtx,
                 'name' => $request->name,
             ];
-            $middlewareLoopState = (object)['req' => $request,
-                'res' => $this->ctx->res ?? new Response()];
+            $this->ctx->req = $request;
+            if (!$this->ctx->res) $this->ctx->res = new Response();
             // @allow \Pike\PikeException
-            $this->execMiddlewareCallback(0, $middlewareLoopState);
-            if ($middlewareLoopState->res->sendIfReady())
+            $this->execMiddlewareCallback(0);
+            if ($this->ctx->res->sendIfReady())
                 return;
-            $injector = $this->setupIocContainer($middlewareLoopState);
-            $injector->execute($ctrlClassPath . '::' . $ctrlMethodName);
-            $middlewareLoopState->res->sendIfReady();
+            $injector = $this->setupIocContainer();
+            $injector->execute("{$ctrlClassPath}::{$ctrlMethodName}");
+            if ($this->ctx->auth) $this->ctx->auth->postProcess();
+            $this->ctx->res->sendIfReady();
         } else {
             throw new PikeException("No route for {$request->method} {$request->path}");
         }
     }
     /**
      * @param int $index
-     * @param \stdClass $state {req: \Pike\Request, res: \Pike\Response}
      */
-    private function execMiddlewareCallback(int $index, \stdClass $state): void {
+    private function execMiddlewareCallback(int $index): void {
         $ware = $this->ctx->router->middleware[$index] ?? null;
-        if (!$ware || $state->res->isSent()) return;
+        if (!$ware || $this->ctx->res->isSent()) return;
         // @allow \Pike\PikeException
-        call_user_func($ware->fn, $state->req, $state->res, function () use ($index, $state) {
-            $this->execMiddlewareCallback($index + 1, $state);
+        call_user_func($ware->fn, $this->ctx->req, $this->ctx->res, function () use ($index) {
+            $this->execMiddlewareCallback($index + 1);
         });
     }
     /**
@@ -85,23 +84,22 @@ final class App {
             !is_string($routeInfo[0]) ||
             !is_string($routeInfo[1]))
             throw new PikeException(
-                'A route (' . $req->method . ' ' . $req->path . ') must return an' .
-                ' array [\'Ctrl\\Class\\Path\', \'methodName\', <yourCtxVarHere>].',
+                "A route ({$req->method} {$req->path}) must return an" .
+                " array [\'Ctrl\\Class\\Path\', \'methodName\', <yourCtxVarHere>].",
                 PikeException::BAD_INPUT);
         if ($numItems < 3)
             $routeInfo[] = null;
         return $routeInfo;
     }
     /**
-     * @param \stdClass $http {req: \Pike\Request, res: \Pike\Response}
      * @return \Auryn\Injector
      */
-    private function setupIocContainer(\stdClass $http): Injector {
+    private function setupIocContainer(): Injector {
         $container = !$this->makeInjector
             ? new Injector()
             : call_user_func($this->makeInjector);
-        $container->share($http->req);
-        $container->share($http->res);
+        $container->share($this->ctx->req);
+        $container->share($this->ctx->res);
         $container->share($this->ctx->appConfig);
         if ($this->ctx->db) $container->share($this->ctx->db);
         if ($this->ctx->auth) $container->share($this->ctx->auth);
@@ -136,12 +134,9 @@ final class App {
         }
         if (!$ctx->auth &&
             ($ctx->serviceHints['auth'] ?? '') === self::MAKE_AUTOMATICALLY) {
-            if (!isset($ctx->db))
-                throw new PikeException('Can\'t make auth without db',
-                                        PikeException::BAD_INPUT);
-            $ctx->auth = new Authenticator(new CachingServicesFactory(function () use ($ctx) {
-                return new DefaultUserRepository($ctx->db);
-            }));
+            if (!$ctx->db) throw new PikeException('Can\'t make auth without db',
+                                                   PikeException::BAD_INPUT);
+            $ctx->auth = new Authenticator(new CachingServicesFactory($ctx));
         }
         //
         foreach ($modules as $clsPath) {

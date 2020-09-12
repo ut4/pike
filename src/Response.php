@@ -11,10 +11,12 @@ class Response {
     protected $statusCode;
     /** @var ?string */
     protected $body;
-    /** @var array<string, mixed[]> */
+    /** @var array<int, mixed[]> */
     protected $headers;
     /** @var bool */
     protected $responseIsSent;
+    /** @var bool */
+    protected $hasRedirect;
     /**
      * @param int $statusCode = 200
      */
@@ -22,6 +24,7 @@ class Response {
         $this->statusCode = $statusCode;
         $this->headers = [];
         $this->responseIsSent = false;
+        $this->hasRedirect = false;
     }
     /**
      * @param int $statusCode
@@ -68,8 +71,8 @@ class Response {
                                string $fileName = 'file.zip',
                                string $mime = 'application/zip'): Response {
         $this->contentType = $mime;
-        $this->headers['Content-Length'] = [strlen($data)];
-        $this->headers['Content-Disposition'] = ["attachment; filename=\"{$fileName}\""];
+        $this->headers[] = ['Content-Length', strlen($data)];
+        $this->headers[] = ['Content-Disposition', "attachment; filename=\"{$fileName}\""];
         $this->body = $data;
         return $this;
     }
@@ -80,7 +83,8 @@ class Response {
      */
     public function redirect(string $to,
                              bool $isPermanent = true): Response {
-        $this->headers['Location'] = [$to, true, $isPermanent ? 301 : 302];
+        $this->headers[] = ['Location', $to, true, $isPermanent ? 301 : 302];
+        $this->hasRedirect = true;
         return $this;
     }
     /**
@@ -92,7 +96,7 @@ class Response {
     public function header(string $name,
                            string $value,
                            bool $replace = true): Response {
-        $this->headers[$name] = [$value, $replace];
+        $this->headers[] = [$name, $value, $replace];
         return $this;
     }
     /**
@@ -101,7 +105,7 @@ class Response {
      * @throws \Pike\PikeException
      */
     public function send(): void {
-        if (!$this->body && !array_key_exists('Location', $this->headers))
+        if (!$this->body && !$this->hasRedirect)
             throw new PikeException('Nothing to send', PikeException::BAD_INPUT);
         $this->sendOutput();
         $this->responseIsSent = true;
@@ -111,8 +115,7 @@ class Response {
      */
     public function sendIfReady(): bool {
         if ($this->isSent()) return true;
-        if (($this->contentType && $this->body) ||
-            array_key_exists('Location', $this->headers)) {
+        if (($this->contentType && $this->body) || $this->hasRedirect) {
             $this->send();
             return true;
         }
@@ -129,10 +132,8 @@ class Response {
     protected function sendOutput(): void {
         http_response_code($this->statusCode);
         header("Content-Type: {$this->contentType}");
-        foreach ($this->headers as $name => $vals) {
-            $vals[0] = "{$name}: {$vals[0]}";
-            header(...$vals);
-        }
+        foreach ($this->headers as $def)
+            header("{$def[0]}: {$def[1]}", ...array_slice($def, 2));
         echo $this->body;
     }
     /**

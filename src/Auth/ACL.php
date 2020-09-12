@@ -94,8 +94,8 @@ class ACL {
         $this->permissions = $this->compactRules->userPermissions;
     }
     /**
-     * @return array|string $allowedActions
-     * @return \stdClass $resourceActions
+     * @param string[]|string $allowedActions
+     * @param \stdClass $resourceActions
      * @return int
      * @throws \Pike\PikeException
      */

@@ -30,6 +30,20 @@ class Crypto {
         return password_verify($plainPass, $hashedPass);
     }
     /**
+     * @param string $algo
+     * @param string $data
+     * @param bool $useRawOutput = false
+     * @return string
+     * @throws \Pike\PikeException
+     */
+    public function hash(string $algo,
+                         string $data,
+                         bool $useRawOutput = false): string {
+        if (!in_array($algo, hash_algos(), true))
+            throw new PikeException("Bad algo {$algo}", PikeException::BAD_INPUT);
+        return hash($algo, $data, $useRawOutput);
+    }
+    /**
      * https://stackoverflow.com/a/15875555
      *
      * @return string
