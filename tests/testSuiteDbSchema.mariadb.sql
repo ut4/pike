@@ -3,11 +3,15 @@ CREATE TABLE users (
     `username` VARCHAR(42) NOT NULL UNIQUE,
     `email` VARCHAR(191) NOT NULL UNIQUE, -- 191 * 4 = 767 bytes = max key length
     `passwordHash` VARCHAR(255) NOT NULL,
-    `role` TINYINT(1) UNSIGNED NOT NULL DEFAULT 255,
-    `activationKey` VARCHAR(512) DEFAULT NULL,
+    `role` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 8388608, -- 1 << 23
     `accountCreatedAt` INT(10) UNSIGNED DEFAULT 0,
+    `accountStatus` TINYINT(1) UNSIGNED DEFAULT 1, -- 0=activated, 1=unactivated, 2=banned
+    --
+    `activationKey` VARCHAR(512) DEFAULT NULL,
     `resetKey` VARCHAR(512) DEFAULT NULL,
     `resetRequestedAt` INT(10) UNSIGNED DEFAULT 0,
-    `accountStatus` TINYINT(1) UNSIGNED DEFAULT 1, -- 0=activated, 1=unactivated, 2=banned
+    `loginId` CHAR(32) DEFAULT NULL,
+    `loginIdValidatorHash` CHAR(64) DEFAULT NULL,
+    `loginData` TEXT,
     PRIMARY KEY (`id`)
 ) DEFAULT CHARSET = utf8mb4;

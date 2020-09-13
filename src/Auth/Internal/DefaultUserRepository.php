@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Pike\Auth\Internal;
 
-use Pike\Auth\AbstractUserRepository;
-use Pike\Auth\User;
-use Pike\Db;
-use Pike\PikeException;
+use Pike\Auth\{AbstractUserRepository, User};
+use Pike\{Db, PikeException};
 
 class DefaultUserRepository extends AbstractUserRepository {
     /** @var \Pike\Db */
@@ -34,36 +32,58 @@ class DefaultUserRepository extends AbstractUserRepository {
                                 PikeException::FAILED_DB_OP);
     }
     /**
-     * @param string $userId
+     * @param string $column 'id'|'resetKey'|'activationKey'|'username'|'loginId'
+     * @param string $value
      * @return \Pike\Auth\User|null
      * @throws \Pike\PikeException
      */
-    public function getUserByUserId(string $userId): ?User {
-        return $this->getUser('`id` = ?', [$userId]);
+    public function getUserByColumn(string $column, string $value): ?User {
+        if (!($whiteListed = [
+                'id' => 'id',
+                'resetKey' => 'resetKey',
+                'activationKey' => 'activationKey',
+                'username' => 'username',
+                'loginId' => 'loginId',
+            ][$column] ?? null))
+            throw new PikeException("Invalid column {$column}",
+                                    PikeException::BAD_INPUT);
+        return $this->getUser("`{$whiteListed}` = ?", [$value]);
     }
     /**
+     * @deprecated
+     * @param string $id
+     * @return \Pike\Auth\User|null
+     * @throws \Pike\PikeException
+     */
+    public function getUserByUserId(string $id): ?User {
+        return $this->getUserByColumn('id', $id);
+    }
+    /**
+     * @deprecated
      * @param string $resetKey
      * @return \Pike\Auth\User|null
      * @throws \Pike\PikeException
      */
     public function getUserByResetKey(string $resetKey): ?User {
-        return $this->getUser('`resetKey` = ?', [$resetKey]);
+        return $this->getUserByColumn('resetKey', $resetKey);
     }
     /**
+     * @deprecated
      * @param string $activationKey
      * @return \Pike\Auth\User|null
      * @throws \Pike\PikeException
      */
     public function getUserByActivationKey(string $activationKey): ?User {
-        return $this->getUser('`activationKey` = ?', [$activationKey]);
+        return $this->getUserByColumn('activationKey', $activationKey);
     }
     /**
+     * @deprecated
      * @param string $username
      * @return \Pike\Auth\User|null
      * @throws \Pike\PikeException
      */
     public function getUserByUsername(string $username): ?User {
-        return $this->getUser('`username` = ?', [$username]);
+        return $this->getUserByColumn('username', $username);
     }
     /**
      * @param string $username
@@ -108,8 +128,9 @@ class DefaultUserRepository extends AbstractUserRepository {
     private function getUser(string $wherePlaceholders, array $whereVals): ?User {
         // @allow \Pike\PikeException
         return $this->db->fetchOne('SELECT `id`,`username`,`email`,`passwordHash`' .
-                                   ',`role`,`activationKey`,`accountCreatedAt`' .
-                                   ',`resetKey`,`resetRequestedAt`,`accountStatus`' .
+                                   ',`role`,`activationKey`,`loginId`,`loginIdValidatorHash`' .
+                                   ',`loginData`,`accountCreatedAt`,`resetKey`' .
+                                   ',`resetRequestedAt`,`accountStatus`' .
                                    ' FROM ${p}users' .
                                    ' WHERE ' . $wherePlaceholders,
                                    $whereVals,

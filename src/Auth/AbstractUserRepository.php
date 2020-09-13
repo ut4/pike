@@ -11,6 +11,13 @@ abstract class AbstractUserRepository {
      */
     public abstract function putUser(\stdClass $data): string;
     /**
+     * @param string $column 'id'|'resetKey'|'activationKey'|'username'|'loginId'
+     * @param string $value
+     * @return \Pike\Auth\User|null
+     */
+    public abstract function getUserByColumn(string $column, string $value): ?User;
+    /**
+     * @deprecated
      * @param string $username
      * @return \Pike\Auth\User|null
      */
@@ -22,16 +29,19 @@ abstract class AbstractUserRepository {
      */
     public abstract function getUserByUsernameOrEmail(string $username, string $email): ?User;
     /**
+     * @deprecated
      * @param string $userId
      * @return \Pike\Auth\User|null
      */
     public abstract function getUserByUserId(string $userId): ?User;
     /**
+     * @deprecated
      * @param string $activationKey
      * @return \Pike\Auth\User|null
      */
     public abstract function getUserByActivationKey(string $activationKey): ?User;
     /**
+     * @deprecated
      * @param string $resetKey
      * @return \Pike\Auth\User|null
      */
@@ -55,15 +65,31 @@ abstract class AbstractUserRepository {
 }
 
 final class User {
+    /** @var string */
     public $id;
+    /** @var string */
     public $username;
+    /** @var string */
     public $email;
+    /** @var string */
     public $passwordHash;
+    /** @var int */
     public $role;
+    /** @var ?string */
     public $activationKey;
+    /** @var ?string */
+    public $loginId;
+    /** @var ?string */
+    public $loginIdValidatorHash;
+    /** @var ?string */
+    public $loginData;
+    /** @var int */
     public $accountCreatedAt;
+    /** @var ?string */
     public $resetKey;
+    /** @var int */
     public $resetRequestedAt;
+    /** @var int */
     public $accountStatus;
     /**
      * Normalisoi \PDO:n asettamat arvot.
