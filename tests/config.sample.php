@@ -5,6 +5,6 @@ return [
     'db.user'        => 'root',
     'db.pass'        => '',
     'db.tablePrefix' => '',
-    'db.charset'     => 'utf8',
+    'db.charset'     => 'utf8mb4',
     'db.schemaInitFilePath' => __DIR__ . '/myTestSuiteDbSchema.sql'
 ];

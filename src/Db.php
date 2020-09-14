@@ -28,7 +28,7 @@ class Db extends DbUtils {
             $this->pdo = new \PDO(
                 'mysql:host=' . ($this->config['db.host'] ?? '127.0.0.1') .
                      ';dbname=' . ($this->config['db.database'] ?? '') .
-                     ';charset=' . ($this->config['db.charset'] ?? 'utf8') ,
+                     ';charset=' . ($this->config['db.charset'] ?? 'utf8mb4') ,
                 $this->config['db.user'] ?? '',
                 $this->config['db.pass'] ?? '',
                 [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
