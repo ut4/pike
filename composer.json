@@ -15,7 +15,8 @@
         "phpunit/phpunit": "8.*"
     },
     "suggest": {
-        "phpmailer/phpmailer": "To use PhpMailerMailer or Authenticator->requestPasswordReset()."
+        "phpmailer/phpmailer": "To use PhpMailerMailer or Authenticator->requestPasswordReset().",
+        "masterminds/html5": "To use Extensions\\Validation\\SafeHTMLValidator."
     },
     "autoload": {
         "psr-4": {"Pike\\": "src/"}

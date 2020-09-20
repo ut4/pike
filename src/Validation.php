@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Pike;
 
+use Pike\Extensions\Validation\SafeHTMLValidator;
+
 /**
  * Validaatiomoduulin julkinen API.
  */
@@ -48,7 +50,8 @@ abstract class Validation {
                 'max'        => ["{$cls}isEqualOrLessThan", 'The value of %s must be %d or less'],
                 'in'         => ["{$cls}isOneOf", 'The value of %s was not in the list'],
                 'identifier' => ["{$cls}isIdentifier", '%s must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]'],
-                'regexp'     => ["{$cls}doesMatchRegexp", 'The value of %s did not pass the regexp']
+                'regexp'     => ["{$cls}doesMatchRegexp", 'The value of %s did not pass the regexp'],
+                'safeHtml'   => [SafeHTMLValidator::class . '::isSafeHTML', 'The value of %s is not valid html'],
             ]);
         }
         if (!array_key_exists($name, self::$ruleImpls))

@@ -9,7 +9,7 @@ use Pike\Auth\Authenticator;
 use Pike\Auth\Internal\CachingServicesFactory;
 
 final class App {
-    public const VERSION = '0.7.0';
+    public const VERSION = '0.7.1-dev';
     public const MAKE_AUTOMATICALLY = '@auto';
     /** @var \Pike\AppContext */
     private $ctx;
