@@ -2,27 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Pike\Auth\Internal;
+namespace Pike\Auth;
 
-use Pike\Auth\{AbstractUserRepository, Crypto};
+use Pike\Auth\{CookieManager, Crypto};
+use Pike\Entities\User;
+use Pike\Interfaces\UserRepositoryInterface;
 
 /**
  * https://paragonie.com/blog/2015/04/secure-authentication-php-with-long-term-persistence#title.2.1
  */
-class DefaultRememberMe {
-    protected const COOKIE_NAME = 'loginTokens';
-    /** @var \Pike\Auth\AbstractUserRepository */
-    protected $persistence;
+final class RememberMe {
+    private const COOKIE_NAME = 'loginTokens';
+    /** @var \Pike\Interfaces\UserRepositoryInterface */
+    private $persistence;
     /** @var \Pike\Auth\Crypto */
-    protected $crypto;
-    /** @var \Pike\Auth\Internal\CookieManager */
-    protected $cookieManager;
+    private $crypto;
+    /** @var \Pike\Auth\CookieManager */
+    private $cookieManager;
     /**
-     * @param \Pike\Auth\AbstractUserRepository $persistence
-     * @param \Pike\Auth\Internal\CookieManager $cookieManager
+     * @param \Pike\Interfaces\UserRepositoryInterface $persistence
+     * @param \Pike\Auth\CookieManager $cookieManager
      * @param \Pike\Auth\Crypto $crypto
      */
-    public function __construct(AbstractUserRepository $persistence,
+    public function __construct(UserRepositoryInterface $persistence,
                                 CookieManager $cookieManager,
                                 Crypto $crypto) {
         $this->persistence = $persistence;
@@ -45,22 +47,22 @@ class DefaultRememberMe {
         return null;
     }
     /**
-     * @param object $user
+     * @param \Pike\Entities\User $user
      * @param string $loginData
     */
-    public function putLogin(object $user, string $loginData): void {
-        $selectorToken = $this->crypto->genRandomToken();
+    public function putLogin(User $user, string $loginData): void {
+        $updated = new User;
+        $updated->loginId = $this->crypto->genRandomToken();
         $validatorToken = $this->crypto->genRandomToken();
+        $updated->loginIdValidatorHash = $this->crypto->hash('sha256', $validatorToken);
+        $updated->loginData = $loginData;
         // @allow \Pike\PikeException
-        $this->persistence->updateUserByUserId((object) [
-            'loginId' => $selectorToken,
-            'loginIdValidatorHash' => $this->crypto->hash('sha256', $validatorToken),
-            'loginData' => $loginData,
-        ], $user->id);
+        $this->persistence->updateUserByUserId($updated,
+            ['loginId', 'loginIdValidatorHash', 'loginData'], $user->id);
         //
-        $this->cookieManager->putCookie(static::COOKIE_NAME,
-                                        "{$selectorToken}:{$validatorToken}",
-                                        strtotime('+6 months'));
+        $this->cookieManager->addCookieConfig(static::COOKIE_NAME,
+            "{$updated->loginId}:{$validatorToken}",
+            strtotime('+6 months'));
     }
     /**
      */
@@ -71,24 +73,25 @@ class DefaultRememberMe {
         // @allow \Pike\PikeException
         if (($user = $this->persistence->getUserByColumn('loginId', $loginIdToken)))
             $this->clearPersistentLoginData($user);
-        $this->cookieManager->clearCookie(static::COOKIE_NAME);
+        $this->cookieManager->addClearCookieConfig(static::COOKIE_NAME);
     }
     /**
      * @return string[] [<loginIdToken>, <loginIdValidatorToken>]
      */
-    protected function getAndParseCookie(): array {
+    private function getAndParseCookie(): array {
         $loginTokens = $this->cookieManager->getCookie(static::COOKIE_NAME);
         return $loginTokens ? explode(':', $loginTokens) : ['', ''];
     }
     /**
-     * @param object $user
+     * @param \Pike\Entities\User $user
      */
-    protected function clearPersistentLoginData(object $user): void {
+    private function clearPersistentLoginData(User $user): void {
+        $user->loginId = null;
+        $user->loginIdValidatorHash = null;
+        $user->loginData = null;
         // @allow \Pike\PikeException
-        $this->persistence->updateUserByUserId((object) [
-            'loginId' => null,
-            'loginIdValidatorHash' => null,
-            'loginData' => null,
-        ], $user->id);
+        $this->persistence->updateUserByUserId($user,
+            ['loginId', 'loginIdValidatorHash', 'loginData'],
+            $user->id);
     }
 }

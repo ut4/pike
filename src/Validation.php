@@ -26,7 +26,7 @@ abstract class Validation {
     }
     /**
      * @param string $name
-     * @param callable $n
+     * @param callable $fn
      * @param string $errorTmpl
      */
     public static function registerRuleImpl(string $name,

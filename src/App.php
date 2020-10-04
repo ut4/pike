@@ -6,7 +6,9 @@ namespace Pike;
 
 use Auryn\Injector;
 use Pike\Auth\Authenticator;
-use Pike\Auth\Internal\CachingServicesFactory;
+use Pike\Auth\Defaults\DefaultCookieStorage;
+use Pike\Defaults\DefaultUserRepository;
+use Pike\Interfaces\{FileSystemInterface, SessionInterface};
 
 final class App {
     public const VERSION = '0.7.1-dev';
@@ -136,7 +138,19 @@ final class App {
             ($ctx->serviceHints['auth'] ?? '') === self::MAKE_AUTOMATICALLY) {
             if (!$ctx->db) throw new PikeException('Can\'t make auth without db',
                                                    PikeException::BAD_INPUT);
-            $ctx->auth = new Authenticator(new CachingServicesFactory($ctx));
+            $ctx->auth = new Authenticator(
+                function ($_factory) use ($ctx) {
+                    return new DefaultUserRepository($ctx->db);
+                },
+                function ($_factory) {
+                    return new NativeSession();
+                },
+                function ($_factory) use ($ctx) {
+                    return new DefaultCookieStorage($ctx);
+                },
+                'maybeLoggedInUserRole',
+                true // doUseRememberMe
+            );
         }
         //
         foreach ($modules as $clsPath) {

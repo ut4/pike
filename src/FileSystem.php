@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Pike;
 
+use Pike\Interfaces\FileSystemInterface;
+
 class FileSystem implements FileSystemInterface {
     /**
      * @param string $path
@@ -15,7 +17,6 @@ class FileSystem implements FileSystemInterface {
     }
     /**
      * @param string $path
-     * @param boolean $che = true
      * @return string|false
      */
     public function read(string $path) {

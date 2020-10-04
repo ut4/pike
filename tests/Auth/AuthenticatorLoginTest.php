@@ -4,20 +4,13 @@ namespace Pike\Tests\Auth;
 
 use Pike\Auth\{Authenticator};
 use Pike\PikeException;
-use Pike\TestUtils\MockCrypto;
 
 class AuthenticatorLoginTest extends AuthenticatorTestCase {
     public function testLoginThrowsIfUserWasNotFound(): void {
-        $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
-        try {
-            $auth->login('username', 'irrelevant');
-            $this->assertFalse(true, 'Pitäisi heittää poikkeus');
-        } catch (PikeException $e) {
-            $this->assertEquals(Authenticator::INVALID_CREDENTIAL,
-                                $e->getCode());
-            $this->assertEquals('User not found or not activated',
-                                $e->getMessage());
-        }
+        $this->expectException(PikeException::class);
+        $this->expectExceptionCode(Authenticator::CREDENTIAL_WAS_INVALID);
+        $this->expectExceptionMessage('User not found or not activated');
+        $this->invokeLoginFeature('non-existing-username', 'irrelevant');
     }
 
 
@@ -26,16 +19,10 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
 
     public function testLoginThrowsIfPasswordDoesNotMatch(): void {
         $this->insertTestUserToDb();
-        $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
-        try {
-            $auth->login(self::TEST_USER_NAME, 'wrongPass');
-            $this->assertFalse(true, 'Pitäisi heittää poikkeus');
-        } catch (PikeException $e) {
-            $this->assertEquals(Authenticator::INVALID_CREDENTIAL,
-                                $e->getCode());
-            $this->assertEquals('Invalid password',
-                                $e->getMessage());
-        }
+        $this->expectException(PikeException::class);
+        $this->expectExceptionCode(Authenticator::CREDENTIAL_WAS_INVALID);
+        $this->expectExceptionMessage('Invalid password');
+        $this->invokeLoginFeature(self::TEST_USER['username'], 'wrongPass');
     }
 
 
@@ -43,15 +30,10 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
 
 
     public function testLoginThrowsIfAccountIsBanned(): void {
-        $this->insertTestUserToDb(Authenticator::ACCOUNT_STATUS_BANNED);
-        $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
-        try {
-            $auth->login(self::TEST_USER_NAME, self::TEST_USER_PASS);
-            $this->assertFalse(true, 'Pitäisi heittää poikkeus');
-        } catch (PikeException $e) {
-            $this->assertEquals(Authenticator::UNEXPECTED_ACCOUNT_STATUS,
-                                $e->getCode());
-        }
+        $this->insertTestUserToDb(['accountStatus' => Authenticator::ACCOUNT_STATUS_BANNED]);
+        $this->expectException(PikeException::class);
+        $this->expectExceptionCode(Authenticator::ACCOUNT_STATUS_WAS_UNEXPECTED);
+        $this->invokeLoginFeature(self::TEST_USER['username'], self::TEST_USER_PASS);
     }
 
 
@@ -59,15 +41,10 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
 
 
     public function testLoginThrowsIfAccountIsUnactivated(): void {
-        $this->insertTestUserToDb(Authenticator::ACCOUNT_STATUS_UNACTIVATED);
-        $auth = new Authenticator($this->makePartiallyMockedServicesFactory());
-        try {
-            $auth->login(self::TEST_USER_NAME, self::TEST_USER_PASS);
-            $this->assertFalse(true, 'Pitäisi heittää poikkeus');
-        } catch (PikeException $e) {
-            $this->assertEquals(Authenticator::UNEXPECTED_ACCOUNT_STATUS,
-                                $e->getCode());
-        }
+        $this->insertTestUserToDb(['accountStatus' => Authenticator::ACCOUNT_STATUS_UNACTIVATED]);
+        $this->expectException(PikeException::class);
+        $this->expectExceptionCode(Authenticator::ACCOUNT_STATUS_WAS_UNEXPECTED);
+        $this->invokeLoginFeature(self::TEST_USER['username'], self::TEST_USER_PASS);
     }
 
 
@@ -77,7 +54,10 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
     public function testLoginPutsUserToSessionOnSuccess(): void {
         $this->insertTestUserToDb();
         $state = $this->setupLoginSessionTest();
-        $this->invokeLoginFeature($state, $this->makeSpyingSession($state));
+        $this->invokeLoginFeature(self::TEST_USER['username'],
+                                  self::TEST_USER_PASS,
+                                  $state,
+                                  $this->makeSpyingSession($state));
         $this->verifyWroteSerializedDataDataToSession($state);
     }
     private function setupLoginSessionTest(): \stdClass {
@@ -88,19 +68,23 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
         $state->actualDataPutToSession = null;
         return $state;
     }
-    private function invokeLoginFeature($s,
+    private function invokeLoginFeature(string $username,
+                                        string $password,
+                                        \stdClass $s = null,
                                         $mockSession = null,
-                                        $mockCookieManager = null): void {
-        $auth = new Authenticator($this->makePartiallyMockedServicesFactory($mockSession,
-            null, $mockCookieManager), 'maybeLoggedInUserRole');
-        $auth->login(self::TEST_USER_NAME,
-                     self::TEST_USER_PASS,
-                     $s->mySerializeUserForSession);
+                                        $mockCookieStorage = null,
+                                        bool $useUserRoleCookie = false,
+                                        bool $useRememberMe = false): void {
+        $auth = $this->makeAuth($mockSession, $mockCookieStorage, $useUserRoleCookie, $useRememberMe);
+        $auth->login($username,
+                     $password,
+                     $s ? $s->mySerializeUserForSession : null);
+        $auth->postProcess();
     }
     private function verifyWroteSerializedDataDataToSession($s): void {
         $this->assertEquals(call_user_func($s->mySerializeUserForSession, (object) [
-                                'id' => self::TEST_USER_ID,
-                                'username' => self::TEST_USER_NAME
+                                'id' => self::TEST_USER['id'],
+                                'username' => self::TEST_USER['username']
                             ]),
                             $s->actualDataPutToSession);
     }
@@ -111,28 +95,26 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
 
     public function testLoginStoresUserToCookiesOnSuccess(): void {
         $this->insertTestUserToDb();
-        $state = $this->setupStoreCookieTest();
-        $this->invokeLoginFeature($state,
-            $this->makeSpyingSession($state),
-            $this->makeSpyingCookieManager($state));
-        $this->verifyWroteCookies($state);
+        $state = $this->setupCookieStoreTest();
+        $this->invokeLoginFeature(self::TEST_USER['username'],
+                                  self::TEST_USER_PASS,
+                                  $state,
+                                  $this->makeSpyingSession($state),
+                                  $this->makeSpyingCookieStorage($state),
+                                  true);
+        $this->verifyPassedConfigurationsToCookieStorage($state);
     }
-    private function setupStoreCookieTest(): \stdClass {
+    private function setupCookieStoreTest(): \stdClass {
         $state = $this->setupLoginSessionTest();
-        $state->actualPutCookieCalls = [];
+        $state->actualDataPassedToCookieStorage = [];
         return $state;
     }
-    private function verifyWroteCookies(\stdClass $s): void {
-        $this->assertCount(2, $s->actualPutCookieCalls);
-        [$userRoleCookieName, $userRoleCookieValue] = $s->actualPutCookieCalls[0];
-        $this->assertEquals('maybeLoggedInUserRole', $userRoleCookieName);
-        $this->assertEquals(self::TEST_USER_ROLE, $userRoleCookieValue);
-        //
-        [$cookieNameSetByRememberMe, $cookieValueSetByRememberMe] = $s->actualPutCookieCalls[1];
-        $expectedLoginId = MockCrypto::mockGenRandomToken();
-        $expectedLoginIdToken = MockCrypto::mockGenRandomToken();
-        $this->assertEquals('loginTokens', $cookieNameSetByRememberMe);
-        $this->assertEquals("{$expectedLoginId}:{$expectedLoginIdToken}",
-                            $cookieValueSetByRememberMe);
+    private function verifyPassedConfigurationsToCookieStorage(\stdClass $s): void {
+        $this->assertCount(1, $s->actualDataPassedToCookieStorage);
+        [$userRoleCookie] = $s->actualDataPassedToCookieStorage[0];
+        $makeExpectedCookie = function ($name, $value) { return "{$name}={$value};path=/"; };
+        $this->assertEquals($makeExpectedCookie('loggedInUserRole',
+                                                self::TEST_USER['role']),
+                            $userRoleCookie);
     }
 }

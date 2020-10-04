@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Pike;
 
+use Pike\Interfaces\SessionInterface;
+
 class NativeSession implements SessionInterface {
     private $bucketKey;
     /** 

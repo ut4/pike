@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Pike;
+namespace Pike\Interfaces;
 
 interface FileSystemInterface {
     /**
@@ -13,7 +13,6 @@ interface FileSystemInterface {
     public function write(string $path, string $content);
     /**
      * @param string $path
-     * @param boolean $che = true
      * @return string|false
      */
     public function read(string $path);

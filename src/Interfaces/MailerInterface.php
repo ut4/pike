@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Pike;
+namespace Pike\Interfaces;
 
-abstract class AbstractMailer {
+interface MailerInterface {
     /**
      * @param object $settings {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string, configureMailer?: fn(\Pike\AbstractMailer $mailer): void}, olettaa että validi
      * @return bool
      */
-    public abstract function sendMail(object $settings): bool;
+    public function sendMail(object $settings): bool;
 }

@@ -2,11 +2,12 @@ CREATE TABLE users (
     `id` CHAR(36) NOT NULL,
     `username` VARCHAR(42) NOT NULL UNIQUE,
     `email` VARCHAR(191) NOT NULL UNIQUE, -- 191 * 4 = 767 bytes = max key length
-    `passwordHash` VARCHAR(255) NOT NULL,
+    `accountStatus` TINYINT(1) UNSIGNED DEFAULT 1, -- 0=activated, 1=unactivated, 2=banned
+    `displayName` VARCHAR(64) NOT NULL,
     `role` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 8388608, -- 1 << 23
     `accountCreatedAt` INT(10) UNSIGNED DEFAULT 0,
-    `accountStatus` TINYINT(1) UNSIGNED DEFAULT 1, -- 0=activated, 1=unactivated, 2=banned
     --
+    `passwordHash` VARCHAR(255) NOT NULL,
     `activationKey` VARCHAR(512) DEFAULT NULL,
     `resetKey` VARCHAR(512) DEFAULT NULL,
     `resetRequestedAt` INT(10) UNSIGNED DEFAULT 0,

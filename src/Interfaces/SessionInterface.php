@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Pike;
+namespace Pike\Interfaces;
 
 interface SessionInterface {
     /**

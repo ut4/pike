@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Pike;
 
 use PHPMailer\PHPMailer\PHPMailer;
+use Pike\Interfaces\MailerInterface;
 
-class PhpMailerMailer extends AbstractMailer {
+class PhpMailerMailer implements MailerInterface {
     /** @var \PHPMailer\PHPMailer\PHPMailer */
     private $mailer;
     /**
