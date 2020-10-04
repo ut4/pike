@@ -6,6 +6,7 @@ use Auryn\Injector;
 use PHPUnit\Framework\MockObject\MockObject;
 use Pike\{App, AppContext, Db, FileSystem, Request, Response};
 use Pike\Auth\{Authenticator, Crypto};
+use Pike\Interfaces\SessionInterface;
 
 trait HttpTestUtils {
     /**
@@ -31,14 +32,27 @@ trait HttpTestUtils {
             $ctx->db = DbTestCase::getDb(!is_string($config) ? $config : require $config);
         }
         if (($ctx->serviceHints['auth'] ?? null) === App::MAKE_AUTOMATICALLY) {
-            $ctx->auth = $this->createMock(Authenticator::class);
-            $ctx->auth->method('getIdentity')->willReturn((object)['id' => '1', 'role' => 1]);
+            $ctx->auth = new Authenticator(
+                function ($_factory) use ($ctx) {
+                    //
+                },
+                function ($_factory) {
+                    $mockSession = $this->createMock(SessionInterface::class);
+                    $mockSession->method('get')->when('user')->willReturn((object) ['id' => '1', 'role' => 1]);
+                    return $mockSession;
+                },
+                function ($_factory) use ($ctx) {
+                    //
+                },
+                'maybeLoggedInUserRole',
+                true // doUseRememberMe
+            );
         }
         return new AppHolder(
             call_user_func($factory, $config, $ctx, function () use ($ctx, $alterInjector) {
                 $injector = new Injector();
                 $injector->alias(Db::class, SingleConnectionDb::class);
-                if ($ctx->auth instanceof MockObject)
+                if (isset($ctx->auth))
                     $injector->delegate(Authenticator::class, function () use ($ctx) { return $ctx->auth; });
                 if (isset($ctx->fs))
                     $injector->delegate(FileSystem::class, function () use ($ctx) { return $ctx->fs; });

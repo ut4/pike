@@ -62,7 +62,7 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
     }
     private function setupLoginSessionTest(): \stdClass {
         $state = new \stdClass;
-        $state->mySerializeUserForSession = function ($user) {
+        $state->myUserToMakeSessionDataFn = function ($user) {
             return "{$user->id}|{$user->username}";
         };
         $state->actualDataPutToSession = null;
@@ -78,11 +78,11 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
         $auth = $this->makeAuth($mockSession, $mockCookieStorage, $useUserRoleCookie, $useRememberMe);
         $auth->login($username,
                      $password,
-                     $s ? $s->mySerializeUserForSession : null);
+                     $s ? $s->myUserToMakeSessionDataFn : null);
         $auth->postProcess();
     }
     private function verifyWroteSerializedDataDataToSession($s): void {
-        $this->assertEquals(call_user_func($s->mySerializeUserForSession, (object) [
+        $this->assertEquals(call_user_func($s->myUserToMakeSessionDataFn, (object) [
                                 'id' => self::TEST_USER['id'],
                                 'username' => self::TEST_USER['username']
                             ]),

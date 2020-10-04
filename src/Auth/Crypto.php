@@ -19,7 +19,7 @@ class Crypto {
         if (is_string($out))
             return $out;
         throw new PikeException('Failed to hash password',
-                                Authenticator::CRYPTO_FAILURE);
+                                PikeException::ERROR_EXCEPTION);
     }
     /**
      * @param string $plainPass
@@ -74,7 +74,7 @@ class Crypto {
         try {
             $ciphertext = sodium_crypto_secretbox($plainStr, $nonce, $key);
         } catch (\SodiumException $e) {
-            throw new PikeException($e->getMessage(), Authenticator::CRYPTO_FAILURE);
+            throw new PikeException($e->getMessage(), PikeException::ERROR_EXCEPTION);
         }
         return base64_encode($nonce . $ciphertext);
     }
@@ -95,9 +95,9 @@ class Crypto {
                 return $out;
         } catch (\SodiumException $e) {
             throw new PikeException($e->getMessage(),
-                                    Authenticator::CRYPTO_FAILURE);
+                                    PikeException::ERROR_EXCEPTION);
         }
         throw new PikeException('Failed to decrypt input string',
-                                Authenticator::CRYPTO_FAILURE);
+                                PikeException::ERROR_EXCEPTION);
     }
 }

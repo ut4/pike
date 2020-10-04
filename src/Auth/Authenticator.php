@@ -10,7 +10,7 @@ use Pike\PikeException;
 /**
  * Autentikaatiomoduulin julkinen API: sisältää metodit kuten login() ja
  * getIdentity(). Käyttäjänhallintatoiminnallisuudet löytyy $auth->
- * makeAccountManager() -luokasta.
+ * getAccountManager() -luokasta.
  */
 final class Authenticator {
     public const ACTIVATION_KEY_EXPIRATION_SECS = 60 * 60 * 24;
@@ -54,12 +54,12 @@ final class Authenticator {
     /**
      * @param string $username
      * @param string $password
-     * @param ?callable $serializeUserForSession = null
+     * @param ?callable $convertUserToSessionData = null fn(\Pike\Entities\User): object
      * @throws \Pike\PikeException
      */
     public function login(string $username,
                           string $password,
-                          ?callable $serializeUserForSession = null): void {
+                          ?callable $convertUserToSessionData = null): void {
         // @allow \Pike\PikeException
         $user = $this->services->makeUserRepository()
             ->getUserByColumn('username', $username);
@@ -73,7 +73,7 @@ final class Authenticator {
             throw new PikeException('Expected accountStatus to be ACTIVATED',
                                     Authenticator::ACCOUNT_STATUS_WAS_UNEXPECTED);
         // @allow \Pike\PikeException
-        $this->putUserToSession($user, $serializeUserForSession);
+        $this->putUserToSession($user, $convertUserToSessionData);
     }
     /**
      * @return ?object
@@ -83,7 +83,11 @@ final class Authenticator {
         if (($data = $this->services->makeSession()->get('user')) ||
             !($rememberMe = $this->services->makeRememberMe()))
             return $data;
-        // todo rememberMe
+        if (($serializedSessionData = $rememberMe->getLogin())) {
+            $sessionData = unserialize($serializedSessionData);
+            $this->services->makeSession()->put('user', $sessionData);
+            return $sessionData;
+        }
         return null;
     }
     /**
@@ -100,25 +104,26 @@ final class Authenticator {
     /**
      * @return \Pike\Auth\AccountManager
      */
-    public function makeAccountManager(): AccountManager {
+    public function getAccountManager(): AccountManager {
         return new AccountManager($this->services->makeUserRepository(),
                                   $this->services->makeCrypto());
     }
     /**
      */
     public function postProcess(): void {
-        if ($this->userRoleCookieName)
+        if ($this->userRoleCookieName || $this->services->makeRememberMe())
             $this->services->makeCookieManager()->commitCookieConfigs();
     }
     /**
      * @param \Pike\Entities\User $user
-     * @param ?callable $serializeUserForSession = null
+     * @param ?callable $convertUserToSessionData = null fn(\Pike\Entities\User): object
      */
     private function putUserToSession(User $user,
-                                      ?callable $serializeUserForSession = null): void {
-        $sessionData = $serializeUserForSession
-            ? call_user_func($serializeUserForSession, $user)
+                                      ?callable $convertUserToSessionData = null): void {
+        $sessionData = $convertUserToSessionData
+            ? call_user_func($convertUserToSessionData, $user)
             : (object) ['id' => $user->id];
+        //
         $this->services->makeSession()->put('user', $sessionData);
         //
         if ($this->userRoleCookieName)
@@ -127,6 +132,6 @@ final class Authenticator {
         //
         if ($rememberMe = $this->services->makeRememberMe())
             // @allow \Pike\PikeException
-            $rememberMe->putLogin($user, serialize($sessionData));
+            $rememberMe->putLogin($user->id, serialize($sessionData));
     }
 }

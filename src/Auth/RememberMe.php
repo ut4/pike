@@ -32,35 +32,35 @@ final class RememberMe {
         $this->crypto = $crypto;
     }
     /**
-     * @return ?object
+     * @return ?string $serializedSessionData
      */
-    public function getLogin(): ?object {
+    public function getLogin(): ?string {
         [$loginIdToken, $loginIdValidatorToken] = $this->getAndParseCookie();
         // @allow \Pike\PikeException
         $user = $this->persistence->getUserByColumn('loginId', $loginIdToken);
         if (!$user || !$user->loginIdValidatorHash) return null;
         if (hash_equals($user->loginIdValidatorHash,
                         $this->crypto->hash('sha256', $loginIdValidatorToken)))
-            return $user;
+            return $user->loginData;
         else
-            $this->clearPersistentLoginData($user);
+            $this->clearPersistentLoginData($user->id);
         return null;
     }
     /**
-     * @param \Pike\Entities\User $user
-     * @param string $loginData
-    */
-    public function putLogin(User $user, string $loginData): void {
+     * @param string $userId
+     * @param string $serializedSessionData
+     */
+    public function putLogin(string $userId, string $serializedSessionData): void {
         $updated = new User;
         $updated->loginId = $this->crypto->genRandomToken();
         $validatorToken = $this->crypto->genRandomToken();
         $updated->loginIdValidatorHash = $this->crypto->hash('sha256', $validatorToken);
-        $updated->loginData = $loginData;
+        $updated->loginData = $serializedSessionData;
         // @allow \Pike\PikeException
         $this->persistence->updateUserByUserId($updated,
-            ['loginId', 'loginIdValidatorHash', 'loginData'], $user->id);
+            ['loginId', 'loginIdValidatorHash', 'loginData'], $userId);
         //
-        $this->cookieManager->addCookieConfig(static::COOKIE_NAME,
+        $this->cookieManager->addCookieConfig(self::COOKIE_NAME,
             "{$updated->loginId}:{$validatorToken}",
             strtotime('+6 months'));
     }
@@ -72,26 +72,27 @@ final class RememberMe {
             return;
         // @allow \Pike\PikeException
         if (($user = $this->persistence->getUserByColumn('loginId', $loginIdToken)))
-            $this->clearPersistentLoginData($user);
-        $this->cookieManager->addClearCookieConfig(static::COOKIE_NAME);
+            $this->clearPersistentLoginData($user->id);
+        $this->cookieManager->addClearCookieConfig(self::COOKIE_NAME);
     }
     /**
      * @return string[] [<loginIdToken>, <loginIdValidatorToken>]
      */
     private function getAndParseCookie(): array {
-        $loginTokens = $this->cookieManager->getCookie(static::COOKIE_NAME);
+        $loginTokens = $this->cookieManager->getCookie(self::COOKIE_NAME);
         return $loginTokens ? explode(':', $loginTokens) : ['', ''];
     }
     /**
-     * @param \Pike\Entities\User $user
+     * @param string $userId
      */
-    private function clearPersistentLoginData(User $user): void {
+    private function clearPersistentLoginData(string $userId): void {
+        $user = new User;
         $user->loginId = null;
         $user->loginIdValidatorHash = null;
         $user->loginData = null;
         // @allow \Pike\PikeException
         $this->persistence->updateUserByUserId($user,
             ['loginId', 'loginIdValidatorHash', 'loginData'],
-            $user->id);
+            $userId);
     }
 }

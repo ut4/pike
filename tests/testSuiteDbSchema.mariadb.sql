@@ -3,7 +3,7 @@ CREATE TABLE users (
     `username` VARCHAR(42) NOT NULL UNIQUE,
     `email` VARCHAR(191) NOT NULL UNIQUE, -- 191 * 4 = 767 bytes = max key length
     `accountStatus` TINYINT(1) UNSIGNED DEFAULT 1, -- 0=activated, 1=unactivated, 2=banned
-    `displayName` VARCHAR(64) NOT NULL,
+    `displayName` VARCHAR(64) DEFAULT NULL,
     `role` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 8388608, -- 1 << 23
     `accountCreatedAt` INT(10) UNSIGNED DEFAULT 0,
     --

@@ -10,7 +10,7 @@ use Pike\{PikeException, Validation};
 
 /**
  * Autentikaatiomoduulin julkinen käyttäjänhallinta-API, toiminnallisuuksiin pääsee
- * käsiksi $auth->makeAccountManager()->toiminnallisuus();
+ * käsiksi $auth->getAccountManager()->toiminnallisuus();
  */
 final class AccountManager {
     /** @var \Pike\Interfaces\UserRepositoryInterface */
@@ -51,6 +51,7 @@ final class AccountManager {
         $user->id = $this->crypto->guidv4();
         $user->username = $username;
         $user->email = $email;
+        $user->accountStatus = Authenticator::ACCOUNT_STATUS_UNACTIVATED;
         // @allow \ike\PikeExceptio;
         $user->passwordHash = $this->crypto->hashPass($password);
         $user->role = $role;

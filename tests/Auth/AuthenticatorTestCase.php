@@ -2,17 +2,18 @@
 
 namespace Pike\Tests\Auth;
 
+use PHPUnit\Framework\MockObject\MockObject;
 use Pike\Auth\{ACL, Authenticator};
 use Pike\Auth\Interfaces\CookieStorageInterface;
 use Pike\Defaults\DefaultUserRepository;
-use Pike\Interfaces\SessionInterface;
+use Pike\Interfaces\{MailerInterface, SessionInterface};
 use Pike\TestUtils\{DbTestCase, HttpTestUtils, MockCrypto};
 
 abstract class AuthenticatorTestCase extends DbTestCase {
     protected const TEST_USER_PASS = '1234';
     use HttpTestUtils;
     protected const TEST_USER = [
-        'id' => '1',
+        'id' => '12345678-1234-1234-1234-123456781234',
         'username' => 'Pike',
         'email' => 'pike@offshore.com',
         'accountStatus' => Authenticator::ACCOUNT_STATUS_ACTIVATED,
@@ -63,10 +64,19 @@ abstract class AuthenticatorTestCase extends DbTestCase {
             throw new \Exception('Failed to insert test user');
     }
     /**
-     * @param \stdClass $state
-     * @return \Pike\Interfaces\SessionInterface
+     * @param string $id = self::TEST_USER['id']
+     * @return ?\stdClass
      */
-    protected function makeSpyingSession(\stdClass $state) {
+    protected function getTestUserFromDb(string $id = self::TEST_USER['id']): ?\stdClass {
+        $user = (new DefaultUserRepository(self::$db))->getUserByColumn('id', $id);
+        if ($user) return (object) ((array) $user);
+        return null;
+    }
+    /**
+     * @param \stdClass $state
+     * @return \PHPUnit\Framework\MockObject\MockObject
+     */
+    protected function makeSpyingSession(\stdClass $state): MockObject {
         $out = $this->createMock(SessionInterface::class);
         $out->method('put')
             ->with('user', $this->callback(function ($data) use ($state) {
@@ -77,15 +87,40 @@ abstract class AuthenticatorTestCase extends DbTestCase {
     }
     /**
      * @param \stdClass $state
-     * @return \Pike\Auth\Interfaces\CookieStorageInterface
+     * @return \PHPUnit\Framework\MockObject\MockObject
      */
-    protected function makeSpyingCookieStorage(\stdClass $state) {
+    protected function makeCookieStorageThatReturnsValidRememberMeTokens(\stdClass $state): MockObject {
+        $out = $this->makeSpyingCookieStorage($state);
+        $out->method('getCookie')
+            ->with('loginTokens')
+            ->willReturn("{$state->testUserData['loginId']}:{$state->loginValidatorToken}");
+        return $out;
+    }
+    /**
+     * @param \stdClass $state
+     * @return \PHPUnit\Framework\MockObject\MockObject
+     */
+    protected function makeSpyingCookieStorage(\stdClass $state): MockObject {
         $out = $this->createMock(CookieStorageInterface::class);
         $out->method('storeCookie')->with(
             $this->callBack(function ($cookieConfigurations) use ($state) {
                 $state->actualDataPassedToCookieStorage[] = [$cookieConfigurations];
                 return true;
             }));
+        return $out;
+    }
+    /**
+     * @param \stdClass $state
+     * @return \PHPUnit\Framework\MockObject\MockObject
+     */
+    protected function makeSpyingMailer(\stdClass $state) {
+        $out = $this->createMock(MailerInterface::class);
+        $out->method('sendMail')
+            ->with($this->callback(function ($val) use ($state) {
+                $state->actualEmailSettings = $val;
+                return true;
+            }))
+            ->willReturn(true);
         return $out;
     }
 }
