@@ -3,7 +3,6 @@
 namespace Pike\Tests\Auth;
 
 use Pike\Auth\{ACL, Authenticator};
-use Pike\Interfaces\MailerInterface;
 use Pike\TestUtils\MockCrypto;
 use Pike\PikeException;
 
@@ -18,7 +17,6 @@ class AccountManagerRequestNewAccountTest extends AuthenticatorTestCase {
             'ir@rele.vant',
             'pass',
             function () {},
-            $this->createMock(MailerInterface::class),
             ACL::ROLE_AUTHOR);
     }
 
@@ -47,7 +45,6 @@ class AccountManagerRequestNewAccountTest extends AuthenticatorTestCase {
                 $mailConfig->fromName = ['not', 'a', 'string'];
                 $mailConfig->toName = ['not', 'a', 'string'];
             },
-            $this->createMock(MailerInterface::class),
             ACL::ROLE_AUTHOR);
     }
 
@@ -73,7 +70,8 @@ class AccountManagerRequestNewAccountTest extends AuthenticatorTestCase {
     }
     private function invokeRequestNewAccountRequest(\stdClass $s): void {
         $auth = $this->makeAuth();
-        $auth->getAccountManager()->requestNewAccount(
+        $fn = $this->makeFnThatReturnsSpyingMailer($s);
+        $auth->getAccountManager($fn)->requestNewAccount(
             $s->inputUsername,
             $s->inputEmail,
             $s->inputPassword,
@@ -82,7 +80,6 @@ class AccountManagerRequestNewAccountTest extends AuthenticatorTestCase {
                 $settingsOut->subject = 'mysite.com | Account activation';
                 $settingsOut->body = "Please activate your account /activate/{$activationKey}";
             },
-            $this->makeSpyingMailer($s),
             $s->inputRole);
     }
     private function verifyInsertedUnactivatedUserToDb(\stdClass $s): void {

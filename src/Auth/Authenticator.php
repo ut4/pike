@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pike\Auth;
 
+use Pike\Auth\Internal\ServicesFactory;
 use Pike\Entities\User;
 use Pike\PikeException;
 
@@ -26,14 +27,14 @@ final class Authenticator {
     public const FAILED_TO_SEND_MAIL    = 201013;
     public const KEY_HAD_EXPIRED        = 201014;
     public const ACCOUNT_STATUS_WAS_UNEXPECTED = 201015;
-    /** @var \Pike\Auth\ServicesFactory */
+    /** @var \Pike\Auth\Internal\ServicesFactory */
     private $services;
     /** @var ?string */
     private $userRoleCookieName;
     /**
-     * @param callable(\Pike\Auth\ServicesFactory): \Pike\Interfaces\UserRepositoryInterface $makeUserRepositoryFn
-     * @param callable(\Pike\Auth\ServicesFactory): \Pike\Interfaces\SessionInterface $makeSessionFn
-     * @param callable(\Pike\Auth\ServicesFactory): \Pike\Auth\Interfaces\CookieStorageInterface $makeCookieStorageFn
+     * @param callable(\Pike\Auth\Internal\ServicesFactory): \Pike\Interfaces\UserRepositoryInterface $makeUserRepositoryFn
+     * @param callable(\Pike\Auth\Internal\ServicesFactory): \Pike\Interfaces\SessionInterface $makeSessionFn
+     * @param callable(\Pike\Auth\Internal\ServicesFactory): \Pike\Auth\Interfaces\CookieStorageInterface $makeCookieStorageFn
      * @param string $userRoleCookieName = 'maybeLoggedInUserRole'
      * @param bool $doUseRememberMe = true
      * @param \Pike\Auth\Crypto $crypto = null
@@ -76,10 +77,28 @@ final class Authenticator {
         $this->putUserToSession($user, $convertUserToSessionData);
     }
     /**
-     * @return ?object
+     * @param string $userId
+     * @param ?callable $convertUserToSessionData = null fn(\Pike\Entities\User): object
      * @throws \Pike\PikeException
      */
-    public function getIdentity(): ?object {
+    public function loginUserById(string $userId,
+                                  ?callable $convertUserToSessionData = null): void {
+        // @allow \Pike\PikeException
+        $user = $this->services->makeUserRepository()->getUserByColumn('id', $userId);
+        if (!$user)
+            throw new PikeException('User not found or not activated',
+                                    Authenticator::CREDENTIAL_WAS_INVALID);
+        if ($user->accountStatus !== Authenticator::ACCOUNT_STATUS_ACTIVATED)
+            throw new PikeException('Expected accountStatus to be ACTIVATED',
+                                    Authenticator::ACCOUNT_STATUS_WAS_UNEXPECTED);
+        // @allow \Pike\PikeException
+        $this->putUserToSession($user, $convertUserToSessionData);
+    }
+    /**
+     * @return mixed|null
+     * @throws \Pike\PikeException
+     */
+    public function getIdentity() {
         if (($data = $this->services->makeSession()->get('user')) ||
             !($rememberMe = $this->services->makeRememberMe()))
             return $data;
@@ -102,11 +121,13 @@ final class Authenticator {
         $this->services->makeSession()->destroy();
     }
     /**
+     * @param callable(): \Pike\Interfaces\MailerInterface $makeMailerFn = null
      * @return \Pike\Auth\AccountManager
      */
-    public function getAccountManager(): AccountManager {
+    public function getAccountManager(callable $makeMailerFn = null): AccountManager {
         return new AccountManager($this->services->makeUserRepository(),
-                                  $this->services->makeCrypto());
+                                  $this->services->makeCrypto(),
+                                  $makeMailerFn);
     }
     /**
      */
@@ -123,6 +144,9 @@ final class Authenticator {
         $sessionData = $convertUserToSessionData
             ? call_user_func($convertUserToSessionData, $user)
             : (object) ['id' => $user->id];
+        if ($sessionData === null)
+            throw new PikeException('convertUserToSessionData mustn\'t return null',
+                                    PikeException::BAD_INPUT);
         //
         $this->services->makeSession()->put('user', $sessionData);
         //

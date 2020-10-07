@@ -33,19 +33,15 @@ trait HttpTestUtils {
         }
         if (($ctx->serviceHints['auth'] ?? null) === App::MAKE_AUTOMATICALLY) {
             $ctx->auth = new Authenticator(
-                function ($_factory) use ($ctx) {
-                    //
-                },
+                function ($_factory) { },
                 function ($_factory) {
                     $mockSession = $this->createMock(SessionInterface::class);
-                    $mockSession->method('get')->when('user')->willReturn((object) ['id' => '1', 'role' => 1]);
+                    $mockSession->method('get')->with('user')->willReturn((object) ['id' => '1', 'role' => 1]);
                     return $mockSession;
                 },
-                function ($_factory) use ($ctx) {
-                    //
-                },
-                'maybeLoggedInUserRole',
-                true // doUseRememberMe
+                function ($_factory) { },
+                '',   // $userRoleCookieName
+                false // doUseRememberMe
             );
         }
         return new AppHolder(

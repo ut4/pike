@@ -2,9 +2,9 @@
 
 namespace Pike\Tests\Auth;
 
-use Pike\Auth\Crypto;
 use Pike\Auth\Interfaces\CookieStorageInterface;
 use Pike\Interfaces\SessionInterface;
+use Pike\TestUtils\MockCrypto;
 
 class AuthenticatorGetIdentityTest extends AuthenticatorTestCase {
     public function testGetIdentityRetrievesIdentityFromSession(): void {
@@ -75,7 +75,7 @@ class AuthenticatorGetIdentityTest extends AuthenticatorTestCase {
         $state->sessionData = (object) ['id' => self::TEST_USER['id']];
         $state->testUserData = [
             'loginId' => str_repeat('b', 32),
-            'loginIdValidatorHash' => (new Crypto)->hash('sha256', $state->loginValidatorToken),
+            'loginIdValidatorHash' => MockCrypto::mockHash('sha256', $state->loginValidatorToken),
             'loginData' => serialize($state->sessionData),
         ];
         $state->actualDataPutToSession = null;

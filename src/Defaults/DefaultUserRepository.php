@@ -43,11 +43,11 @@ final class DefaultUserRepository implements UserRepositoryInterface {
         if (!in_array($column, self::VALID_WHERE_COLUMNS, true))
             throw new PikeException("Invalid column `{$column}`",
                                     PikeException::BAD_INPUT);
-        $user =  $this->db->fetchOne("SELECT * FROM `\${p}users`" .
-                                     " WHERE `{$column}` = ?",
-                                     [$value],
-                                     \PDO::FETCH_CLASS,
-                                     User::class);
+        $user = $this->db->fetchOne("SELECT * FROM `\${p}users`" .
+                                    " WHERE `{$column}` = ?",
+                                    [$value],
+                                    \PDO::FETCH_CLASS,
+                                    User::class);
         self::normalizeUser($user);
         return $user;
     }

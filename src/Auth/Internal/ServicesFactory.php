@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Pike\Auth;
+namespace Pike\Auth\Internal;
 
+use Pike\Auth\Crypto;
 use Pike\Auth\Interfaces\CookieStorageInterface;
 use Pike\Interfaces\{SessionInterface, UserRepositoryInterface};
 
@@ -20,7 +21,7 @@ class ServicesFactory {
     private $crypto;
     /** @var ?\Pike\Interfaces\SessionInterface */
     private $cachedSession;
-    /** @var ?\Pike\Auth\CookieManager */
+    /** @var ?\Pike\Auth\Internal\CookieManager */
     private $cachedCookieManager;
     /**
      * @param callable($this): \Pike\Interfaces\UserRepositoryInterface $makeUserRepositoryFn
@@ -56,7 +57,7 @@ class ServicesFactory {
         return $this->cachedSession;
     }
     /**
-     * @return ?\Pike\Auth\RememberMe
+     * @return ?\Pike\Auth\Internal\RememberMe
      */
     public function makeRememberMe(): ?RememberMe {
         return $this->doUseRememberMe
@@ -72,7 +73,7 @@ class ServicesFactory {
         return $this->crypto ?? new Crypto;
     }
     /**
-     * @return \Pike\Auth\CookieManager
+     * @return \Pike\Auth\Internal\CookieManager
      */
     public function makeCookieManager(): CookieManager {
         if (!$this->cachedCookieManager)

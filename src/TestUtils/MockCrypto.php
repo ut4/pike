@@ -13,6 +13,9 @@ class MockCrypto extends Crypto {
     public function hashPass(string $plainPass): string {
         return self::mockHashPass($plainPass);
     }
+    public function hash(string $algo, string $data, bool $useRawOutput = false): string {
+        return self::mockHash($algo, $data . (!$useRawOutput ? '' : '(raw)'));
+    }
     public function guidv4(): string {
         return self::mockGuidv4();
     }
@@ -26,7 +29,10 @@ class MockCrypto extends Crypto {
         return self::mockDecrypt($str);
     }
     public static function mockHashPass(string $plainPass): string {
-        return 'hashed: ' . $plainPass;
+        return "hashed: {$plainPass}";
+    }
+    public static function mockHash(string $algo, string $data): string {
+        return "{$algo} hash of: {$data}";
     }
     public static function mockGuidv4(): string {
         return 'here\'s-guid-for-you';
@@ -35,7 +41,7 @@ class MockCrypto extends Crypto {
         return 'randomToken';
     }
     public static function mockEncrypt(string $str): string {
-        return 'encrypted: ' . $str;
+        return "encrypted: {$str}";
     }
     public static function mockDecrypt(string $str): string {
         return substr($str, strlen('encrypted: '));

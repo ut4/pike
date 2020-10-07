@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Pike\Auth;
+namespace Pike\Auth\Internal;
 
 use Pike\Auth\Interfaces\CookieStorageInterface;
 

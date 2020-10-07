@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Pike\Auth;
+namespace Pike\Auth\Internal;
 
-use Pike\Auth\{CookieManager, Crypto};
+use Pike\Auth\Crypto;
 use Pike\Entities\User;
 use Pike\Interfaces\UserRepositoryInterface;
 
@@ -17,11 +17,11 @@ final class RememberMe {
     private $persistence;
     /** @var \Pike\Auth\Crypto */
     private $crypto;
-    /** @var \Pike\Auth\CookieManager */
+    /** @var \Pike\Auth\Internal\CookieManager */
     private $cookieManager;
     /**
      * @param \Pike\Interfaces\UserRepositoryInterface $persistence
-     * @param \Pike\Auth\CookieManager $cookieManager
+     * @param \Pike\Auth\Internal\CookieManager $cookieManager
      * @param \Pike\Auth\Crypto $crypto
      */
     public function __construct(UserRepositoryInterface $persistence,

@@ -7,11 +7,10 @@ use Pike\Auth\{ACL, Authenticator};
 use Pike\Auth\Interfaces\CookieStorageInterface;
 use Pike\Defaults\DefaultUserRepository;
 use Pike\Interfaces\{MailerInterface, SessionInterface};
-use Pike\TestUtils\{DbTestCase, HttpTestUtils, MockCrypto};
+use Pike\TestUtils\{DbTestCase, MockCrypto};
 
 abstract class AuthenticatorTestCase extends DbTestCase {
     protected const TEST_USER_PASS = '1234';
-    use HttpTestUtils;
     protected const TEST_USER = [
         'id' => '12345678-1234-1234-1234-123456781234',
         'username' => 'Pike',
@@ -111,16 +110,18 @@ abstract class AuthenticatorTestCase extends DbTestCase {
     }
     /**
      * @param \stdClass $state
-     * @return \PHPUnit\Framework\MockObject\MockObject
+     * @return \Closure
      */
-    protected function makeSpyingMailer(\stdClass $state) {
-        $out = $this->createMock(MailerInterface::class);
-        $out->method('sendMail')
-            ->with($this->callback(function ($val) use ($state) {
-                $state->actualEmailSettings = $val;
-                return true;
-            }))
-            ->willReturn(true);
-        return $out;
+    protected function makeFnThatReturnsSpyingMailer(\stdClass $state): \Closure {
+        return function() use ($state) {
+            $out = $this->createMock(MailerInterface::class);
+            $out->method('sendMail')
+                ->with($this->callback(function ($val) use ($state) {
+                    $state->actualEmailSettings = $val;
+                    return true;
+                }))
+                ->willReturn(true);
+            return $out;
+        };
     }
 }

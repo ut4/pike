@@ -6,7 +6,7 @@ namespace Pike\Auth;
 
 use Pike\Entities\User;
 use Pike\Interfaces\{MailerInterface, UserRepositoryInterface};
-use Pike\{PikeException, Validation};
+use Pike\{PhpMailerMailer, PikeException, Validation};
 
 /**
  * Autentikaatiomoduulin julkinen käyttäjänhallinta-API, toiminnallisuuksiin pääsee
@@ -17,21 +17,25 @@ final class AccountManager {
     private $persistence;
     /** @var \Pike\Auth\Crypto */
     private $crypto;
+    /** @var ?callable(): \Pike\Interfaces\MailerInterface */
+    private $makeMailerFn;
     /**
      * @param \Pike\Interfaces\UserRepositoryInterface $userRepo
      * @param \Pike\Auth\Crypto $crypto
+     * @param callable(): \Pike\Interfaces\MailerInterface $makeMailerFn = null
      */
     public function __construct(UserRepositoryInterface $userRepo,
-                                Crypto $crypto) {
+                                Crypto $crypto,
+                                ?callable $makeMailerFn = null) {
         $this->persistence = $userRepo;
         $this->crypto = $crypto;
+        $this->makeMailerFn = $makeMailerFn;
     }
     /**
      * @param string $username
      * @param string $email
      * @param string $password
      * @param callable(\Pike\Entities\User $user, string $activationKey, object $emailSettings): void $makeEmailSettings
-     * @param \Pike\Interfaces\MailerInterface $mailer
      * @param int $role = \Pike\Auth\ACL::ROLE_LAST
      * @throws \Pike\PikeException
      */
@@ -39,7 +43,6 @@ final class AccountManager {
                                       string $email,
                                       string $password,
                                       callable $makeEmailSettings,
-                                      MailerInterface $mailer,
                                       int $role = ACL::ROLE_LAST): void {
         // @allow \Pike\PikeException
         if ($this->persistence->getUserByColumn('username', $username))
@@ -59,6 +62,7 @@ final class AccountManager {
         $key = $this->crypto->genRandomToken(32);
         // @allow \Pike\PikeException
         $emailSettings = $this->makeEmailSettings($makeEmailSettings, $user, $key);
+        $mailer = $this->makeMailer();
         $this->persistence->runInTransaction(function () use ($key,
                                                               $user,
                                                               $mailer,
@@ -111,12 +115,10 @@ final class AccountManager {
     /**
      * @param string $email
      * @param callable(\Pike\Entities\User $user, string $resetKey, object $emailSettings): void $makeEmailSettings
-     * @param \Pike\Interfaces\MailerInterface $mailer
      * @throws \Pike\PikeException
      */
     public function requestPasswordReset(string $email,
-                                         callable $makeEmailSettings,
-                                         MailerInterface $mailer): void {
+                                         callable $makeEmailSettings): void {
         // @allow \Pike\PikeException
         $user = $this->persistence->getUserByColumn('email', $email);
         if (!$user)
@@ -129,6 +131,7 @@ final class AccountManager {
         $key = $this->crypto->genRandomToken(32);
         // @allow \Pike\PikeException
         $emailSettings = $this->makeEmailSettings($makeEmailSettings, $user, $key);
+        $mailer = $this->makeMailer();
         // @allow \Pike\PikeException
         $this->persistence->runInTransaction(function () use ($key,
                                                               $emailSettings,
@@ -227,5 +230,13 @@ final class AccountManager {
             throw new PikeException(implode(', ', $errors),
                                     Authenticator::FAILED_TO_FORMAT_MAIL);
         return $settings;
+    }
+    /**
+     * @return \Pike\Interfaces\MailerInterface
+     */
+    private function makeMailer(): MailerInterface {
+        return !$this->makeMailerFn
+            ? new PhpMailerMailer
+            : call_user_func($this->makeMailerFn);
     }
 }

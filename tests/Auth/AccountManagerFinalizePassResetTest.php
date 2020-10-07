@@ -3,8 +3,8 @@
 namespace Pike\Tests\Auth;
 
 use Pike\Auth\Authenticator;
-use Pike\TestUtils\MockCrypto;
 use Pike\PikeException;
+use Pike\TestUtils\MockCrypto;
 
 class AccountManagerFinalizePassResetTest extends AuthenticatorTestCase {
     public function testFinalizePassResetThrowsIfResetKeyWasNotFoundEmailDoNotMatch(): void {
@@ -27,6 +27,7 @@ class AccountManagerFinalizePassResetTest extends AuthenticatorTestCase {
         $state = $this->setupExpiredKeyTest();
         $this->insertTestUserToDb(['resetKey' => $state->testResetKey,
                                    'resetRequestedAt' => $state->testResetRequestedAt]);
+        $state->originalData = $this->getTestUserFromDb(self::TEST_USER['id']);
         try {
             $this->invokeFinalizePassResetFeature($state);
             $this->assertFalse(true, 'Pitäisi heittää poikkeus');
@@ -43,19 +44,7 @@ class AccountManagerFinalizePassResetTest extends AuthenticatorTestCase {
     }
     private function verifyDidNotWriteNewPasswordToDb(\stdClass $s): void {
         $data = $this->getTestUserFromDb();
-        $this->assertNotNull($data);
-        $this->assertEquals(self::TEST_USER['username'], $data->username);
-        $this->assertEquals(self::TEST_USER['email'], $data->email);
-        $this->assertEquals(Authenticator::ACCOUNT_STATUS_ACTIVATED,
-                            $data->accountStatus);
-        $this->assertEquals(self::TEST_USER['role'], $data->role);
-        $this->assertEquals(self::TEST_USER['accountCreatedAt'], $data->accountCreatedAt);
-        $this->assertEquals(MockCrypto::mockHashPass(self::TEST_USER_PASS),
-                            $data->passwordHash);
-        $this->assertNull($data->activationKey);
-        $this->assertNull($data->loginId);
-        $this->assertNull($data->loginIdValidatorHash);
-        $this->assertNull($data->loginData);
+        $this->assertEquals($s->originalData, $data);
         $s->actualUserFromDb = $data;
     }
     private function verifyDidNotClearResetPassInfoFromToDb(\stdClass $s): void {
@@ -72,9 +61,11 @@ class AccountManagerFinalizePassResetTest extends AuthenticatorTestCase {
         $state = $this->setupFinalizePassResetTest();
         $this->insertTestUserToDb(['resetKey' => $state->testResetKey,
                                    'resetRequestedAt' => $state->testResetRequestedAt]);
+        $state->originalData = $this->getTestUserFromDb(self::TEST_USER['id']);
         $this->invokeFinalizePassResetFeature($state);
         $this->verifyWroteNewPasswordToDb($state);
         $this->verifyClearedResetPassInfoFromToDb($state);
+        $this->verifyDidNotChangeOriginalDataFromDb($state);
     }
     private function setupFinalizePassResetTest(): \stdClass {
         $state = new \stdClass;
@@ -94,23 +85,20 @@ class AccountManagerFinalizePassResetTest extends AuthenticatorTestCase {
     private function verifyWroteNewPasswordToDb(\stdClass $s): void {
         $data = $this->getTestUserFromDb();
         $this->assertNotNull($data);
-        $this->assertEquals(self::TEST_USER['username'], $data->username);
-        $this->assertEquals(self::TEST_USER['email'], $data->email);
-        $this->assertEquals(Authenticator::ACCOUNT_STATUS_ACTIVATED,
-                            $data->accountStatus);
-        $this->assertEquals(self::TEST_USER['role'], $data->role);
-        $this->assertEquals(self::TEST_USER['accountCreatedAt'], $data->accountCreatedAt);
         $this->assertEquals(MockCrypto::mockHashPass($s->newPassword),
                             $data->passwordHash);
-        $this->assertNull($data->activationKey);
-        $this->assertNull($data->loginId);
-        $this->assertNull($data->loginIdValidatorHash);
-        $this->assertNull($data->loginData);
         $s->actualUserFromDb = $data;
     }
     private function verifyClearedResetPassInfoFromToDb(\stdClass $s): void {
         $data = $s->actualUserFromDb;
         $this->assertNull($data->resetKey);
         $this->assertEquals('0', $data->resetRequestedAt);
+    }
+    private function verifyDidNotChangeOriginalDataFromDb(\stdClass $s): void {
+        foreach (['passwordHash', 'resetKey', 'resetRequestedAt'] as $except) {
+            unset($s->originalData->{$except});
+            unset($s->actualUserFromDb->{$except});
+        }
+        $this->assertEquals($s->originalData, $s->actualUserFromDb);
     }
 }

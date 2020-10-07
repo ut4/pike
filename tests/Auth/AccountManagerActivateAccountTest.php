@@ -4,7 +4,6 @@ namespace Pike\Tests\Auth;
 
 use Pike\Auth\Authenticator;
 use Pike\PikeException;
-use Pike\TestUtils\MockCrypto;
 
 class AccountManagerActivateAccountTest extends AuthenticatorTestCase {
     public function testActivateAccountThrowsIfActivationKeyWasNotFoundOrAccountStatusIsNotUnactivated(): void {
@@ -45,11 +44,13 @@ class AccountManagerActivateAccountTest extends AuthenticatorTestCase {
 
     public function testActivateAccountValidatesActivationKeyAndUpdatesAccountStatusToDb(): void {
         $state = $this->setupActivateAccountTest();
-        $this->insertTestUserToDb();
-        $this->insertTestActivationInfoToDb($state);
+        $this->insertTestUserToDb(['activationKey' => $state->testActivationKey,
+                                   'accountCreatedAt' => $state->testAccountCreatedAt,
+                                   'accountStatus' => Authenticator::ACCOUNT_STATUS_UNACTIVATED]);
+        $state->originalData = $this->getTestUserFromDb(self::TEST_USER['id']);
         $this->invokeActivateAccountFeature($state);
-        $this->verifyWroteAccountStatusToDb($state);
-        $this->verifyClearedActivationInfoFromToDb($state);
+        $this->verifyClearedActivationKeyAndUpdatedAccountStatusToDb($state);
+        $this->verifyDidNotChangeOriginalDataFromDb($state);
     }
     private function setupActivateAccountTest(): \stdClass {
         $state = new \stdClass;
@@ -58,35 +59,22 @@ class AccountManagerActivateAccountTest extends AuthenticatorTestCase {
         $state->testAccountCreatedAt = time() - 10;
         return $state;
     }
-    private function insertTestActivationInfoToDb(\stdClass $s): void {
-        // @allow \Pike\PikeException
-        self::$db->exec('UPDATE users SET `activationKey`=?' .
-                        ',`accountCreatedAt`=?,`accountStatus`=?' .
-                        ' WHERE `id` = ?',
-                        [$s->testActivationKey, $s->testAccountCreatedAt,
-                         Authenticator::ACCOUNT_STATUS_UNACTIVATED,
-                         self::TEST_USER['id']]);
-    }
     private function invokeActivateAccountFeature(\stdClass $s): void {
         $this->makeAuth()->getAccountManager()->activateAccount($s->testActivationKey);
     }
-    private function verifyWroteAccountStatusToDb(\stdClass $s): void {
+    private function verifyClearedActivationKeyAndUpdatedAccountStatusToDb(\stdClass $s): void {
         $data = $this->getTestUserFromDb(self::TEST_USER['id']);
         $this->assertNotNull($data);
+        $this->assertNull($data->activationKey);
         $this->assertEquals(Authenticator::ACCOUNT_STATUS_ACTIVATED,
                             $data->accountStatus);
-        $this->assertEquals(self::TEST_USER['username'], $data->username);
-        $this->assertEquals(self::TEST_USER['email'], $data->email);
-        $this->assertEquals(MockCrypto::mockHashPass(self::TEST_USER_PASS),
-                            $data->passwordHash);
-        $this->assertEquals(self::TEST_USER['role'], $data->role);
-        $this->assertEquals($s->testAccountCreatedAt, $data->accountCreatedAt);
-        $this->assertNull($data->resetKey);
-        $this->assertEquals('0', $data->resetRequestedAt);
         $s->actualUserFromDb = $data;
     }
-    private function verifyClearedActivationInfoFromToDb(\stdClass $s): void {
-        $data = $s->actualUserFromDb;
-        $this->assertNull($data->activationKey);
+    private function verifyDidNotChangeOriginalDataFromDb(\stdClass $s): void {
+        foreach (['activationKey', 'accountStatus'] as $except) {
+            unset($s->originalData->{$except});
+            unset($s->actualUserFromDb->{$except});
+        }
+        $this->assertEquals($s->originalData, $s->actualUserFromDb);
     }
 }
