@@ -37,13 +37,14 @@ final class AccountManager {
      * @param string $password
      * @param callable(\Pike\Entities\User $user, string $activationKey, object $emailSettings): void $makeEmailSettings
      * @param int $role = \Pike\Auth\ACL::ROLE_LAST
+     * @return string The return value of $this->persistence->createUser()
      * @throws \Pike\PikeException
      */
     public function requestNewAccount(string $username,
                                       string $email,
                                       string $password,
                                       callable $makeEmailSettings,
-                                      int $role = ACL::ROLE_LAST): void {
+                                      int $role = ACL::ROLE_LAST): string {
         // @allow \Pike\PikeException
         if ($this->persistence->getUserByColumn('username', $username))
             throw new PikeException('User already exists',
@@ -55,7 +56,7 @@ final class AccountManager {
         $user->username = $username;
         $user->email = $email;
         $user->accountStatus = Authenticator::ACCOUNT_STATUS_UNACTIVATED;
-        // @allow \ike\PikeExceptio;
+        // @allow \Pike\PikeException
         $user->passwordHash = $this->crypto->hashPass($password);
         $user->role = $role;
         // @allow \Pike\PikeException
@@ -63,10 +64,10 @@ final class AccountManager {
         // @allow \Pike\PikeException
         $emailSettings = $this->makeEmailSettings($makeEmailSettings, $user, $key);
         $mailer = $this->makeMailer();
-        $this->persistence->runInTransaction(function () use ($key,
-                                                              $user,
-                                                              $mailer,
-                                                              $emailSettings) {
+        return $this->persistence->runInTransaction(function () use ($key,
+                                                                     $user,
+                                                                     $mailer,
+                                                                     $emailSettings) {
             $user->activationKey = $key;
             $user->accountCreatedAt = time();
             // @allow \Pike\PikeException
@@ -113,14 +114,14 @@ final class AccountManager {
                                     PikeException::FAILED_DB_OP);
     }
     /**
-     * @param string $email
+     * @param string $usernameOrEmail
      * @param callable(\Pike\Entities\User $user, string $resetKey, object $emailSettings): void $makeEmailSettings
      * @throws \Pike\PikeException
      */
-    public function requestPasswordReset(string $email,
+    public function requestPasswordReset(string $usernameOrEmail,
                                          callable $makeEmailSettings): void {
         // @allow \Pike\PikeException
-        $user = $this->persistence->getUserByColumn('email', $email);
+        $user = $this->persistence->getUserByColumn('usernameOrEmail', $usernameOrEmail);
         if (!$user)
             throw new PikeException('User not found or not activated',
                                     Authenticator::CREDENTIAL_WAS_INVALID);

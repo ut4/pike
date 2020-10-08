@@ -13,7 +13,7 @@ interface UserRepositoryInterface {
      */
     public function createUser(User $user): string;
     /**
-     * @param string $column 'id'|'username'|'email'|'activationKey'|'resetKey'|'loginId'
+     * @param string $column 'id'|'username'|'email'|'usernameOrEmail'|'activationKey'|'resetKey'|'loginId'
      * @param string $value
      * @return ?\Pike\Entities\User
      */

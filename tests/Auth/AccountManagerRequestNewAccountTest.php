@@ -64,7 +64,7 @@ class AccountManagerRequestNewAccountTest extends AuthenticatorTestCase {
         $state->inputEmail = 'new@user.mail';
         $state->inputPassword = 'new user pass';
         $state->inputRole = ACL::ROLE_EDITOR;
-        $state->mockActivationKey = MockCrypto::mockGenRandomToken();
+        $state->mockActivationKey = MockCrypto::mockGenRandomToken(32);
         $state->actualEmailSettings = null;
         return $state;
     }

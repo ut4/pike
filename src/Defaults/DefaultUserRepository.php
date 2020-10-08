@@ -9,8 +9,8 @@ use Pike\{Db, PikeException};
 use Pike\Entities\User;
 
 final class DefaultUserRepository implements UserRepositoryInterface {
-    private const VALID_WHERE_COLUMNS = ['id', 'username', 'email', 'activationKey',
-                                         'resetKey', 'loginId',];
+    private const VALID_WHERE_COLUMNS = ['id', 'username', 'email', 'usernameOrEmail',
+                                         'activationKey', 'resetKey', 'loginId',];
     /** @var \Pike\Db */
     private $db;
     /**
@@ -35,7 +35,7 @@ final class DefaultUserRepository implements UserRepositoryInterface {
                                 PikeException::FAILED_DB_OP);
     }
     /**
-     * @param string $column 'id'|'username'|'email'|'activationKey'|'resetKey'|'loginId'
+     * @param string $column 'id'|'username'|'usernameOrEmail'|'email'|'activationKey'|'resetKey'|'loginId'
      * @param string $value
      * @return ?\Pike\Entities\User
      */
@@ -44,8 +44,12 @@ final class DefaultUserRepository implements UserRepositoryInterface {
             throw new PikeException("Invalid column `{$column}`",
                                     PikeException::BAD_INPUT);
         $user = $this->db->fetchOne("SELECT * FROM `\${p}users`" .
-                                    " WHERE `{$column}` = ?",
-                                    [$value],
+                                    " WHERE " . ($column !== 'usernameOrEmail'
+                                        ? "`{$column}` = ?"
+                                        : '`username` = ? OR `email` = ?'),
+                                    $column !== 'usernameOrEmail'
+                                        ? [$value]
+                                        : [$value, $value],
                                     \PDO::FETCH_CLASS,
                                     User::class);
         self::normalizeUser($user);

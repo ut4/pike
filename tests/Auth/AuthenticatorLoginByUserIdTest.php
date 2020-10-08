@@ -19,8 +19,8 @@ class AuthenticatorLoginByUserIdTest extends AuthenticatorTestCase {
                                         bool $useUserRoleCookie = false,
                                         bool $useRememberMe = false): void {
         $auth = $this->makeAuth($mockSession, $mockCookieStorage, $useUserRoleCookie, $useRememberMe);
-        $auth->loginUserById($userId,
-                              $s ? $s->myUserToMakeSessionDataFn : null);
+        $auth->loginByUserId($userId,
+                             $s ? $s->myUserToMakeSessionDataFn : null);
         $auth->postProcess();
     }
 

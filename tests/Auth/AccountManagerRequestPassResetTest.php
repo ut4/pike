@@ -72,25 +72,25 @@ class AccountManagerRequestPassResetTest extends AuthenticatorTestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testRequestPasswordResetWritesResetKeyToDbAndSendsItViaEmail(): void {
+    public function testRequestPasswordResetByUsernameWritesResetKeyToDbAndSendsItViaEmail(): void {
         $state = $this->setupTestRequestPasswordTest();
         $this->insertTestUserToDb();
         $state->originalData = $this->getTestUserFromDb(self::TEST_USER['id']);
-        $this->invokeRequestPasswordResetFeature($state);
+        $this->invokeRequestPasswordResetFeature($state, 'username');
         $this->verifyInsertedResetKeyToDb($state);
         $this->verifyDidNotChangeOriginalDataFromDb($state);
         $this->verifySentEmail($state);
     }
     private function setupTestRequestPasswordTest(): \stdClass {
         $state = new \stdClass;
-        $state->mockResetKey = MockCrypto::mockGenRandomToken();
+        $state->mockResetKey = MockCrypto::mockGenRandomToken(32);
         $state->actualEmailSettings = null;
         return $state;
     }
-    private function invokeRequestPasswordResetFeature(\stdClass $s): void {
+    private function invokeRequestPasswordResetFeature(\stdClass $s, string $byColumn): void {
         $fn = $this->makeFnThatReturnsSpyingMailer($s);
         $this->makeAuth()->getAccountManager($fn)->requestPasswordReset(
-            self::TEST_USER['email'],
+            self::TEST_USER[$byColumn],
             function ($_user, $resetKey, $settingsOut) {
                 $settingsOut->fromAddress = 'mysite.com';
                 $settingsOut->subject = 'mysite.com | Password reset';
@@ -122,5 +122,19 @@ class AccountManagerRequestPassResetTest extends AuthenticatorTestCase {
         $this->assertEquals('mysite.com | Password reset', $s->actualEmailSettings->subject);
         $this->assertEquals("Please visit /change-password/{$s->mockResetKey}",
                             $s->actualEmailSettings->body);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testRequestPasswordResetByEmailWritesResetKeyToDbAndSendsItViaEmail(): void {
+        $state = $this->setupTestRequestPasswordTest();
+        $this->insertTestUserToDb();
+        $state->originalData = $this->getTestUserFromDb(self::TEST_USER['id']);
+        $this->invokeRequestPasswordResetFeature($state, 'email');
+        $this->verifyInsertedResetKeyToDb($state);
+        $this->verifyDidNotChangeOriginalDataFromDb($state);
+        $this->verifySentEmail($state);
     }
 }

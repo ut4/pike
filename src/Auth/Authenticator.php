@@ -53,17 +53,17 @@ final class Authenticator {
         $this->userRoleCookieName = strlen($userRoleCookieName) ? $userRoleCookieName : null;
     }
     /**
-     * @param string $username
+     * @param string $usernameOrEmail
      * @param string $password
      * @param ?callable $convertUserToSessionData = null fn(\Pike\Entities\User): object
      * @throws \Pike\PikeException
      */
-    public function login(string $username,
+    public function login(string $usernameOrEmail,
                           string $password,
                           ?callable $convertUserToSessionData = null): void {
         // @allow \Pike\PikeException
         $user = $this->services->makeUserRepository()
-            ->getUserByColumn('username', $username);
+            ->getUserByColumn('usernameOrEmail', $usernameOrEmail);
         if (!$user)
             throw new PikeException('User not found or not activated',
                                     Authenticator::CREDENTIAL_WAS_INVALID);
@@ -81,7 +81,7 @@ final class Authenticator {
      * @param ?callable $convertUserToSessionData = null fn(\Pike\Entities\User): object
      * @throws \Pike\PikeException
      */
-    public function loginUserById(string $userId,
+    public function loginByUserId(string $userId,
                                   ?callable $convertUserToSessionData = null): void {
         // @allow \Pike\PikeException
         $user = $this->services->makeUserRepository()->getUserByColumn('id', $userId);
@@ -128,6 +128,21 @@ final class Authenticator {
         return new AccountManager($this->services->makeUserRepository(),
                                   $this->services->makeCrypto(),
                                   $makeMailerFn);
+    }
+    /**
+     * @return string
+     */
+    public function getPerSessionCsrfToken(): string {
+        return $this->services->makeSession()->get('csrfToken') ??
+            $this->issuePerSessionCsrfToken();
+    }
+    /**
+     * @return string
+     */
+    public function issuePerSessionCsrfToken(): string {
+        $token = $this->services->makeCrypto()->genRandomToken();
+        $this->services->makeSession()->put('csrfToken', $token);
+        return $token;
     }
     /**
      */

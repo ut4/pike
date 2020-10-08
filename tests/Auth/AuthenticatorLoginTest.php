@@ -13,7 +13,7 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
         $this->expectExceptionMessage('User not found or not activated');
         $this->invokeLoginFeature('non-existing-username', 'irrelevant');
     }
-    private function invokeLoginFeature(string $username,
+    private function invokeLoginFeature(string $usernameOrEmail,
                                         string $password,
                                         \stdClass $s = null,
                                         $mockSession = null,
@@ -21,7 +21,7 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
                                         bool $useUserRoleCookie = false,
                                         bool $useRememberMe = false): void {
         $auth = $this->makeAuth($mockSession, $mockCookieStorage, $useUserRoleCookie, $useRememberMe);
-        $auth->login($username,
+        $auth->login($usernameOrEmail,
                      $password,
                      $s ? $s->myUserToMakeSessionDataFn : null);
         $auth->postProcess();
@@ -65,7 +65,7 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testLoginPutsUserToSessionOnSuccess(): void {
+    public function testLoginPutsUserToSessionOnSuccessfulLoginByUsername(): void {
         $this->insertTestUserToDb();
         $state = $this->setupLoginSessionTest();
         $this->invokeLoginFeature(self::TEST_USER['username'],
@@ -88,6 +88,20 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
                                 'username' => self::TEST_USER['username']
                             ]),
                             $s->actualDataPutToSession);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testLoginPutsUserToSessionOnSuccessfulLoginByEmail(): void {
+        $this->insertTestUserToDb();
+        $state = $this->setupLoginSessionTest();
+        $this->invokeLoginFeature(self::TEST_USER['email'],
+                                  self::TEST_USER_PASS,
+                                  $state,
+                                  $this->makeSpyingSession($state));
+        $this->verifyWroteSerializedDataDataToSession($state);
     }
 
 
