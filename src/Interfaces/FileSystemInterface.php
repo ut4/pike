@@ -28,6 +28,16 @@ interface FileSystemInterface {
      */
     public function copy(string $path, string $destPath): bool;
     /**
+     * @param string $oldPath
+     * @param string $newPath
+     * @return string|false
+     */
+    public function rename(string $oldPath, string $newPath): bool;
+    /**
+     * @see $this:rename
+     */
+    public function move(string $oldPath, string $newPath): bool;
+    /**
      * @param string $path
      * @param int $perms = 0755
      * @param bool $recursive = true

@@ -38,6 +38,20 @@ class FileSystem implements FileSystemInterface {
         return copy($path, $destPath);
     }
     /**
+     * @param string $oldPath
+     * @param string $newPath
+     * @return string|false
+     */
+    public function rename(string $oldPath, string $newPath): bool {
+        return rename($oldPath, $newPath);
+    }
+    /**
+     * @see $this:rename
+     */
+    public function move(string $oldPath, string $newPath): bool {
+        return $this->rename($oldPath, $newPath);
+    }
+    /**
      * @param string $path
      * @param int $perms = 0755
      * @param bool $recursive = true

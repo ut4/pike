@@ -15,12 +15,14 @@ class Request {
     public $files;
     /** @var object */
     public $params;
-    /** @var mixed */
-    public $user;
-    /** @var ?object {myCtx: mixed, name: string|null} */
+    /** @var ?object {myCtx: mixed, name: ?string} */
     public $routeInfo;
     /** @var ?string */
     public $name;
+    /** @var mixed */
+    public $myData;
+    /** @var mixed */
+    public $user;
     /** @var array */
     private $serverVars;
     /**
@@ -45,7 +47,7 @@ class Request {
     /**
      * @param string $key
      * @param ?string $default = null
-     * @return string|null
+     * @return ?string
      */
     public function queryVar(string $key, ?string $default = null): ?string {
         return $_GET[$key] ?? $default;
@@ -61,38 +63,54 @@ class Request {
     /**
      * @param string $key
      * @param ?string $default = null
-     * @return string|null
+     * @return ?string
      */
     public function cookie(string $key, ?string $default = null): ?string {
         return $_COOKIE[$key] ?? $default;
+    }
+    /**
+     * @param string $name
+     * @param ?string $default = null
+     * @return ?string
+     */
+    public function header(string $name, ?string $default = null): ?string {
+        // x-requested-with / X-Requested-With -> X_REQUESTED_WITH
+        $key = str_replace('-', '_', strtoupper($name));
+        return $this->attr(
+            // https://github.com/symfony/http-foundation/blob/5139321b2b54dd2859540c9dbadf6fddf63ad1a5/ServerBag.php#L28
+            (!in_array($key, ['CONTENT_TYPE', 'CONTENT_LENGTH', 'CONTENT_MD5'], true)
+                ? 'HTTP_'
+                : '') . $key,
+            $default
+        );
     }
 
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param string $BASE_URL
-     * @param string $urlPath = substr($_SERVER['REQUEST_URI'], strlen($BASE_URL) - 1)
+     * @param string $baseUrl
+     * @param string $urlPath = substr($_SERVER['REQUEST_URI'], strlen($baseUrl) - 1)
      * @return \Pike\Request
      * @throws \Pike\PikeException
      */
-    public static function createFromGlobals(string $BASE_URL,
+    public static function createFromGlobals(string $baseUrl,
                                              string $urlPath = null): Request {
         $method = $_SERVER['REQUEST_METHOD'];
         $body = null;
         $files = null;
         if ($method === 'POST' || $method === 'PUT') {
-            if ($_SERVER['CONTENT_TYPE'] !== 'application/json') {
-                $body = (object) $_POST;
-                $files = (object) $_FILES;
-            } else {
+            if ($_SERVER['CONTENT_TYPE'] === 'application/json') {
                 if (!($json = file_get_contents('php://input')))
                     $body = new \stdClass;
                 elseif (($body = json_decode($json)) === null)
                     throw new PikeException('Invalid json input', PikeException::BAD_INPUT);
+            } else {
+                $body = (object) $_POST;
+                $files = (object) $_FILES;
             }
         }
         return new Request(
-            $urlPath ?? substr($_SERVER['REQUEST_URI'], strlen($BASE_URL) - 1),
+            $urlPath ?? substr($_SERVER['REQUEST_URI'], strlen($baseUrl) - 1),
             $method,
             $body,
             $files,

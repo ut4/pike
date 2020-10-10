@@ -17,12 +17,12 @@ final class App {
     private $ctx;
     /** @var class-string[] */
     private $moduleClsPaths;
-    /** @var callable|null */
+    /** @var ?callable */
     private $makeInjector;
     /**
      * @param \Pike\AppContext $ctx
      * @param class-string[] $modules
-     * @param callable|null $makeInjector fn(): \Auryn\Injector
+     * @param ?callable $makeInjector fn(): \Auryn\Injector
      */
     private function __construct(AppContext $ctx,
                                  array $modules,
@@ -164,7 +164,7 @@ final class App {
     }
     /**
      * @param array|string|null $config
-     * @param \Pike\AppContext|null $ctx
+     * @param ?\Pike\AppContext $ctx
      * @return \Pike\AppContext
      */
     private static function makeEmptyCtx($config, ?AppContext $ctx): AppContext {
