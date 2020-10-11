@@ -142,9 +142,7 @@ trait HttpTestUtils {
      * @param \Pike\Response $res
      * @param \Pike\TestUtils\AppHolder $appHolder
      */
-    public function sendRequest(Request $req,
-                                $res,
-                                AppHolder $appHolder) {
+    public function sendRequest(Request $req, $res, AppHolder $appHolder) {
         $appHolder->getAppCtx()->res = $res;
         $appHolder->getApp()->handleRequest($req);
     }

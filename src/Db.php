@@ -33,6 +33,7 @@ class Db extends DbUtils {
                 $this->config['db.pass'] ?? '',
                 [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
             );
+            $this->config = [];
             return true;
         } catch (\PDOException $e) {
             throw new PikeException('The database connection failed: ' . $e->getCode(),

@@ -12,5 +12,5 @@ $myModules = [\Me\AuthorizingRoutes\MyAuthModule::class,
               \Me\AuthorizingRoutes\Review\ReviewModule::class];
 $app = \Pike\App::create($myModules);
 
-$req = \Pike\Request::createFromGlobals('', $_GET['q'] ?? '/');
+$req = \Pike\Request::createFromGlobals($_GET['q'] ?? '/');
 $app->handleRequest($req);

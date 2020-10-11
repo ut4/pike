@@ -88,18 +88,18 @@ class Request {
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param string $baseUrl
-     * @param string $urlPath = substr($_SERVER['REQUEST_URI'], strlen($baseUrl) - 1)
+     * @param ?string $fullUrl = $_SERVER['REQUEST_URI']
+     * @param ?string $baseUrl = null
      * @return \Pike\Request
      * @throws \Pike\PikeException
      */
-    public static function createFromGlobals(string $baseUrl,
-                                             string $urlPath = null): Request {
+    public static function createFromGlobals(?string $fullUrl = null,
+                                             ?string $baseUrl = null): Request {
         $method = $_SERVER['REQUEST_METHOD'];
         $body = null;
         $files = null;
         if ($method === 'POST' || $method === 'PUT') {
-            if ($_SERVER['CONTENT_TYPE'] === 'application/json') {
+            if (strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') === 0) {
                 if (!($json = file_get_contents('php://input')))
                     $body = new \stdClass;
                 elseif (($body = json_decode($json)) === null)
@@ -109,8 +109,11 @@ class Request {
                 $files = (object) $_FILES;
             }
         }
+        $urlPath = explode('?', !$fullUrl ? $_SERVER['REQUEST_URI'] : $fullUrl)[0];
         return new Request(
-            $urlPath ?? substr($_SERVER['REQUEST_URI'], strlen($baseUrl) - 1),
+            !$baseUrl || ($baseless = substr($urlPath, strlen($baseUrl) - 1)) === false
+                ? $urlPath
+                : $baseless,
             $method,
             $body,
             $files,

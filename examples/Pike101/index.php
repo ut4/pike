@@ -8,5 +8,5 @@ $loader->addPsr4('Me\\Pike101\\', __DIR__ . '/src');
 $myModules = [\Me\Pike101\SomeModule::class];
 $app = \Pike\App::create($myModules);
 
-$req = \Pike\Request::createFromGlobals('', $_GET['q'] ?? '/');
+$req = \Pike\Request::createFromGlobals($_GET['q'] ?? '/');
 $app->handleRequest($req);

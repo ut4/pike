@@ -8,5 +8,5 @@ $loader->addPsr4('Me\\MappingRoutes\\', __DIR__ . '/src');
 $myModules = [\Me\MappingRoutes\Module::class];
 $app = \Pike\App::create($myModules);
 
-$req = \Pike\Request::createFromGlobals('', $_GET['q'] ?? '/');
+$req = \Pike\Request::createFromGlobals($_GET['q'] ?? '/');
 $app->handleRequest($req);

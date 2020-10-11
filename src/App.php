@@ -32,12 +32,12 @@ final class App {
         $this->makeInjector = $makeInjector;
     }
     /**
-     * @param \Pike\Request|string $request
-     * @param string $urlPath = null
+     * @param \Pike\Request|string|null $request
+     * @param ?string $baseUrl = null
      */
-    public function handleRequest($request, string $urlPath = null): void {
-        if (is_string($request))
-            $request = Request::createFromGlobals($request, $urlPath);
+    public function handleRequest($request, ?string $baseUrl = null): void {
+        if (!$request || is_string($request))
+            $request = Request::createFromGlobals($request, $baseUrl);
         if (($match = $this->ctx->router->match($request->path, $request->method))) {
             // @allow \Pike\PikeException
             [$ctrlClassPath, $ctrlMethodName, $usersRouteCtx] =
@@ -132,7 +132,11 @@ final class App {
         }
         if (!$ctx->db &&
             ($ctx->serviceHints['db'] ?? '') === self::MAKE_AUTOMATICALLY) {
-            $ctx->db = new Db($ctx->appConfig->getVals());
+            $config = $ctx->appConfig->getVals();
+            $ctx->db = new Db($config);
+            foreach (get_object_vars($config) as $key => $_) {
+                if (strpos($key, 'db.') === 0) $config->{$key} = '<wiped>';
+            }
         }
         if (!$ctx->auth &&
             ($ctx->serviceHints['auth'] ?? '') === self::MAKE_AUTOMATICALLY) {
