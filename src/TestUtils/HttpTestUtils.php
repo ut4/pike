@@ -56,7 +56,6 @@ trait HttpTestUtils {
                     $injector->delegate(Crypto::class, function () use ($ctx) { return $ctx->crypto; });
                 if (isset($ctx->res) &&
                     ($ctx->res instanceof MutedSpyingResponse ||
-                     $ctx->res instanceof MutedResponse ||
                      $ctx->res instanceof MockObject))
                     $injector->delegate(Response::class, function () use ($ctx) { return $ctx->res; });
                 if ($alterInjector)
@@ -71,61 +70,6 @@ trait HttpTestUtils {
      */
     public function makeSpyingResponse() {
         return new MutedSpyingResponse;
-    }
-    /**
-     * @deprecated
-     * @param mixed $expectedBody = null
-     * @param int $expectedStatus = 200
-     * @param string $expectedContentType = 'json'
-     * @return \PHPUnit\Framework\MockObject\MockObject
-     */
-    public function createMockResponse($expectedBody = null,
-                                       $expectedStatus = 200,
-                                       $expectedContentType = 'json') {
-        $stub = $this->createMock(MutedResponse::class);
-        if ($expectedStatus === 200) {
-            $stub->method('status')
-                ->willReturn($stub);
-        } else {
-            $stub->expects($this->atLeastOnce())
-                ->method('status')
-                ->with($this->equalTo($expectedStatus))
-                ->willReturn($stub);
-        }
-        if (!$expectedBody) return $stub;
-        //
-        $bodyExpection = null;
-        if (is_object($expectedBody) &&
-            property_exists($expectedBody, 'actualResponseBody')) {
-            $state = $expectedBody;
-            $bodyExpection = $this->callback(function ($actualResponse) use ($state, $expectedContentType) {
-                $state->actualResponseBody = $expectedContentType !== 'json'
-                    ? $actualResponse
-                    : json_encode($actualResponse);
-                return true;
-            });
-        } else {
-            $bodyExpection = is_string($expectedBody)
-                ? $this->equalTo($expectedBody)
-                : $expectedBody;
-        }
-        $stub->expects($this->once())
-            ->method($expectedContentType)
-            ->with($bodyExpection)
-            ->willReturn($stub);
-        return $stub;
-    }
-    /**
-     * @deprecated
-     * @param object $captureTo
-     * @param int $expectedStatus = 200
-     * @param string $expectedContentType = 'json'
-     * @return \PHPUnit\Framework\MockObject\MockObject
-     */
-    public function createBodyCapturingMockResponse($captureTo,
-                                                    $expectedStatus = 200,
-                                                    $expectedContentType = 'json') {
-        return $this->createMockResponse($captureTo, $expectedStatus, $expectedContentType);
     }
     /**
      * Esimerkki:
