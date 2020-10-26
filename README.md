@@ -12,7 +12,8 @@ Minimalistic but not entirely useless php application framework. Does not self-r
 
 # Optional dependencies
 
-- [phpmailer/phpmailer ^6.1](https://github.com/PHPMailer/PHPMailer) (Authenticator)
+- [phpmailer/phpmailer ^6.1](https://github.com/PHPMailer/PHPMailer) (Auth\AccountManager)
+- [masterminds/html5 ^2.7](https://github.com/Masterminds/html5-php) (Extensions\SafeHTMLValidator)
 
 # Documentation
 

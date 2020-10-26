@@ -11,7 +11,7 @@ use Pike\Defaults\DefaultUserRepository;
 use Pike\Interfaces\{FileSystemInterface, SessionInterface};
 
 final class App {
-    public const VERSION = '0.7.1-dev';
+    public const VERSION = '0.8.0';
     public const MAKE_AUTOMATICALLY = '@auto';
     /** @var \Pike\AppContext */
     private $ctx;
