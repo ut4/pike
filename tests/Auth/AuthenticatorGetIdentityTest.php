@@ -2,6 +2,7 @@
 
 namespace Pike\Tests\Auth;
 
+use Pike\Auth\Authenticator;
 use Pike\Auth\Interfaces\CookieStorageInterface;
 use Pike\Interfaces\SessionInterface;
 use Pike\TestUtils\MockCrypto;
@@ -95,5 +96,32 @@ class AuthenticatorGetIdentityTest extends AuthenticatorTestCase {
     private function verifyStoredLoginDataToSession(\stdClass $state): void {
         $this->assertEquals($state->sessionData,
                             $state->actualDataPutToSession);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testGetIdentityWithRememberMeOnDoesNotRetrieveIdentityIfAccountIsBanned(): void {
+        $state = $this->setupRememberBannedUserTest();
+        $this->insertTestUserToDb($state->testUserData);
+        $this->invokeGetIdentityFeature($state);
+        $this->verifyDidNotReturIdentity($state);
+        $this->verifyClearedLoginDataFromDb($state);
+    }
+    private function setupRememberBannedUserTest(): \stdClass {
+        $state = $this->setupRememberMeTest();
+        $state->testUserData['accountStatus'] = Authenticator::ACCOUNT_STATUS_BANNED;
+        return $state;
+    }
+    private function verifyDidNotReturIdentity(\stdClass $state): void {
+        $this->assertNull($state->actualIdentity);
+    }
+    private function verifyClearedLoginDataFromDb(\stdClass $state): void {
+        $data = $this->getTestUserFromDb(self::TEST_USER['id']);
+        $this->assertNotNull($data);
+        $this->assertNull($data->loginId);
+        $this->assertNull($data->loginIdValidatorHash);
+        $this->assertNull($data->loginData);
     }
 }

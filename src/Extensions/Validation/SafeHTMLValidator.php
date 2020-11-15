@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Pike\Extensions\Validation;
 
-use Masterminds\{HTML5};
+use Masterminds\HTML5;
 use Masterminds\HTML5\Parser\{DOMTreeBuilder, Scanner, Tokenizer};
 
 abstract class SafeHTMLValidator {
@@ -43,6 +43,7 @@ abstract class SafeHTMLValidator {
         'th' => 'th',
         'thead' => 'thead',
         'tr' => 'tr',
+        'u' => 'u',
         'ul' => 'ul',
     ];
     public const DEFAULT_ALLOWED_ATTRIBUTES = [

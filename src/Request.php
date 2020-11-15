@@ -102,8 +102,14 @@ class Request {
             if (strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') === 0) {
                 if (!($json = file_get_contents('php://input')))
                     $body = new \stdClass;
-                elseif (($body = json_decode($json)) === null)
-                    throw new PikeException('Invalid json input', PikeException::BAD_INPUT);
+                else {
+                    if (($body = json_decode($json)) === null)
+                        throw new PikeException('Invalid json input',
+                                                PikeException::BAD_INPUT);
+                    elseif (!($body instanceof \stdClass))
+                        throw new PikeException('Input json must be an object',
+                                                PikeException::BAD_INPUT);
+                }
             } else {
                 $body = (object) $_POST;
                 $files = (object) $_FILES;

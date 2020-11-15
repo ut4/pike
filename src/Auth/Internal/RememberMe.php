@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Pike\Auth\Internal;
 
-use Pike\Auth\Crypto;
+use Pike\Auth\{Authenticator, Crypto};
 use Pike\Entities\User;
 use Pike\Interfaces\UserRepositoryInterface;
 
@@ -39,11 +39,13 @@ final class RememberMe {
         // @allow \Pike\PikeException
         $user = $this->persistence->getUserByColumn('loginId', $loginIdToken);
         if (!$user || !$user->loginIdValidatorHash) return null;
-        if (hash_equals($user->loginIdValidatorHash,
+        //
+        if ($user->accountStatus === Authenticator::ACCOUNT_STATUS_ACTIVATED &&
+            hash_equals($user->loginIdValidatorHash,
                         $this->crypto->hash('sha256', $loginIdValidatorToken)))
             return $user->loginData;
-        else
-            $this->clearPersistentLoginData($user->id);
+        //
+        $this->clearPersistentLoginData($user->id);
         return null;
     }
     /**
@@ -67,7 +69,7 @@ final class RememberMe {
     /**
      */
     public function clearLogin(): void {
-        [$loginIdToken, $loginIdValidatorToken] = $this->getAndParseCookie();
+        [$loginIdToken, $_loginIdValidatorToken] = $this->getAndParseCookie();
         if (!$loginIdToken)
             return;
         // @allow \Pike\PikeException

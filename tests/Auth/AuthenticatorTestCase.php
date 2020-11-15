@@ -54,7 +54,7 @@ abstract class AuthenticatorTestCase extends DbTestCase {
         );
     }
     /**
-     * @param array $data = []
+     * @param array<string, mixed> $data = []
      */
     protected function insertTestUserToDb(array $data = []): void {
         [$qList, $values, $columns] = self::$db->makeInsertQParts(array_merge(self::TEST_USER, $data));
