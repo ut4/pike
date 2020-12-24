@@ -37,7 +37,7 @@ final class Authenticator {
      * @param callable(\Pike\Auth\Internal\ServicesFactory): \Pike\Auth\Interfaces\CookieStorageInterface $makeCookieStorageFn
      * @param string $userRoleCookieName = 'maybeLoggedInUserRole'
      * @param bool $doUseRememberMe = true
-     * @param \Pike\Auth\Crypto $crypto = null
+     * @param ?\Pike\Auth\Crypto $crypto = null
      */
     public function __construct(callable $makeUserRepositoryFn,
                                 callable $makeSessionFn,
@@ -121,7 +121,7 @@ final class Authenticator {
         $this->services->makeSession()->destroy();
     }
     /**
-     * @param callable(): \Pike\Interfaces\MailerInterface $makeMailerFn = null
+     * @param ?callable(): \Pike\Interfaces\MailerInterface $makeMailerFn = null
      * @return \Pike\Auth\AccountManager
      */
     public function getAccountManager(callable $makeMailerFn = null): AccountManager {

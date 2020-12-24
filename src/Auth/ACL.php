@@ -56,7 +56,7 @@ class ACL {
      * @param string $action
      * @param string $resource
      * @return bool
-     * @throw \Pike\PikeException
+     * @throws \Pike\PikeException
      */
     public function can(int $role, string $action, string $resource): bool {
         if ($role === self::ROLE_SUPER_ADMIN)

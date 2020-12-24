@@ -11,6 +11,7 @@ abstract class ConfigProvidingTestCase extends TestCase {
     protected static function getAppConfig() {
         if (defined('TEST_CONFIG_DIR_PATH'))
             return require TEST_CONFIG_DIR_PATH . 'config.php';
-        throw new \RuntimeException('Not implemented');
+        throw new \RuntimeException("ConfigProvidingTestCase must implement getAppConfig() if" .
+            " TEST_CONFIG_DIR_PATH . 'config.php' does not exist.");
     }
 }

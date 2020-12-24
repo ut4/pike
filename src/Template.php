@@ -15,7 +15,7 @@ class Template {
     protected $__locals;
     /**
      * @param string $file
-     * @param array<string, mixed> $vars = null
+     * @param ?array<string, mixed> $vars = null
      */
     public function __construct(string $file, array $vars = null) {
         $this->__vars = $vars ?? [];

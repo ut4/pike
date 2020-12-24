@@ -39,7 +39,7 @@ class MockCrypto extends Crypto {
         return 'here\'s-guid-for-you';
     }
     public static function mockGenRandomToken(int $bytes = 16): string {
-        return str_pad('randomToken', $bytes * 2, '-');
+        return str_pad('randomToken', $bytes * 2, '-'); // @phan-suppress-current-line PhanParamSuspiciousOrder
     }
     public static function mockEncrypt(string $str, string $key): string {
         return "encrypted with {$key}: {$str}";

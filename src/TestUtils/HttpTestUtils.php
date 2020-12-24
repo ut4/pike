@@ -92,7 +92,7 @@ trait HttpTestUtils {
     }
     /**
      * @param string|object|array $expected
-     * @param \Pike\TestUtils\SpyingResponse|string|\stdClass $actual
+     * @param \Pike\TestUtils\MutedSpyingResponse|string|\stdClass $actual
      */
     public function verifyResponseBodyEquals($expected, $actual): void {
         $expected = is_string($expected) ? $expected : json_encode($expected);
@@ -105,7 +105,7 @@ trait HttpTestUtils {
     /**
      * @param int $expectedStatusCode 200 etc.
      * @param string $expectedContentType 'application/json' etc.
-     * @param \Pike\TestUtils\SpyingResponse $spyingResponse
+     * @param \Pike\TestUtils\MutedSpyingResponse $spyingResponse
      */
     public function verifyResponseMetaEquals(int $expectedStatusCode,
                                              string $expectedContentType,

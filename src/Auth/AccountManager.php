@@ -22,7 +22,7 @@ final class AccountManager {
     /**
      * @param \Pike\Interfaces\UserRepositoryInterface $userRepo
      * @param \Pike\Auth\Crypto $crypto
-     * @param callable(): \Pike\Interfaces\MailerInterface $makeMailerFn = null
+     * @param ?callable(): \Pike\Interfaces\MailerInterface $makeMailerFn = null
      */
     public function __construct(UserRepositoryInterface $userRepo,
                                 Crypto $crypto,

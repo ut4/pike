@@ -7,7 +7,7 @@ namespace Pike;
 use AltoRouter;
 
 class Router extends AltoRouter {
-    /** @var array<{pattern: string, fn: callable}> */
+    /** @var object[] {pattern: string, fn: callable} */
     public $middleware = [];
     /**
      * @param string $pattern
@@ -15,7 +15,7 @@ class Router extends AltoRouter {
      */
     public function on(string $pattern, callable $fn): void {
         if ($pattern !== '*')
-            throw new \Exception('Patterns other than '*' not implemented');
+            throw new \Exception('Patterns other than \'*\' not implemented');
         $this->middleware[] = (object)['pattern' => $pattern, 'fn' => $fn];
     }
 }

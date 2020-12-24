@@ -17,7 +17,7 @@ class ServicesFactory {
     private $makeCookieStorageFn;
     /** @var bool */
     private $doUseRememberMe;
-    /** @var \Pike\Auth\Crypto */
+    /** @var ?\Pike\Auth\Crypto */
     private $crypto;
     /** @var ?\Pike\Interfaces\SessionInterface */
     private $cachedSession;

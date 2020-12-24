@@ -164,7 +164,7 @@ class ObjectValidator extends BaseValidator {
     /**
      * @param string $propPath
      * @param string $ruleName
-     * @param array ...$args
+     * @param mixed ...$args
      * @return $this
      */
     public function rule(string $propPath,

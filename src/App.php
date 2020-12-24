@@ -116,8 +116,8 @@ final class App {
     /**
      * @param class-string[] $modules
      * @param string|array|\Pike\AppConfig $config = null
-     * @param \Pike\AppContext $ctx = null
-     * @param callable $makeInjector = null fn(): \Auryn\Injector
+     * @param ?\Pike\AppContext $ctx = null
+     * @param ?callable $makeInjector = null fn(): \Auryn\Injector
      * @return \Pike\App
      */
     public static function create(array $modules,

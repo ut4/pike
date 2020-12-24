@@ -20,7 +20,7 @@ class Translator {
     }
     /**
      * @param string $key
-     * @param mixed[] $args
+     * @param float|int|string ...$args
      * @return string
      */
     public function t(string $key, ...$args): string {

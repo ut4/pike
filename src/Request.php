@@ -28,9 +28,9 @@ class Request {
     /**
      * @param string $path
      * @param string $method = 'GET'
-     * @param object $body = new \stdClass
-     * @param object $files = new \stdClass
-     * @param array $serverVars = []
+     * @param ?object $body = new \stdClass
+     * @param ?object $files = new \stdClass
+     * @param ?array $serverVars = []
      */
     public function __construct(string $path,
                                 string $method = 'GET',
@@ -123,7 +123,7 @@ class Request {
             $method,
             $body,
             $files,
-            $_SERVER,
+            $_SERVER
         );
     }
 }

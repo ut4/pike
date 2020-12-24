@@ -42,7 +42,7 @@ class FileSystem implements FileSystemInterface {
      * @param string $newPath
      * @return string|false
      */
-    public function rename(string $oldPath, string $newPath): bool {
+    public function rename(string $oldPath, string $newPath) {
         return rename($oldPath, $newPath);
     }
     /**

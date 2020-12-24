@@ -32,7 +32,7 @@ interface FileSystemInterface {
      * @param string $newPath
      * @return string|false
      */
-    public function rename(string $oldPath, string $newPath): bool;
+    public function rename(string $oldPath, string $newPath);
     /**
      * @see $this:rename
      */
