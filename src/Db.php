@@ -36,7 +36,7 @@ class Db extends DbUtils {
             $this->config = [];
             return true;
         } catch (\PDOException $e) {
-            throw new PikeException('The database connection failed: ' . $e->getCode(),
+            throw new PikeException("The database connection failed: {$e->getCode()}",
                                     PikeException::ERROR_EXCEPTION,
                                     $e);
         }
@@ -79,7 +79,7 @@ class Db extends DbUtils {
                              ...$fetchConfig) {
         try {
             $prep = $this->pdo->prepare($this->compileQuery($query));
-            $prep->setFetchMode(...$fetchConfig);
+            $fetchConfig && $prep->setFetchMode(...$fetchConfig);
             $prep->execute($params);
             $row = $prep->fetch();
             return $row !== false ? $row : null;
