@@ -14,16 +14,18 @@ class Response {
     /** @var array<int, mixed[]> */
     protected $headers;
     /** @var bool */
-    protected $responseIsSent;
+    protected $responseIsCommitted;
     /** @var bool */
     protected $hasRedirect;
     /**
      * @param int $statusCode = 200
      */
     public function __construct(int $statusCode = 200) {
+        $this->contentType = 'text/html';
         $this->statusCode = $statusCode;
+        $this->body = null;
         $this->headers = [];
-        $this->responseIsSent = false;
+        $this->responseIsCommitted = false;
         $this->hasRedirect = false;
     }
     /**
@@ -59,6 +61,18 @@ class Response {
     public function plain(string $body): Response {
         $this->body = $body;
         $this->type('plain');
+        return $this;
+    }
+    /**
+     * @param string $type 'html' | 'json' | 'plain' | 'content/type'
+     * @return $this
+     */
+    public function type(string $type): Response {
+        $this->contentType = [
+            'html' => 'text/html',
+            'json' => 'application/json',
+            'plain' => 'text/plain',
+        ][$type] ?? $type;
         return $this;
     }
     /**
@@ -100,23 +114,18 @@ class Response {
         return $this;
     }
     /**
-     * Lähettää configuroidut headerit ja datan clientille.
-     *
-     * @throws \Pike\PikeException
+     * @param string $body
      */
-    public function send(): void {
-        if (!$this->body && !$this->hasRedirect)
-            throw new PikeException('Nothing to send', PikeException::BAD_INPUT);
-        $this->sendOutput();
-        $this->responseIsSent = true;
+    public function send(string $body): void {
+        $this->body = $body;
     }
     /**
-     * @return bool $responseIsSent
+     * @return bool $responseIsCommitted
      */
-    public function sendIfReady(): bool {
-        if ($this->isSent()) return true;
-        if (($this->contentType && $this->body) || $this->hasRedirect) {
-            $this->send();
+    public function commitIfReady(): bool {
+        if ($this->isCommitted()) return true;
+        if (($this->contentType && $this->body !== null) || $this->hasRedirect) {
+            $this->commit();
             return true;
         }
         return false;
@@ -124,26 +133,20 @@ class Response {
     /**
      * @return bool
      */
-    public function isSent(): bool {
-        return $this->responseIsSent;
+    public function isCommitted(): bool {
+        return $this->responseIsCommitted;
     }
     /**
+     * @throws \Pike\PikeException
      */
-    protected function sendOutput(): void {
+    protected function commit(): void {
+        if ($this->body === null && !$this->hasRedirect)
+            throw new PikeException('Nothing to send', PikeException::BAD_INPUT);
         http_response_code($this->statusCode);
         header("Content-Type: {$this->contentType}");
         foreach ($this->headers as $def)
             header("{$def[0]}: {$def[1]}", ...array_slice($def, 2));
         echo $this->body;
-    }
-    /**
-     * @param string $type 'html' | 'json' | 'plain'
-     */
-    private function type(string $type): void {
-        $this->contentType = [
-            'html' => 'text/html',
-            'json' => 'application/json',
-            'plain' => 'text/plain',
-        ][$type];
+        $this->responseIsCommitted = true;
     }
 }

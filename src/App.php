@@ -52,12 +52,12 @@ final class App {
             if (!$this->ctx->res) $this->ctx->res = new Response();
             // @allow \Pike\PikeException
             $this->execMiddlewareCallback(0);
-            if ($this->ctx->res->sendIfReady())
+            if ($this->ctx->res->commitIfReady())
                 return;
             $injector = $this->setupIocContainer();
             $injector->execute("{$ctrlClassPath}::{$ctrlMethodName}");
             if ($this->ctx->auth) $this->ctx->auth->postProcess();
-            $this->ctx->res->sendIfReady();
+            $this->ctx->res->commitIfReady();
         } else {
             throw new PikeException("No route for {$request->method} {$request->path}");
         }
@@ -67,7 +67,7 @@ final class App {
      */
     private function execMiddlewareCallback(int $index): void {
         $ware = $this->ctx->router->middleware[$index] ?? null;
-        if (!$ware || $this->ctx->res->isSent()) return;
+        if (!$ware || $this->ctx->res->isCommitted()) return;
         // @allow \Pike\PikeException
         call_user_func($ware->fn, $this->ctx->req, $this->ctx->res, function () use ($index) {
             $this->execMiddlewareCallback($index + 1);

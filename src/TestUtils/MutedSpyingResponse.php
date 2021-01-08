@@ -28,7 +28,7 @@ class MutedSpyingResponse extends Response {
         }
         return null;
     }
-    protected function sendOutput(): void {
+    protected function commit(): void {
         // Muted.
     }
 }
