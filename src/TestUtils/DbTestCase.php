@@ -10,16 +10,16 @@ abstract class DbTestCase extends ConfigProvidingTestCase {
     /** @var ?\Pike\Db */
     protected static $db = null;
     protected function setUp(): void {
-        if (!self::$db) self::getDb();
+        self::setGetDb();
         self::$db->beginTransaction();
     }
     protected function tearDown(): void {
         self::$db->rollBack();
     }
-    public static function getDb(array $config = null): Db {
+    public static function setGetDb(array $config = null): Db {
         if (!self::$db) {
             self::$db = new SingleConnectionDb([]);
-            self::createOrOpenTestDb($config !== null ? $config : static::getAppConfig());
+            self::createOrOpenTestDb($config ?? self::setGetConfig());
         }
         return self::$db;
     }

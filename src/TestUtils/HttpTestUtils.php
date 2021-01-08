@@ -3,92 +3,45 @@
 namespace Pike\TestUtils;
 
 use Auryn\Injector;
-use PHPUnit\Framework\MockObject\MockObject;
-use Pike\{App, AppContext, Db, FileSystem, Request, Response};
-use Pike\Auth\{Authenticator, Crypto};
+use Pike\{App, AppConfig, AppContextPopulatorModule, Db, Response};
+use Pike\Auth\{Authenticator};
 use Pike\Interfaces\SessionInterface;
 
 trait HttpTestUtils {
     /**
-     * @param callable $factory fn(array $config, \Pike\AppContext $ctx, callable? $makeInjector): \Pike\App
-     * @param array|string|null $config = null
-     * @param \Pike\AppContext|class-string $ctx = null
-     * @param callable $alterInjector = null fn(\Auryn\Injector $injector): void
-     * @return \Pike\TestUtils\AppHolder
+     * @param callable(): \Pike\App $factory
+     * @param ?\Closure $userDefinedAlterDi = null callable(\Auryn\Injector $di): void
      */
     public function makeApp(callable $factory,
-                            $config = null,
-                            $ctx = null,
-                            callable $alterInjector = null) {
-        if ($config === null && $this instanceof ConfigProvidingTestCase) {
-            $config = $this->getAppConfig();
+                            ?\Closure $userDefinedAlterDi = null): ResponseSpyingApp {
+        $app = call_user_func($factory);
+        $modules =& $app->getModules();
+        //
+        foreach ($modules as $m) {
+            if ($m instanceof AppContextPopulatorModule) {
+                $this->adjustCtxPopulationInstructionsForTesting($m->getPopulationInstructions());
+                break;
+            }
         }
-        if (!$ctx || is_string($ctx)) {
-            $Cls = !$ctx ? AppContext::class : $ctx;
-            $ctx = new $Cls(['db' => App::MAKE_AUTOMATICALLY,
-                             'auth' => App::MAKE_AUTOMATICALLY]);
-        }
-        if (($ctx->serviceHints['db'] ?? null) === App::MAKE_AUTOMATICALLY) {
-            $ctx->db = DbTestCase::getDb(!is_string($config) ? $config : require $config);
-        }
-        if (($ctx->serviceHints['auth'] ?? null) === App::MAKE_AUTOMATICALLY) {
-            $ctx->auth = new Authenticator(
-                function ($_factory) { },
-                function ($_factory) {
-                    $mockSession = $this->createMock(SessionInterface::class);
-                    $mockSession->method('get')->with('user')->willReturn((object) ['id' => '1', 'role' => 1]);
-                    return $mockSession;
-                },
-                function ($_factory) { },
-                '',   // $userRoleCookieName
-                false // doUseRememberMe
-            );
-        }
-        return new AppHolder(
-            call_user_func($factory, $config, $ctx, function () use ($ctx, $alterInjector) {
-                $injector = new Injector();
-                $injector->alias(Db::class, SingleConnectionDb::class);
-                if (isset($ctx->auth))
-                    $injector->delegate(Authenticator::class, function () use ($ctx) { return $ctx->auth; });
-                if (isset($ctx->fs))
-                    $injector->delegate(FileSystem::class, function () use ($ctx) { return $ctx->fs; });
-                if (isset($ctx->crypto))
-                    $injector->delegate(Crypto::class, function () use ($ctx) { return $ctx->crypto; });
-                if (isset($ctx->res) &&
-                    ($ctx->res instanceof MutedSpyingResponse ||
-                     $ctx->res instanceof MockObject))
-                    $injector->delegate(Response::class, function () use ($ctx) { return $ctx->res; });
-                if ($alterInjector)
-                    $alterInjector($injector);
-                return $injector;
-            }),
-            $ctx
-        );
+        //
+        $modules[] = new class($userDefinedAlterDi) {
+            private $alterDiFn;
+            public function __construct(?\Closure $userDefinedAlterDi = null) {
+                $this->alterDiFn = $userDefinedAlterDi;
+            }
+            public function alterDi(Injector $di): void {
+                $di->alias(Response::class, MutedSpyingResponse::class);
+                $di->alias(Db::class, SingleConnectionDb::class);
+                if ($this->alterDiFn) $this->alterDiFn->__invoke($di);
+            }
+        };
+        return new ResponseSpyingApp($app);
     }
     /**
      * @return \Pike\TestUtils\MutedSpyingResponse
      */
     public function makeSpyingResponse() {
         return new MutedSpyingResponse;
-    }
-    /**
-     * Esimerkki:
-     * ```
-     * $req = new Request('/api/foo', 'GET');
-     * $res = $this->makeSpyingResponse();
-     * $app = $this->makeApp('\My\App::create', $this->getAppConfig());
-     * $this->sendRequest($req, $res, $app);
-     * $this->assertEquals(200, $res->getActualStatusCode());
-     * $this->assertEquals(json_encode(['expected response']), $res->getActualBody());
-     * ```
-     *
-     * @param \Pike\Request $req
-     * @param \Pike\Response $res
-     * @param \Pike\TestUtils\AppHolder $appHolder
-     */
-    public function sendRequest(Request $req, $res, AppHolder $appHolder) {
-        $appHolder->getAppCtx()->res = $res;
-        $appHolder->getApp()->handleRequest($req);
     }
     /**
      * @param string|object|array $expected
@@ -112,5 +65,36 @@ trait HttpTestUtils {
                                              MutedSpyingResponse $spyingResponse): void {
         $this->assertEquals($expectedStatusCode, $spyingResponse->getActualStatusCode());
         $this->assertEquals($expectedContentType, $spyingResponse->getActualContentType());
+    }
+    /**
+     * @param array<int, string|object> &$instructions
+     */
+    private function adjustCtxPopulationInstructionsForTesting(array &$instructions): void {
+        $config = $instructions['config'] ?? null;
+        if (!$config && method_exists(self::class, 'setGetConfig'))
+            $instructions['config'] = self::setGetConfig();
+        //
+        if (($instructions['db'] ?? null) === App::MAKE_AUTOMATICALLY)
+            $instructions['db'] = function ($ctx) {
+                $cfg = $ctx->config ?? null;
+                return DbTestCase::setGetDb($cfg instanceof AppConfig
+                    ? (array) $ctx->config->getVals()
+                    : null);
+            };
+        //
+        if (($instructions['auth'] ?? null) === App::MAKE_AUTOMATICALLY)
+            $instructions['auth'] = function ($_ctx) {
+                return new Authenticator(
+                    function ($_factory) { },
+                    function ($_factory) {
+                        $mockSession = $this->createMock(SessionInterface::class);
+                        $mockSession->method('get')->with('user')->willReturn((object) ['id' => '1', 'role' => 1]);
+                        return $mockSession;
+                    },
+                    function ($_factory) { },
+                    '',   // $userRoleCookieName
+                    false // doUseRememberMe
+                );
+            };
     }
 }
