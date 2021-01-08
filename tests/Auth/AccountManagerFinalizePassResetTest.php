@@ -7,7 +7,7 @@ use Pike\PikeException;
 use Pike\TestUtils\MockCrypto;
 
 class AccountManagerFinalizePassResetTest extends AuthenticatorTestCase {
-    public function testFinalizePassResetThrowsIfResetKeyWasNotFoundEmailDoNotMatch(): void {
+    public function testFinalizePassResetThrowsIfResetKeyWasNotFound(): void {
         $state = $this->setupMissingKeyTest();
         $this->expectException(PikeException::class);
         $this->expectExceptionCode(Authenticator::CREDENTIAL_WAS_INVALID);
@@ -78,7 +78,6 @@ class AccountManagerFinalizePassResetTest extends AuthenticatorTestCase {
     private function invokeFinalizePassResetFeature(\stdClass $s): void {
         $this->makeAuth()->getAccountManager()->finalizePasswordReset(
             $s->testResetKey,
-            self::TEST_USER['email'],
             $s->newPassword
         );
     }

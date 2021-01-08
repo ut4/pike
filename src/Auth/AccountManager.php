@@ -159,18 +159,16 @@ final class AccountManager {
     }
     /**
      * @param string $key
-     * @param string $email
      * @param string $newPassword
      * @throws \Pike\PikeException
      */
     public function finalizePasswordReset(string $key,
-                                          string $email,
                                           string $newPassword): void {
         // 1. Hae resetointidata tietokannasta
         // @allow \Pike\PikeException
         $user = $this->persistence->getUserByColumn('resetKey', $key);
         // 2. Validoi avain ja email
-        if (!$user || $user->email !== $email)
+        if (!$user)
             throw new PikeException('Invalid reset credential',
                                     Authenticator::CREDENTIAL_WAS_INVALID);
         if (time() > $user->resetRequestedAt +
