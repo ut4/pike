@@ -5,8 +5,8 @@
 $loader = require dirname(__DIR__, 2) . '/vendor/autoload.php';
 $loader->addPsr4('Me\\Pike101\\', __DIR__ . '/src');
 
-$myModules = [\Me\Pike101\SomeModule::class];
-$app = \Pike\App::create($myModules);
+$myModules = [new \Me\Pike101\SomeModule];
+$app = new \Pike\App($myModules);
 
 $req = \Pike\Request::createFromGlobals($_GET['q'] ?? '/');
 $app->handleRequest($req);

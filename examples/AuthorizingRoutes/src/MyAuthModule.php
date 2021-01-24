@@ -7,13 +7,13 @@ namespace Me\AuthorizingRoutes;
 use Auryn\Injector;
 use Pike\{AppContext, Auth\ACL};
 
-abstract class MyAuthModule {
+final class MyAuthModule {
     /** @var \Pike\AppContext */
-    private static $ctx;
+    private $ctx;
     /**
      * @param \Pike\AppContext $ctx
      */
-    public static function init(AppContext $ctx): void {
+    public function init(AppContext $ctx): void {
         $ctx->acl = new ACL();
         $ctx->acl->setRules(self::makeMyAclRules());
         //
@@ -28,7 +28,7 @@ abstract class MyAuthModule {
                 $next();
         });
         //
-        self::$ctx = $ctx;
+        $this->ctx = $ctx;
     }
     /**
      * @return \stdClass
@@ -64,7 +64,7 @@ abstract class MyAuthModule {
     /**
      * @param \Auryn\Injector $container
      */
-    public static function alterIoc(Injector $container) {
-        $container->share(self::$ctx->acl);
+    public function alterDi(Injector $container) {
+        $container->share($this->ctx->acl);
     }
 }

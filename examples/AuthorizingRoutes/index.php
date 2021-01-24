@@ -7,10 +7,10 @@ $loader->addPsr4('Me\\AuthorizingRoutes\\', __DIR__ . '/src');
 
 define('LOGGED_IN_USER_ROLE', \Pike\Auth\ACL::ROLE_EDITOR);
 
-$myModules = [\Me\AuthorizingRoutes\MyAuthModule::class,
-              \Me\AuthorizingRoutes\Product\ProductModule::class,
-              \Me\AuthorizingRoutes\Review\ReviewModule::class];
-$app = \Pike\App::create($myModules);
+$myModules = [new \Me\AuthorizingRoutes\MyAuthModule,
+              new \Me\AuthorizingRoutes\Product\ProductModule,
+              new \Me\AuthorizingRoutes\Review\ReviewModule];
+$app = new \Pike\App($myModules);
 
 $req = \Pike\Request::createFromGlobals($_GET['q'] ?? '/');
 $app->handleRequest($req);

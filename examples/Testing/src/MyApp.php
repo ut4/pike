@@ -6,19 +6,14 @@ namespace Me\Testing;
 
 use Pike\{App, AppContext};
 
-abstract class MyApp {
+final class MyApp {
     /**
-     * @param array<string, mixed> $config
-     * @param \Pike\AppContext $ctx
-     * @param callable $makeInjector = null
      * @return \Pike\App
      */
-    public static function create(array $config,
-                                  AppContext $ctx,
-                                  callable $makeInjector = null): App {
-        return App::create([
-            SomeModule::class
+    public static function create(): App {
+        return new App([
+            new SomeModule,
             // muut moduulit tänne
-        ], $config, $ctx, $makeInjector);
+        ]);
     }
 }

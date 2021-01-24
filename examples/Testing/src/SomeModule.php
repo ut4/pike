@@ -6,11 +6,11 @@ namespace Me\Testing;
 
 use Pike\AppContext;
 
-abstract class SomeModule {
+final class SomeModule {
     /**
      * @param \Pike\AppContext $ctx
      */
-    public static function init(AppContext $ctx): void {
+    public function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/some-route',
             [MyController::class, 'handleSomeRoute']
         );

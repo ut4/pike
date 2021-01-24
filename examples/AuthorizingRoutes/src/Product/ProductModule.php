@@ -6,11 +6,11 @@ namespace Me\AuthorizingRoutes\Product;
 
 use Pike\AppContext;
 
-abstract class ProductModule {
+final class ProductModule {
     /**
      * @param \Pike\AppContext $ctx
      */
-    public static function init(AppContext $ctx): void {
+    public function init(AppContext $ctx): void {
         $ctx->router->map('POST', '/products',
             [ProductController::class, 'handleCreateProduct', 'create:products']
         );

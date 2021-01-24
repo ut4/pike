@@ -3,8 +3,7 @@
 namespace Pike\TestUtils;
 
 use Auryn\Injector;
-use Pike\{App, AppConfig, AppContextPopulatorModule, Db, Response};
-use Pike\Auth\{Authenticator};
+use Pike\{App, Db, Response};
 use Pike\Interfaces\SessionInterface;
 
 trait HttpTestUtils {
@@ -15,16 +14,18 @@ trait HttpTestUtils {
     public function makeApp(callable $factory,
                             ?\Closure $userDefinedAlterDi = null): ResponseSpyingApp {
         $app = call_user_func($factory);
-        $modules =& $app->getModules();
+        if (!($app instanceof App))
+            throw new \UnexpectedValueException('$factory must return an instance of \Pike\App');
         //
-        foreach ($modules as $m) {
-            if ($m instanceof AppContextPopulatorModule) {
-                $this->adjustCtxPopulationInstructionsForTesting($m->getPopulationInstructions());
-                break;
-            }
-        }
+        $app->setServiceInstantiator(fn($ctx) => new ServiceDefaultsForTests($ctx, function ($_factory) {
+            $mockSession = $this->createMock(SessionInterface::class);
+            $mockSession->method('get')->with('user')->willReturn((object) ['id' => '1', 'role' => 1]);
+            return $mockSession;
+        }, function () {
+            return self::setGetConfig();
+        }));
         //
-        $modules[] = new class($userDefinedAlterDi) {
+        $app->getModules()[] = new class($userDefinedAlterDi) {
             private $alterDiFn;
             public function __construct(?\Closure $userDefinedAlterDi = null) {
                 $this->alterDiFn = $userDefinedAlterDi;
@@ -65,36 +66,5 @@ trait HttpTestUtils {
                                              MutedSpyingResponse $spyingResponse): void {
         $this->assertEquals($expectedStatusCode, $spyingResponse->getActualStatusCode());
         $this->assertEquals($expectedContentType, $spyingResponse->getActualContentType());
-    }
-    /**
-     * @param array<int, string|object> &$instructions
-     */
-    private function adjustCtxPopulationInstructionsForTesting(array &$instructions): void {
-        $config = $instructions['config'] ?? null;
-        if (!$config && method_exists(self::class, 'setGetConfig'))
-            $instructions['config'] = self::setGetConfig();
-        //
-        if (($instructions['db'] ?? null) === App::MAKE_AUTOMATICALLY)
-            $instructions['db'] = function ($ctx) {
-                $cfg = $ctx->config ?? null;
-                return DbTestCase::setGetDb($cfg instanceof AppConfig
-                    ? (array) $ctx->config->getVals()
-                    : null);
-            };
-        //
-        if (($instructions['auth'] ?? null) === App::MAKE_AUTOMATICALLY)
-            $instructions['auth'] = function ($_ctx) {
-                return new Authenticator(
-                    function ($_factory) { },
-                    function ($_factory) {
-                        $mockSession = $this->createMock(SessionInterface::class);
-                        $mockSession->method('get')->with('user')->willReturn((object) ['id' => '1', 'role' => 1]);
-                        return $mockSession;
-                    },
-                    function ($_factory) { },
-                    '',   // $userRoleCookieName
-                    false // doUseRememberMe
-                );
-            };
     }
 }

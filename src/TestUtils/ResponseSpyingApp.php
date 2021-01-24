@@ -14,6 +14,12 @@ class ResponseSpyingApp {
         $this->app = $app;
     }
     /**
+     * @param \Pike\App $app
+     */
+    public function getApp(): App {
+        return $this->app;
+    }
+    /**
      * @param \Pike\Request $req
      * @param ?\Pike\Response $res = null
      * @return \Pike\Response

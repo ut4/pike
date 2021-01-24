@@ -14,17 +14,24 @@ final class App {
     private $moduleInstances;
     /** @var \Pike\AppContext */
     private $ctx;
+    /** @var ?\Closure */
+    private $populateCtx;
+    /** @var ?\Pike\ServiceDefaults */
+    private $serviceDefaults;
     /**
      * @param object[] $modules
-     * @param ?\Pike\AppContext $ctx = null
+     * @param ?\Closure $populateCtx = null
+     * @param ?\Pike\AppContext $initialCtx = null
      * @param ?\Pike\Router $router = null
      */
     public function __construct(array $modules,
-                                ?AppContext $ctx = null,
+                                ?\Closure $populateCtx = null,
+                                ?AppContext $initialCtx = null,
                                 ?Router $router = null) {
         self::throwIfAnyModuleIsNotValid($modules);
         $this->moduleInstances = $modules;
-        $this->ctx = $ctx ?? new AppContext;
+        $this->populateCtx = $populateCtx;
+        $this->ctx = $initialCtx ?? new AppContext;
         $this->ctx->router = $router ?? new Router;
         $this->ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_-]++']);
     }
@@ -37,14 +44,25 @@ final class App {
     public function handleRequest($request,
                                   ?string $baseUrl = null,
                                   ?Response $response = null): void {
-        $this->forEachModuleCall('init', $this->ctx);
-        //
         $this->ctx->req = !$request || is_string($request)
             ? Request::createFromGlobals($request, $baseUrl)
             : $request;
         $this->ctx->res = $response ?? new Response;
         $req = $this->ctx->req;
         $res = $this->ctx->res;
+        //
+        $ctxIsPopulated = false;
+        $populateCtxIfNotPopulated = function () use (&$ctxIsPopulated): void {
+            if ($ctxIsPopulated) return;
+            if ($this->populateCtx) call_user_func(
+                $this->populateCtx,
+                $this->ctx,
+                $this->serviceDefaults ?? new ServiceDefaults($this->ctx)
+            );
+            $ctxIsPopulated = true;
+        };
+        $this->forEachModuleCall('init', $this->ctx, $populateCtxIfNotPopulated);
+        //
         if (($match = $this->ctx->router->match($req->path, $req->method))) {
             // @allow \Pike\PikeException
             [$ctrlClassPath, $ctrlMethodName, $userDefinedRouteCtx] =
@@ -56,6 +74,7 @@ final class App {
                 'name' => $req->name,
             ];
             //
+            $populateCtxIfNotPopulated();
             $responseWasSent = $this->runMiddleware();
             if ($responseWasSent) return;
             //
@@ -69,10 +88,22 @@ final class App {
         }
     }
     /**
+     * @param callable(\Pike\AppContext $ctx): \Pike\ServiceDefaults $fn
+     */
+    public function setServiceInstantiator(callable $fn): void {
+        $this->serviceDefaults = $fn($this->ctx);
+    }
+    /**
      * @return object[]
      */
     public function &getModules(): array {
         return $this->moduleInstances;
+    }
+    /**
+     * @return \Pike\AppContext
+    */
+    public function getCtx(): AppContext {
+        return $this->ctx;
     }
     /**
      * @param object[] $modules
@@ -118,10 +149,10 @@ final class App {
         while ($i < count($wares)) {
             $iBefore = $i;
             call_user_func($wares[$iBefore]->fn, $req, $res, $next);
-            if ($i === $iBefore || // Did the middleware skip next()?
-                $res->isCommitted()) return true;
+            if ($i === $iBefore) // Middleware didn't call next()
+                return $res->commitIfReady();
         }
-        return $res->commitIfReady();
+        return $res->isCommitted();
     }
     /**
      * @return \Auryn\Injector
@@ -139,12 +170,12 @@ final class App {
     }
     /**
      * @param string $methodName
-     * @param mixed $arg
+     * @param mixed[] $args
      */
-    private function forEachModuleCall(string $methodName, $arg): void {
+    private function forEachModuleCall(string $methodName, ...$args): void {
         foreach ($this->moduleInstances as $instance) {
             if (method_exists($instance, $methodName))
-                call_user_func([$instance, $methodName], $arg);
+                call_user_func([$instance, $methodName], ...$args);
         }
     }
 }

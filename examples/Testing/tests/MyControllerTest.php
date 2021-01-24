@@ -12,19 +12,15 @@ class MyControllerTest extends TestCase {
     use HttpTestUtils;
     public function testSomeRouteReturnsFoo(): void {
     // 1. Luo applikaatio-olio
-        $config = [];
-        $ctx = new AppContext;
-        $app = $this->makeApp([MyApp::class, 'create'], $config, $ctx);
+        $app = $this->makeApp([MyApp::class, 'create']);
     // 2. Luo olio testattavalle reitille
         $body = null;
         $files = null;
         $serverVars = null;
         $req = new Request('/some-route', 'GET', $body, $files, $serverVars);
-    // 3. Luo olio vastaukselle
-        $res = $this->makeSpyingResponse();
-    // 4. Suorita testi
-        $this->sendRequest($req, $res, $app);
-    // 5. Assertoi
+    // 3. Suorita testi
+        $res = $app->sendRequest($req);
+    // 4. Assertoi
         $this->assertEquals(200, $res->getActualStatusCode());
         $this->assertEquals(json_encode((object) ['message' => 'foo']),
                             $res->getActualBody());
@@ -32,16 +28,12 @@ class MyControllerTest extends TestCase {
     }
     public function testAnotherRouteReturnsBar(): void {
     // 1. Luo applikaatio-olio
-        $config = [];
-        $ctx = new AppContext;
-        $app = $this->makeApp([MyApp::class, 'create'], $config, $ctx);
+        $app = $this->makeApp([MyApp::class, 'create']);
     // 2. Luo olio testattavalle reitille
         $req = new Request('/another-route', 'GET');
-    // 3. Luo olio vastaukselle
-        $res = $this->makeSpyingResponse();
-    // 4. Suorita pyyntö
-        $this->sendRequest($req, $res, $app);
-    // 5. Assertoi
+    // 3. Suorita testi
+        $res = $app->sendRequest($req);
+    // 4. Assertoi
         $expected = json_encode((object) ['message' => 'bar']);
         $this->assertEquals($expected, $res->getActualBody());
     }

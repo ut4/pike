@@ -9,14 +9,9 @@ final class AppTest extends TestCase {
     use HttpTestUtils;
     public function testHandleRequestStopsAtFirstMiddleware() {
         $req = new Request('/foo', 'GET');
-        $res = $this->makeSpyingResponse();
-        $app = $this->makeApp(function ($config, $ctx, $makeInjector) {
-            return App::create([TestModule::class, TestModule2::class],
-                               $config,
-                               $ctx,
-                               $makeInjector);
-        });
-        $this->sendRequest($req, $res, $app);
+        $res = $this->makeApp(function () {
+            return new App([new TestModule, new TestModule2]);
+        })->sendRequest($req);
         //
         $this->assertEquals('Not allowed', $res->getActualBody());
         $this->assertFalse(TestController::$method1Called);
@@ -24,8 +19,8 @@ final class AppTest extends TestCase {
     }
 }
 
-abstract class TestModule {
-    public static function init(AppContext $ctx): void {
+final class TestModule {
+    public function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/foo', [TestController::class, 'method']);
         $ctx->router->on('*', function ($_req, $res, $_next) {
             $res->status(400)->plain('Not allowed');
@@ -33,8 +28,8 @@ abstract class TestModule {
     }
 }
 
-abstract class TestModule2 {
-    public static function init(AppContext $ctx): void {
+final class TestModule2 {
+    public function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/bar', [TestController::class, 'method2']);
     }
 }
