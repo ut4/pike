@@ -172,10 +172,7 @@ class ObjectValidator extends BaseValidator {
                          ...$args): ObjectValidator {
         $rule = new \stdClass;
         $rule->validator = $this->getRuleImpl($ruleName);
-        $rule->isOptional = $propPath[-1] === '?';
-        $rule->propPath = !$rule->isOptional
-            ? $propPath
-            : \substr($propPath, 0, \strlen($propPath) - 1);
+        $rule->propPath = $propPath;
         $rule->args = $args;
         $this->rules[] = $rule;
         return $this;
@@ -190,79 +187,139 @@ class ObjectValidator extends BaseValidator {
             $isValid = false;
             // fast lane
             if (strpos($r->propPath, '.') === false) {
-                if ($r->isOptional && !($object->{$r->propPath} ?? null))
+                [$propPath, $isOptional] = T::parsePropPath($r->propPath);
+                if (($val = $object->{$propPath} ?? null) === null && $isOptional)
                     continue;
-                $isValid = call_user_func($r->validator[0],
-                                          $object->{$r->propPath} ?? null,
-                                          ...$r->args);
+                $isValid = call_user_func($r->validator[0], $val, ...$r->args);
+                $key = $r->propPath;
             // value.by.path
             } else {
-                [$val, $isIterable] = self::getValFor(explode('.', $r->propPath),
-                                                      $object);
-                if ($r->isOptional && !$val)
+                if (strpos($r->propPath, '*?') !== false)
+                    throw new PikeException("Invalid path {$r->propPath}");
+                [$val, $wasOptional, $err] = T::getVal($r->propPath, $object);
+                if ($err) {
+                    $errors[] = $err;
                     continue;
-                if (!$isIterable) {
-                    $isValid = call_user_func($r->validator[0], $val, ...$r->args);
-                } else {
-                    $wildcardPos = strpos($r->propPath, '*');
-                    foreach ($val as $k => $v) {
-                        if ($r->isOptional && !$v)
-                            continue;
-                        if (!call_user_func($r->validator[0], $v, ...$r->args))
-                            $errors[] = sprintf(
-                                $r->validator[1],
-                                $wildcardPos === false
-                                    // foo.bar
-                                    ? $r->propPath
-                                    // foo.*.bar -> foo.0.bar or foo.prop.bar
-                                    : substr($r->propPath, 0, $wildcardPos) .
-                                        $k .
-                                      substr($r->propPath, $wildcardPos + 1),
-                                ...$r->args
-                            );
+                }
+                if ($val[1] === T::VALUE_MULTI) {
+                    foreach ($val[0] as $multiValue) {
+                        if (!call_user_func($r->validator[0],
+                                            $multiValue->val,
+                                            ...$r->args))
+                            $errors[] = sprintf($r->validator[1], $multiValue->key, ...$r->args);
                     }
                     continue;
                 }
+                if ($wasOptional && !$val[0]->val)
+                    continue;
+                $isValid = call_user_func($r->validator[0], $val[0]->val, ...$r->args);
+                $key = $val[0]->key;
             }
             if (!$isValid)
-                $errors[] = sprintf($r->validator[1], $r->propPath, ...$r->args);
+                $errors[] = sprintf($r->validator[1], $key, ...$r->args);
         }
-        return $errors;
+        return array_map(function ($err) {
+            return str_replace(['[root].', '?'], '', $err);
+        }, $errors);
     }
+}
+
+abstract class T {
+    public const VALUE_SINGLE = 0;
+    public const VALUE_MULTI = 1;
     /**
-     * @param string[] $pathPieces
-     * @param mixed $object
-     * @return array [mixed, bool]
+     * Returns property|ies from $object by $path (foo.path, foo.*.path, foo.*.path.* etc.).
+     *
+     * @param string $path
+     * @param object object
+     * @return array [$valueAndValueType, $valueWasOptional, $pathError]
      */
-    private static function getValFor(array $pathPieces, $object): array {
-        $end = count($pathPieces) - 1;
-        $cur = $object;
-        foreach ($pathPieces as $i => $p) {
-            if ($i < $end) {
-                if ($p !== '*' && is_object($cur) && property_exists($cur, $p))
-                    $cur = $cur->$p;
-                elseif ($p === '*') {
-                    if (!self::isIterable($cur)) return [null, false];
-                    $vls = [];
-                    foreach ($cur as $item) {
-                        [$v, $isIterable] =  self::getValFor(array_slice($pathPieces, $i + 1), $item);
-                        if (!$isIterable) $vls[] = $v;
-                        else throw new \RuntimeException('Not implemented');
+    public static function getVal(string $path, object $object) {
+        $segments = array_merge(['.'], explode('|', str_replace('.', '|.|', $path))); // 'foo.bar' -> ['.', 'foo', '.', 'bar']
+        $valAndType = [(object) ['key' => '[root]', 'val' => $object], self::VALUE_SINGLE];
+        $isOptional = false;
+        for ($i = 0; $i < count($segments); ++$i) {
+            $cur = $segments[$i];
+            if ($cur !== '.')
+                throw new PikeException("Invalid path {$path}");
+            $next = $segments[++$i] ?? null;
+            // .bar
+            if ($next !== '*') {
+                [$prop, $isOptional] = self::parsePropPath($next);
+                // Current value is not result of .*
+                if ($valAndType[1] === self::VALUE_SINGLE) {
+                    $newVal = self::getObjProp($valAndType[0]->val, $prop);
+                    if ($newVal === null && $isOptional)
+                        return [[(object) ['val' => null], self::VALUE_SINGLE], true, null];
+                    if ($newVal instanceof PikeException)
+                        return [null, $isOptional, self::makeErr($valAndType[0]->key)];
+                    $valAndType = [(object) [
+                        'key' => "{$valAndType[0]->key}.{$prop}",
+                        'val' => $newVal
+                    ], self::VALUE_SINGLE];
+                // Current value is result of .*
+                } else {
+                    $propsFromMulti = [];
+                    foreach ($valAndType[0] as $i2 => $multiVal) {
+                        $val = self::getObjProp($multiVal->val, $prop);
+                        if ($val instanceof PikeException)
+                            return [null, $isOptional, self::makeErr($multiVal->key)];
+                        if (!$isOptional || $val !== null)
+                            $propsFromMulti[] = (object) ['key' => "{$multiVal->key}.{$prop}", 'val' => $val];
                     }
-                    return [$vls, true];
+                    $valAndType = [$propsFromMulti, self::VALUE_MULTI];
                 }
-                else return [null, false];
+            // .*
             } else {
-                if ($p !== '*') return [$cur->$p ?? null, false];
-                else return self::isIterable($cur) ? [$cur, true] : [null, false];
+                if ($valAndType[1] === self::VALUE_SINGLE) {
+                    if (!is_array($valAndType[0]->val) && !($valAndType[0]->val instanceof \ArrayObject))
+                        return [null, $isOptional, self::makeErr($valAndType[0]->key, 'an array')];
+                    $itemsFromSingle = [];
+                    foreach ($valAndType[0]->val as $i2 => $val)
+                        $itemsFromSingle[] = (object) ['key' => "{$valAndType[0]->key}.{$i2}", 'val' => $val];
+                    $valAndType = [$itemsFromSingle, self::VALUE_MULTI];
+                } else {
+                    $itemsFromMulti = [];
+                    foreach ($valAndType[0] as $multiValue) {
+                        if (!is_array($multiValue->val) && !($multiValue->val instanceof \ArrayObject))
+                            return [null, $isOptional, self::makeErr($multiValue->key, 'an array')];
+                        foreach ($multiValue->val as $i2 => $val)
+                            $itemsFromMulti[] = (object) ['key' => "{$multiValue->key}.{$i2}", 'val' => $val];
+                    }
+                    $valAndType = [$itemsFromMulti, self::VALUE_MULTI];
+                }
             }
         }
+        return [$valAndType, $isOptional, null];
     }
     /**
-     * @param mixed $val
-     * @return bool
+     * 'foo' -> ['foo', false]
+     * 'foo?' -> ['foo', true]
+     *
+     * @param string $propPath
+     * @return array
      */
-    private static function isIterable($val): bool {
-        return is_array($val) || is_object($val);
+    public static function parsePropPath(string $propPath): array {
+        $isOptional = $propPath[-1] === '?';
+        return [!$isOptional ? $propPath : \substr($propPath, 0, \strlen($propPath) - 1),
+                $isOptional];
+    }
+    /**
+     * @param mixed $candidate
+     * @param string $prop
+     * @return mixed|\Pike\PikeException
+     */
+    private static function getObjProp($candidate, string $prop) {
+        if ($candidate === null || !is_object($candidate))
+            return new PikeException;
+        return $candidate->{$prop} ?? null;
+    }
+    /**
+     * @param string|string[] $path
+     * @param string $what = 'an object'
+     * @return string
+     */
+    private static function makeErr($path, string $what = 'an object'): string {
+        return "Expected `{$path}` to be {$what}";
     }
 }
