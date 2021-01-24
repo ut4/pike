@@ -25,24 +25,29 @@ class Request {
     public $user;
     /** @var array */
     private $serverVars;
+    /** @var ?array */
+    private $queryVars;
     /**
      * @param string $path
      * @param string $method = 'GET'
      * @param ?object $body = new \stdClass
      * @param ?object $files = new \stdClass
      * @param ?array $serverVars = []
+     * @param ?array $queryVars = []
      */
     public function __construct(string $path,
                                 string $method = 'GET',
-                                object $body = null,
-                                object $files = null,
-                                array $serverVars = null) {
+                                ?object $body = null,
+                                ?object $files = null,
+                                ?array $serverVars = null,
+                                ?array $queryVars = null) {
         $this->path = urldecode($path !== '' ? $path : '/');
         $this->method = $method;
         $this->body = $body ?? new \stdClass;
         $this->files = $files ?? new \stdClass;
         $this->params = new \stdClass;
         $this->serverVars = $serverVars ?? [];
+        $this->queryVars = $queryVars;
     }
     /**
      * @param string $key
@@ -50,7 +55,7 @@ class Request {
      * @return ?string
      */
     public function queryVar(string $key, ?string $default = null): ?string {
-        return $_GET[$key] ?? $default;
+        return ($this->queryVars ?? $_GET)[$key] ?? $default;
     }
     /**
      * @param string $key e.g. 'SERVER_NAME'
