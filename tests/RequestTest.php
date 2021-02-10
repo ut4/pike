@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Pike\Request;
 
 final class RequestTest extends TestCase {
-    public function testReturnsHeaders(): void {
+    public function testHeaderReturnsHeaders(): void {
         $req = new Request('', 'GET', null, null, [
             'HTTP_HOST' => 'localhost',
             'HTTP_X_REQUESTED_BY' => 'foo',
@@ -24,5 +24,12 @@ final class RequestTest extends TestCase {
         //
         $this->assertEquals(null, $req->header('foo'));
         $this->assertEquals('-', $req->header('SERVER_ADMIN', '-'));
+    }
+    public function testQueryVarReturnsQueryVariables(): void {
+        $req = new Request('', 'GET', null, null, null, ['foo' => 'bar']);
+        $this->assertEquals('bar', $req->queryVar('foo'));
+        //
+        $this->assertEquals(null, $req->queryVar('fos'));
+        $this->assertEquals('-', $req->queryVar('fos', '-'));
     }
 }

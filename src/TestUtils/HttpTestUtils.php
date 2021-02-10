@@ -39,6 +39,7 @@ trait HttpTestUtils {
         return new ResponseSpyingApp($app);
     }
     /**
+     * @deprecated
      * @return \Pike\TestUtils\MutedSpyingResponse
      */
     public function makeSpyingResponse() {

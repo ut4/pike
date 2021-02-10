@@ -8,7 +8,7 @@ use Pike\Auth\ACL;
 final class ACLTest extends TestCase {
     public function testCanDisallowsEverythingByDefault() {
         $resources = (object)[
-            'res1' => (object)['action1' => 1<<1]
+            'res1' => (object)['action1' => 1 << 1]
         ];
         $userPermissions = (object)[
             ACL::ROLE_EDITOR => (object)['res1' => 0],
@@ -74,7 +74,7 @@ final class ACLTest extends TestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testCanAllowsOnlyWhenUserhasPermission() {
+    public function testCanAllowsOnlyWhenUserHasPermission() {
         $resources = (object)[
             'res1' => (object)[
                 'action1' => 1 << 1,
