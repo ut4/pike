@@ -5,8 +5,6 @@
     "license": "Apache-2.0",
     "require": {
         "php": "^7.2",
-        "ext-pdo_mysql": "*",
-        "ext-mbstring": "*",
         "ext-ctype": "*",
         "altorouter/altorouter": "^1.2",
         "rdlowrey/auryn": "^1.4"
@@ -15,6 +13,8 @@
         "phpunit/phpunit": "8.*"
     },
     "suggest": {
+        "ext-pdo_mysql": "To use Db with the MySQL/MariaDB driver",
+        "ext-mbstring": "To use Validation",
         "phpmailer/phpmailer": "To use PhpMailerMailer or Authenticator->requestPasswordReset().",
         "masterminds/html5": "To use Extensions\\Validation\\SafeHTMLValidator."
     },

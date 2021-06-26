@@ -9,7 +9,6 @@ use Pike\Interfaces\{FileSystemInterface, SessionInterface};
 
 final class App {
     public const VERSION = '0.9.0-dev';
-    public const MAKE_AUTOMATICALLY = '@auto';
     /** @var object[] */
     private $moduleInstances;
     /** @var \Pike\AppContext */
@@ -75,8 +74,8 @@ final class App {
             ];
             //
             $populateCtxIfNotPopulated();
-            $responseWasSent = $this->runMiddleware();
-            if ($responseWasSent) return;
+            $allWaresRan = $this->runMiddleware();
+            if (!$allWaresRan) return;
             //
             $di = $this->makeDi();
             $this->forEachModuleCall('alterDi', $di);
@@ -114,7 +113,7 @@ final class App {
                 throw new PikeException('A module (' . json_encode($instance) . ') must be an object',
                                         PikeException::BAD_INPUT);
             if (!method_exists($instance, 'init'))
-                throw new PikeException(get_class($instance) . '->init(\Pike\Router $router) is required',
+                throw new PikeException(get_class($instance) . '->init(\Pike\AppContext $ctx) is required',
                                         PikeException::BAD_INPUT);
         }
     }
@@ -138,7 +137,7 @@ final class App {
         return $routeInfo;
     }
     /**
-     * @return bool $responseWasSent
+     * @return bool $didEveryMiddlewareCallNext
      */
     private function runMiddleware(): bool {
         $i = 0;
@@ -150,9 +149,9 @@ final class App {
             $iBefore = $i;
             call_user_func($wares[$iBefore]->fn, $req, $res, $next);
             if ($i === $iBefore) // Middleware didn't call next()
-                return $res->commitIfReady();
+                return false;
         }
-        return $res->isCommitted();
+        return true;
     }
     /**
      * @return \Auryn\Injector

@@ -3,34 +3,69 @@
 namespace Pike\Tests;
 
 use PHPUnit\Framework\TestCase;
-use Pike\{App, AppContext, Request, TestUtils\HttpTestUtils};
+use Pike\{App, AppContext, Request};
+use Pike\TestUtils\{HttpTestUtils, MutedSpyingResponse};
 
 final class AppTest extends TestCase {
     use HttpTestUtils;
-    public function testHandleRequestStopsAtFirstMiddleware() {
+    public function tearDown(): void {
+        TestController::$method1Called = false;
+        TestController::$method2Called = false;
+    }
+    public function testHandleRequestStopsAtFirstMiddlewareThatDoesNotCallNext(): void {
         $req = new Request('/foo', 'GET');
-        $res = $this->makeApp(function () {
-            return new App([new TestModule, new TestModule2]);
-        })->sendRequest($req);
+        $modules = [new TestModule(true), new TestModule2];
+        $res = $this->sendTestRequest($req, $modules);
         //
         $this->assertEquals('Not allowed', $res->getActualBody());
+        $this->assertTrue($modules[0]->middlewareCalled);
+        $this->assertFalse($modules[1]->middlewareCalled);
+        $this->verifyDidNotExecuteAnyControllers();
+    }
+    public function testHandleRequestStopsAtFirstMiddlewareEvenIfNoRequestHasBeenSent(): void {
+        $req = new Request('/foo', 'GET');
+        $modules = [new TestModule(false), new TestModule2];
+        $res = $this->sendTestRequest($req, $modules);
+        //
+        $this->assertTrue($modules[0]->middlewareCalled);
+        $this->assertFalse($modules[1]->middlewareCalled);
+        $this->verifyDidNotExecuteAnyControllers();
+    }
+    private function sendTestRequest(Request $req, array $modules): MutedSpyingResponse {
+        return $this->makeApp(function () use ($modules) {
+            return new App($modules);
+        })->sendRequest($req);
+    }
+    private function verifyDidNotExecuteAnyControllers(): void {
         $this->assertFalse(TestController::$method1Called);
         $this->assertFalse(TestController::$method2Called);
     }
 }
 
 final class TestModule {
+    private $doSendRequest;
+    public $middlewareCalled = false;
+    public function __construct(bool $doSendRequest) {
+        $this->doSendRequest = $doSendRequest;
+    }
     public function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/foo', [TestController::class, 'method']);
         $ctx->router->on('*', function ($_req, $res, $_next) {
-            $res->status(400)->plain('Not allowed');
+            $this->middlewareCalled = true;
+            if ($this->doSendRequest)
+                $res->status(400)->plain('Not allowed');
+            // Note: no $next() call here
         });
     }
 }
 
 final class TestModule2 {
+    public $middlewareCalled = false;
     public function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/bar', [TestController::class, 'method2']);
+        $ctx->router->on('*', function ($_req, $res, $_next) {
+            $this->middlewareCalled = true;
+        });
     }
 }
 
