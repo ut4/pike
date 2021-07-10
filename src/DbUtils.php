@@ -18,7 +18,7 @@ class DbUtils {
             if ($columnsToInclude && !in_array($key, $columnsToInclude, true)) continue;
             $qList[] = '?';
             $values[] = $val;
-            $cols[] = self::columnify($key);
+            $cols[] = self::columnify(strval($key));
         }
         return [implode(',', $qList), $values, implode(',', $cols)];
     }

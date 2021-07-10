@@ -10,6 +10,8 @@ use Pike\Defaults\DefaultUserRepository;
  * Provides default services for `new App(..., function (ServiceDefaults $defaults) { // here })`.
  */
 class ServiceDefaults {
+    /** @var \Pike\AppContext */
+    private $ctx;
     /**
      * @param \Pike\AppContext $ctx
      */

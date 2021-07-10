@@ -112,4 +112,14 @@ final class DbUtilsTest extends TestCase {
         $expected = ['`col$_1`=?', array_values((array) $data)];
         $this->assertEquals($expected, DbUtils::makeUpdateQParts($data));
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testMakeInsertQPartsAllowsNumericArrays() {
+        $data = ['a', 'b'];
+        $expected = ['?,?', $data, '`0`,`1`'];
+        $this->assertEquals($expected, DbUtils::makeInsertQParts($data));
+    }
 }

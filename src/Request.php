@@ -10,11 +10,17 @@ class Request {
     /** @var string */
     public $method;
     /** @var object */
+    public $params;
+    /** @var object */
     public $body;
     /** @var object */
     public $files;
-    /** @var object */
-    public $params;
+    /** @var array<string, string> */
+    public $serverVars;
+    /** @var array<string, string> */
+    public $queryVars;
+    /** @var array<string, string> */
+    public $cookies;
     /** @var ?object {myCtx: mixed, name: ?string} */
     public $routeInfo;
     /** @var ?string */
@@ -23,31 +29,30 @@ class Request {
     public $myData;
     /** @var mixed */
     public $user;
-    /** @var array */
-    private $serverVars;
-    /** @var ?array */
-    private $queryVars;
     /**
      * @param string $path
      * @param string $method = 'GET'
      * @param ?object $body = new \stdClass
      * @param ?object $files = new \stdClass
-     * @param ?array $serverVars = []
-     * @param ?array $queryVars = []
+     * @param ?array $serverVars = null
+     * @param ?array $queryVars = null
+     * @param ?array $cookies = null
      */
     public function __construct(string $path,
                                 string $method = 'GET',
                                 ?object $body = null,
                                 ?object $files = null,
                                 ?array $serverVars = null,
-                                ?array $queryVars = null) {
+                                ?array $queryVars = null,
+                                ?array $cookies = null) {
         $this->path = urldecode($path !== '' ? $path : '/');
         $this->method = $method;
         $this->body = $body ?? new \stdClass;
         $this->files = $files ?? new \stdClass;
         $this->params = new \stdClass;
         $this->serverVars = $serverVars ?? [];
-        $this->queryVars = $queryVars;
+        $this->queryVars = $queryVars ?? [];
+        $this->cookies = $cookies ?? [];
     }
     /**
      * @param string $key
@@ -55,7 +60,7 @@ class Request {
      * @return ?string
      */
     public function queryVar(string $key, ?string $default = null): ?string {
-        return ($this->queryVars ?? $_GET)[$key] ?? $default;
+        return $this->queryVars[$key] ?? $default;
     }
     /**
      * @param string $key e.g. 'SERVER_NAME'
@@ -71,7 +76,7 @@ class Request {
      * @return ?string
      */
     public function cookie(string $key, ?string $default = null): ?string {
-        return $_COOKIE[$key] ?? $default;
+        return $this->cookies[$key] ?? $default;
     }
     /**
      * @param string $name
@@ -103,22 +108,18 @@ class Request {
         $method = $_SERVER['REQUEST_METHOD'];
         $body = null;
         $files = null;
-        if ($method === 'POST' || $method === 'PUT') {
-            if (strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') === 0) {
-                if (!($json = file_get_contents('php://input')))
-                    $body = new \stdClass;
-                else {
-                    if (($body = json_decode($json)) === null)
-                        throw new PikeException('Invalid json input',
-                                                PikeException::BAD_INPUT);
-                    elseif (!($body instanceof \stdClass))
-                        throw new PikeException('Input json must be an object',
-                                                PikeException::BAD_INPUT);
-                }
-            } else {
-                $body = (object) $_POST;
-                $files = (object) $_FILES;
+        if (strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') === 0) {
+            if (($json = file_get_contents('php://input'))) {
+                if (($body = json_decode($json)) === null)
+                    throw new PikeException('Invalid json input',
+                                            PikeException::BAD_INPUT);
+                elseif (!is_object($body))
+                    throw new PikeException('Input json must be an object',
+                                            PikeException::BAD_INPUT);
             }
+        } else {
+            $body = (object) $_POST;
+            $files = (object) $_FILES;
         }
         $urlPath = explode('?', !$fullUrl ? $_SERVER['REQUEST_URI'] : $fullUrl)[0];
         return new Request(
@@ -128,7 +129,9 @@ class Request {
             $method,
             $body,
             $files,
-            $_SERVER
+            $_SERVER,
+            $_GET,
+            $_COOKIE
         );
     }
 }
