@@ -20,26 +20,44 @@ class Db extends DbUtils {
         $this->setConfig($config);
     }
     /**
+     * @param array $pdoOptions = []
+     * @param bool $doSwallowExceptionError = true
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function open(): bool {
-        try {
+    public function open(array $pdoOptions = [],
+                         bool $doSwallowExceptionError = true): bool {
+        $doOpenDb = function () use ($pdoOptions) {
             $this->pdo = new \PDO(
-                'mysql:host=' . ($this->config['db.host'] ?? '127.0.0.1') .
-                     ';dbname=' . ($this->config['db.database'] ?? '') .
-                     ';charset=' . ($this->config['db.charset'] ?? 'utf8mb4') ,
-                $this->config['db.user'] ?? '',
-                $this->config['db.pass'] ?? '',
-                [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
+                ($this->config['db.driver'] ?? '') === 'sqlite'
+                    ? sprintf(
+                        'sqlite:%s',
+                        $this->config['db.database'] ?? '',
+                    )
+                    : sprintf(
+                        'mysql:host=%s;dbname=%s;charset=%s',
+                        $this->config['db.host'] ?? '127.0.0.1',
+                        $this->config['db.database'] ?? '',
+                        $this->config['db.charset'] ?? 'utf8mb4'
+                    ),
+                $this->config['db.user'] ?? null,
+                $this->config['db.pass'] ?? null,
+                [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION] + $pdoOptions
             );
             $this->config = [];
             return true;
-        } catch (\PDOException $e) {
-            throw new PikeException("The database connection failed: {$e->getCode()}",
-                                    PikeException::ERROR_EXCEPTION,
-                                    $e);
+        };
+        if ($doSwallowExceptionError) {
+            try {
+                return $doOpenDb();
+            } catch (\PDOException $e) {
+                throw new PikeException("The database connection failed: {$e->getCode()}",
+                                        PikeException::ERROR_EXCEPTION,
+                                        $e);
+            }
         }
+        // @allow \Pike\PikeException
+        return $doOpenDb();
     }
     /**
      * @param string $query
@@ -178,7 +196,7 @@ class Db extends DbUtils {
      * @return mixed|bool
      */
     public function attr(int $attr, $value = null) {
-        return !$value
+        return $value === null
             ? $this->pdo->getAttribute($attr)
             : $this->pdo->setAttribute($attr, $value);
     }

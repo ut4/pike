@@ -11,9 +11,10 @@ class SingleConnectionDb extends Db {
     private $connectionOpened = false;
     /** @var string */
     private $currentDatabaseName = '';
-    public function open(): bool {
+    public function open(array $pdoOptions = [],
+                         bool $doSwallowExceptionError = false): bool {
         if ($this->connectionOpened) return true;
-        $ok = parent::open();
+        $ok = parent::open($pdoOptions, $doSwallowExceptionError);
         $this->connectionOpened = true;
         return $ok;
     }
