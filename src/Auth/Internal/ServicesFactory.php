@@ -9,11 +9,11 @@ use Pike\Auth\Interfaces\CookieStorageInterface;
 use Pike\Interfaces\{SessionInterface, UserRepositoryInterface};
 
 class ServicesFactory {
-    /** @var callable($this): \Pike\Interfaces\UserRepositoryInterface */
+    /** @var callable fn($this): \Pike\Interfaces\UserRepositoryInterface */
     private $makeUserRepositoryFn;
-    /** @var callable($this): \Pike\Interfaces\SessionInterface */
+    /** @var callable fn($this): \Pike\Interfaces\SessionInterface */
     private $makeSessionFn;
-    /** @var callable($this): \Pike\Auth\Interfaces\CookieStorageInterface */
+    /** @var callable fn($this): \Pike\Auth\Interfaces\CookieStorageInterface */
     private $makeCookieStorageFn;
     /** @var bool */
     private $doUseRememberMe;
@@ -24,9 +24,9 @@ class ServicesFactory {
     /** @var ?\Pike\Auth\Internal\CookieManager */
     private $cachedCookieManager;
     /**
-     * @param callable($this): \Pike\Interfaces\UserRepositoryInterface $makeUserRepositoryFn
-     * @param callable($this): \Pike\Interfaces\SessionInterface $makeSessionFn
-     * @param callable($this): \Pike\Auth\Interfaces\CookieStorageInterface $makeCookieStorageFn
+     * @param callable $makeUserRepositoryFn fn($this): \Pike\Interfaces\UserRepositoryInterface
+     * @param callable $makeSessionFn fn($this): \Pike\Interfaces\SessionInterface
+     * @param callable $makeCookieStorageFn fn($this): \Pike\Auth\Interfaces\CookieStorageInterface
      * @param bool $doUseRememberMe
      * @param ?\Pike\Auth\Crypto $crypto = null
      */

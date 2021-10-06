@@ -21,6 +21,7 @@ class Template {
         $this->__vars = $vars ?? [];
         $this->__file = $file;
         $this->__dir = dirname($file) . '/';
+        $this->__locals = [];
     }
     /**
      * @param array<string, mixed> $locals = []

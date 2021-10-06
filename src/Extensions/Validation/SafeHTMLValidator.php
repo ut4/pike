@@ -77,18 +77,16 @@ abstract class SafeHTMLValidator {
 }
 
 final class MyHTML5 extends HTML5 {
-    /** @inheritdoc */
-    private $defaultOptions = [
-        'encode_entities' => false,
-        'disable_html_ns' => false,
-    ];
     /** @var bool */
     private $hasValidationErrors = true;
     /**
      * @inheritdoc
      */
     public function parseFragment($input, array $options = array()) {
-        $options = array_merge($this->defaultOptions, $options);
+        $options = array_merge([
+            'encode_entities' => false,
+            'disable_html_ns' => false,
+        ], $options);
         $events = new MyDOMTreeBuilder(true, $options);
         $scanner = new Scanner($input, !empty($options['encoding']) ? $options['encoding'] : 'UTF-8');
         $parser = new Tokenizer($scanner, $events, !empty($options['xmlNamespaces']) ? Tokenizer::CONFORMANT_XML : Tokenizer::CONFORMANT_HTML);
@@ -113,9 +111,10 @@ final class MyDOMTreeBuilder extends DOMTreeBuilder {
     /** @var int */
     private $numInvalidItems;
     /**
-     * @inheritdoc
+     * @param bool $isFragment = false
+     * @param array<string, mixed> $options = []
      */
-    public function __construct($isFragment = false, array $options = array()) {
+    public function __construct($isFragment = false, array $options = []) {
         parent::__construct($isFragment, $options);
         $this->allowedTags = $options['allowedTags'];
         $this->allowedAttributes = $options['allowedAttributes'];
@@ -130,28 +129,31 @@ final class MyDOMTreeBuilder extends DOMTreeBuilder {
             ++$this->numInvalidItems;
             return $out;
         }
-        foreach ($attributes as $name => $_val){
+        foreach ($attributes as $name => $_val) {
             if (!in_array($name, $this->allowedAttributes))
                 ++$this->numInvalidItems;
         }
         return $out;
     }
     /**
-     * @inheritdoc
+     * @param string $data
+     * @return void
      */
     public function cdata($data) {
         parent::cdata($data);
         ++$this->numInvalidItems;
     }
     /**
-     * @inheritdoc
+     * @param string $name
+     * @param string $data = null
+     * @return void
      */
     public function processingInstruction($name, $data = null) {
         parent::processingInstruction($name, $data);
         ++$this->numInvalidItems;
     }
     /**
-     * @inheritdoc
+     * @return bool
      */
     public function hasErrors(): bool {
         return $this->numInvalidItems > 0;

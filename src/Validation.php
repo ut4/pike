@@ -187,7 +187,7 @@ class ObjectValidator extends BaseValidator {
             $isValid = false;
             // fast lane
             if (strpos($r->propPath, '.') === false) {
-                [$propPath, $isOptional] = T::parsePropPath($r->propPath);
+                [$propPath, $isOptional] = PropPathProcessor::parsePropPath($r->propPath);
                 if (($val = $object->{$propPath} ?? null) === null && $isOptional)
                     continue;
                 $isValid = call_user_func($r->validator[0], $val, ...$r->args);
@@ -196,12 +196,12 @@ class ObjectValidator extends BaseValidator {
             } else {
                 if (strpos($r->propPath, '*?') !== false)
                     throw new PikeException("Invalid path {$r->propPath}");
-                [$val, $wasOptional, $err] = T::getVal($r->propPath, $object);
+                [$val, $wasOptional, $err] = PropPathProcessor::getVal($r->propPath, $object);
                 if ($err) {
                     $errors[] = $err;
                     continue;
                 }
-                if ($val[1] === T::VALUE_MULTI) {
+                if ($val[1] === PropPathProcessor::VALUE_MULTI) {
                     foreach ($val[0] as $multiValue) {
                         if (!call_user_func($r->validator[0],
                                             $multiValue->val,
@@ -224,7 +224,7 @@ class ObjectValidator extends BaseValidator {
     }
 }
 
-abstract class T {
+abstract class PropPathProcessor {
     public const VALUE_SINGLE = 0;
     public const VALUE_MULTI = 1;
     /**

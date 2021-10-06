@@ -40,9 +40,9 @@ class FileSystem implements FileSystemInterface {
     /**
      * @param string $oldPath
      * @param string $newPath
-     * @return string|false
+     * @return bool
      */
-    public function rename(string $oldPath, string $newPath) {
+    public function rename(string $oldPath, string $newPath): bool {
         return rename($oldPath, $newPath);
     }
     /**
@@ -98,6 +98,7 @@ class FileSystem implements FileSystemInterface {
     /**
      * @param string $path
      * @param string $filterRegexp = '/.<zeroOrMore>/'
+     * @param int $flags = \FilesystemIterator::CURRENT_AS_PATHNAME
      * @return mixed[]
      * @throws \UnexpectedValueException|\InvalidArgumentException
      */

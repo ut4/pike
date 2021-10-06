@@ -16,7 +16,8 @@
         "ext-pdo_mysql": "To use Db with the MySQL/MariaDB driver",
         "ext-mbstring": "To use Validation",
         "phpmailer/phpmailer": "To use PhpMailerMailer or Authenticator->requestPasswordReset().",
-        "masterminds/html5": "To use Extensions\\Validation\\SafeHTMLValidator."
+        "masterminds/html5": "To use Extensions\\Validation\\SafeHTMLValidator.",
+        "vimeo/psalm": "To use `composer lint`"
     },
     "autoload": {
         "psr-4": {"Pike\\": "src/"}
@@ -25,6 +26,7 @@
         "psr-4": { "Pike\\Tests\\": "tests/" }
     },
     "scripts": {
-        "test": "\"vendor/bin/phpunit\" --bootstrap ./tests/bootstrap.php"
+        "test": "\"vendor/bin/phpunit\" --bootstrap ./tests/bootstrap.php",
+        "lint": "\"./vendor/bin/psalm\" --set-baseline=psalm-known-errors.xml"
     }
 }

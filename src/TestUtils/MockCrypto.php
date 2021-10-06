@@ -23,11 +23,11 @@ class MockCrypto extends Crypto {
     public function genRandomToken(int $bytes = 16): string {
         return self::mockGenRandomToken($bytes);
     }
-    public function encrypt(string $str, string $key): string {
-        return self::mockEncrypt($str, $key);
+    public function encrypt(string $plainStr, string $key): string {
+        return self::mockEncrypt($plainStr, $key);
     }
-    public function decrypt(string $str, string $key): string {
-        return self::mockDecrypt($str, $key);
+    public function decrypt(string $encodedStr, string $key): string {
+        return self::mockDecrypt($encodedStr, $key);
     }
     public static function mockHashPass(string $plainPass): string {
         return 'hashed: ' . $plainPass;

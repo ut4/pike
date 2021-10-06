@@ -75,12 +75,12 @@ final class App {
             //
             $populateCtxIfNotPopulated();
             $allWaresRan = $this->runMiddleware();
-            if (!$allWaresRan) return;
-            //
-            $di = $this->makeDi();
-            $this->forEachModuleCall('alterDi', $di);
-            $di->execute("{$ctrlClassPath}::{$ctrlMethodName}");
-            if (isset($this->ctx->auth)) $this->ctx->auth->postProcess();
+            if ($allWaresRan) {
+                $di = $this->makeDi();
+                $this->forEachModuleCall('alterDi', $di);
+                $di->execute("{$ctrlClassPath}::{$ctrlMethodName}");
+                if (isset($this->ctx->auth)) $this->ctx->auth->postProcess();
+            }
             $res->commitIfReady();
         } else {
             throw new PikeException("No route for {$req->method} {$req->path}");

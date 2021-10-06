@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files psalm-version="4.10.0@916b098b008f6de4543892b1e0651c1c3b92cbfa">
+  <file src="src/PhpMailerMailer.php">
+    <UndefinedClass occurrences="5">
+      <code>$this-&gt;mailer-&gt;Body</code>
+      <code>$this-&gt;mailer-&gt;CharSet</code>
+      <code>$this-&gt;mailer-&gt;Subject</code>
+      <code>PHPMailer</code>
+      <code>\PHPMailer\PHPMailer\PHPMailer</code>
+    </UndefinedClass>
+    <UndefinedDocblockClass occurrences="4">
+      <code>$this-&gt;mailer</code>
+      <code>$this-&gt;mailer</code>
+      <code>$this-&gt;mailer</code>
+      <code>\PHPMailer\PHPMailer\PHPMailer</code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="src/TestUtils/ServiceDefaultsForTests.php">
+    <InvalidArgument occurrences="2">
+      <code>function ($_factory) { }</code>
+      <code>function ($_factory) { }</code>
+    </InvalidArgument>
+  </file>
+</files>

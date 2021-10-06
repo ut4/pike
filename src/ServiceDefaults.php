@@ -19,8 +19,8 @@ class ServiceDefaults {
         $this->ctx = $ctx;
     }
     /**
-     * @return object\array\null $config
-     * @return \Pike\AppConfig
+     * @param object|array|null $config
+     * @return AppConfig
      */
     public function makeConfig($config = null): AppConfig {
         return new AppConfig($config ?? new \stdClass);
@@ -36,7 +36,6 @@ class ServiceDefaults {
      */
     public function makeAuth(): Authenticator {
         return new Authenticator(
-            // @phan-suppress-next-line PhanUndeclaredProperty
             function ($_factory) { return new DefaultUserRepository($this->ctx->db); },
             function ($_factory) { return new NativeSession(); },
             function ($_factory) { return new DefaultCookieStorage($this->ctx); },

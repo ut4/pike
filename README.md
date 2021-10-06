@@ -6,7 +6,7 @@ Minimalistic but not entirely useless php application framework. Does not self-r
 
 # Dependencies
 
-- PHP ^7.2
+- PHP >=7.3
 - [altorouter/altorouter ^1.2](https://github.com/dannyvankooten/AltoRouter)
 - [rdlowrey/auryn ^1.4](https://github.com/rdlowrey/auryn) (Dependency injection)
 

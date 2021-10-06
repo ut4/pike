@@ -94,7 +94,7 @@ final class AccountManager {
         if (!$user)
             throw new PikeException('Invalid reset credential',
                                     Authenticator::CREDENTIAL_WAS_INVALID);
-        if (time() > $user->accountCreatedAt +
+        if (time() > ($user->accountCreatedAt ?? 0) +
                      Authenticator::ACTIVATION_KEY_EXPIRATION_SECS) {
         // 2.1 Avain vanhentunut, poista käyttäjä
             // @allow \Pike\PikeException
@@ -171,7 +171,7 @@ final class AccountManager {
         if (!$user)
             throw new PikeException('Invalid reset credential',
                                     Authenticator::CREDENTIAL_WAS_INVALID);
-        if (time() > $user->resetRequestedAt +
+        if (time() > ($user->resetRequestedAt ?? 0) +
                      Authenticator::RESET_KEY_EXPIRATION_SECS) {
             throw new PikeException('Reset key had expired',
                                     Authenticator::KEY_HAD_EXPIRED);

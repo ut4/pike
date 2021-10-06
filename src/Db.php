@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Pike;
 
+/**
+ * @template T
+ */
 class Db extends DbUtils {
     /** @var string */
     protected $tablePrefix;
@@ -65,7 +68,7 @@ class Db extends DbUtils {
      * @param int $fetchStyle = \PDO::FETCH_ASSOC
      * @param mixed $fetchArgument = null
      * @param array $fetchCtorArgs = []
-     * @return array
+     * @return array<int, T>
      * @throws \Pike\PikeException
      */
     public function fetchAll(string $query,
@@ -89,7 +92,7 @@ class Db extends DbUtils {
      * @param int $fetchStyle = \PDO::FETCH_ASSOC
      * @param mixed $fetchArgument = null
      * @param array $fetchCtorArgs = []
-     * @return object|array|null
+     * @return T|array|null
      * @throws \Pike\PikeException
      */
     public function fetchOne(string $query,
