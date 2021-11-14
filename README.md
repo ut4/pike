@@ -2,7 +2,7 @@
 
 ![Pike logo](https://ut4.github.io/img/pike-logo.png)
 
-Minimalistic but not entirely useless php application framework. Does not self-roll everything, but uses existing, high-quality (and bloat-free) libraries for heavy lifting. Relatively low-level, extremely lightweight.
+Low-level toolkit for depeloping fast and testable php applications. A mixture of php's own APIs (pdo, sessions), existing libraries (routing, di), and self-rolled stuff (auth, data validation).
 
 # Dependencies
 
