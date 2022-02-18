@@ -2,7 +2,7 @@
 
 ![Pike logo](https://ut4.github.io/img/pike-logo.png)
 
-Low-level toolkit for depeloping fast and testable php applications. A mixture of php's own APIs (pdo, sessions), existing libraries (routing, di), and self-rolled stuff (auth, data validation).
+Low-level toolkit for developing fast and testable php applications. A mixture of php's own APIs (pdo, sessions), existing libraries (routing, di), and self-rolled stuff (auth, data validation).
 
 # Dependencies
 

@@ -11,7 +11,7 @@ use Pike\Defaults\DefaultUserRepository;
  */
 class ServiceDefaults {
     /** @var \Pike\AppContext */
-    private $ctx;
+    protected $ctx;
     /**
      * @param \Pike\AppContext $ctx
      */

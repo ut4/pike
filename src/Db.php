@@ -211,9 +211,21 @@ class Db extends DbUtils {
         $this->tablePrefix = $this->config['db.tablePrefix'] ?? '';
     }
     /**
+     * @return \PDO
+     */
+    public function getPdo() {
+        return $this->pdo;
+    }
+    /**
      * @return string
      */
-    private function compileQuery(string $query): string {
+    public function getTablePrefix(): string {
+        return $this->tablePrefix;
+    }
+    /**
+     * @return string
+     */
+    public function compileQuery(string $query): string {
         return str_replace('${p}', $this->tablePrefix, $query);
     }
 }

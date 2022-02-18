@@ -10,8 +10,6 @@ use Pike\Auth\Authenticator;
  * running tests.
  */
 final class ServiceDefaultsForTests extends ServiceDefaults {
-    /** @var \Pike\AppContext */
-    private $ctx;
     /** @var \Closure */
     private $makeMockSessionFn;
     /** @var \Closure */
@@ -24,7 +22,7 @@ final class ServiceDefaultsForTests extends ServiceDefaults {
     public function __construct(AppContext $ctx,
                                 \Closure $makeMockSessionFn,
                                 \Closure $getConfigFn) {
-        $this->ctx = $ctx;
+        parent::__construct($ctx);
         $this->makeMockSessionFn = $makeMockSessionFn;
         $this->getConfigFn = $getConfigFn;
     }
