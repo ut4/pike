@@ -5,6 +5,7 @@ namespace Pike;
 use Envms\FluentPDO\Exception;
 use Envms\FluentPDO\Queries\Select;
 use Envms\FluentPDO\Query;
+use Pike\Interfaces\RowMapperInterface;
 
 class CoolDb {
     /** @var \Pike\Db */
@@ -62,6 +63,7 @@ class CoolDb {
      * @return string "[[prefix]]drop table" -> "`myprefix_drop_table`"
      */
     private function compileTableName(string $input): string {
+        return $this->db->compileQuery($input);
         return $this->db->columnify($this->db->compileQuery($input));
     }
 }
@@ -85,6 +87,8 @@ class MyQuery extends Query {
 }
 
 class MySelect extends Select {
+    /** @var ?\Pike\Interfaces\RowMapperInterface */
+    private $mapper = null;
     /**
      * @param string[] $columns
      * @param bool $overrideDefault = true
@@ -106,11 +110,12 @@ class MySelect extends Select {
         return $this->processAndGetResults([parent::fetch($column, $cursorOrientation)])[0] ?? null;
     }
     /**
-     * todo 
+     * @param Pike\Interfaces\RowMapperInterface $mapper
+     * @return $this
      */
-    private function processAndGetResults($rows) {
-        if (!$rows) return $rows;
-        return $rows;
+    public function mapWith(RowMapperInterface $mapper): Select {
+        $this->mapper = $mapper;
+        return $this;
     }
     /**
      * Get query string
@@ -124,6 +129,26 @@ class MySelect extends Select {
         unset($this->clauses["SELECT"]);
         unset($this->clauses["FROM"]);
         return $this->getQuery($formatted);
+    }
+    /**
+     * @param array<int, object|array<string, mixed>> $rows
+     * @return array<int, object|array<string, mixed>>
+     */
+    private function processAndGetResults(array $rows) {
+        if (!$rows) return $rows;
+        //
+        if (!($mapper = $this->mapper))
+            return $rows;
+        if (!is_object($rows[0]))
+            throw new PikeException("Mappers only supports objects i.e. select(..., MyObject::class)",
+                                    PikeException::BAD_INPUT);
+        //
+        $filtered = [];
+        for ($i = 0; $i < count($rows); ++$i) {
+            $mapped = $mapper->mapRow($rows[$i], $i, $rows);
+            if ($mapped) $filtered[] = $mapped;
+        }
+        return $filtered;
     }
 }
 

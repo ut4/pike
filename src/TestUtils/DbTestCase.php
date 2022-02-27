@@ -77,7 +77,7 @@ abstract class DbTestCase extends ConfigProvidingTestCase {
                 self::$db->exec($stmt);
             self::$db->exec("COMMIT");
         } else {
-            self::$db->exec($initSql->sql);
+            self::$db->exec($initSql);
         }
     }
 }
