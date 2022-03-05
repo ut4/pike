@@ -120,6 +120,9 @@ class Db extends DbUtils {
         try {
             $prep = $this->pdo->prepare($this->compileQuery($query));
             $prep->execute($params ? array_map(function ($val) {
+                if (is_array($val))
+                    throw new PikeException(sprintf("Can't use array (%s) for bindValue()", json_encode($val)),
+                                            PikeException::BAD_INPUT);
                 return !is_bool($val) ? $val : (int) $val;
             }, $params) : $params);
             return $prep->rowCount();

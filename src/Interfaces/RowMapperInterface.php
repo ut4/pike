@@ -11,5 +11,5 @@ interface RowMapperInterface {
      * @param object[] $rows The complete result set
      * @return object|null Mapped/mutated $row
      */
-    public function mapRow(object $row, int $numRow, array $rows): ?object;
+    public function mapRow(object $row, int $rowNum, array $rows): ?object;
 }

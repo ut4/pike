@@ -1,13 +1,13 @@
 <?php declare(strict_types=1);
 
-namespace Pike;
+namespace Pike\Db;
 
-use Envms\FluentPDO\Exception;
+use Envms\FluentPDO\{Query};
 use Envms\FluentPDO\Queries\Select;
-use Envms\FluentPDO\Query;
+use Pike\{Db, PikeException};
 use Pike\Interfaces\RowMapperInterface;
 
-class CoolDb {
+class FluentDb {
     /** @var \Pike\Db */
     protected $db;
     /** @var string */
@@ -21,18 +21,19 @@ class CoolDb {
     }
     /**
      * @param string $tableName
-     * @return \Pike\MyInsert 
+     * @return \Pike\Db\MyInsert 
      */
     public function insert(string $tableName): MyInsert {
-        return new MyInsert($this->compileTableName($tableName), $this->db);
+        return new MyInsert($this->db->compileQuery($tableName), $this->db);
     }
     /**
      * @param string $tableName
      * @param ?class-string $toClass = null
-     * @return \Pike\MySelect
+     * @return \Pike\Db\MySelect
      */
     public function select(string $tableName, ?string $toClass = null): MySelect {
-        $out = (new MyQuery($this->db->getPdo()))->from($this->compileTableName($tableName));
+        $out = (new MyQuery($this->db->getPdo()))
+            ->from($this->db->compileQuery($tableName), null, $this->db);
         if ($toClass)
             $out->asObject($toClass);
         // else use default assoc
@@ -40,17 +41,17 @@ class CoolDb {
     }
     /**
      * @param string $tableName
-     * @return \Pike\MyUpdate 
+     * @return \Pike\Db\MyUpdate 
      */
     public function update(string $tableName): MyUpdate {
-        return new MyUpdate($this->compileTableName($tableName), $this->db);
+        return new MyUpdate($this->db->compileQuery($tableName), $this->db);
     }
     /**
      * @param string $tableName
-     * @return \Pike\MyDelete 
+     * @return \Pike\Db\MyDelete 
      */
     public function delete(string $tableName): MyDelete {
-        return new MyDelete($this->compileTableName($tableName), $this->db);
+        return new MyDelete($this->db->compileQuery($tableName), $this->db);
     }
     /**
      * @return \Pike\Db 
@@ -58,24 +59,21 @@ class CoolDb {
     public function getDb(): Db {
         return $this->db;
     }
-    /**
-     * @param string $input
-     * @return string "[[prefix]]drop table" -> "`myprefix_drop_table`"
-     */
-    private function compileTableName(string $input): string {
-        return $this->db->compileQuery($input);
-        return $this->db->columnify($this->db->compileQuery($input));
-    }
 }
 
 class MyQuery extends Query {
     /**
-     * @inheritdoc
+     * @param ?string  $table = null      - db table name
+     * @param ?int     $primaryKey = null - return one row by primary key
+     * @param \Pike\Db $db = null
+     * @return \Pike\Db\MySelect
      */
-    public function from(?string $table = null, ?int $primaryKey = null): Select {
+    public function from(?string $table = null,
+                         ?int $primaryKey = null,
+                         Db $db = null): Select {
         $this->setTableName($table);
         $table = $this->getFullTableName();
-        $query = new MySelect($this, $table);
+        $query = new MySelect($this, $table, $db);
         if ($primaryKey !== null) {
             $tableTable = $query->getFromTable();
             $tableAlias = $query->getFromAlias();
@@ -87,8 +85,23 @@ class MyQuery extends Query {
 }
 
 class MySelect extends Select {
+    /** @var ?\Pike\Db */
+    private $db;
     /** @var ?\Pike\Interfaces\RowMapperInterface */
-    private $mapper = null;
+    private $mapper;
+    /** @var ?callable(string): string */
+    private $finalQueryMutator;
+    /**
+     * @param \Envms\FluentPDO\Query $fluent
+     * @param string                 $from
+     * @param ?\Pike\Db              $db = null
+     */
+    function __construct(Query $fluent, $from, ?Db $db = null) {
+        parent::__construct($fluent, $from);
+        $this->db = $db;
+        $this->mapper = null;
+        $this->finalQueryMutator = null;
+    }
     /**
      * @param string[] $columns
      * @param bool $overrideDefault = true
@@ -98,19 +111,7 @@ class MySelect extends Select {
         return $this->select($columns, $overrideDefault);
     }
     /**
-     * @inheritdoc
-     */
-    public function fetchAll($index = "", $selectOnly = "") {
-        return $this->processAndGetResults(parent::fetchAll($index, $selectOnly));
-    }
-    /**
-     * @inheritdoc
-     */
-    public function fetch(?string $column = null, int $cursorOrientation = \PDO::FETCH_ORI_NEXT) {
-        return $this->processAndGetResults([parent::fetch($column, $cursorOrientation)])[0] ?? null;
-    }
-    /**
-     * @param Pike\Interfaces\RowMapperInterface $mapper
+     * @param \Pike\Interfaces\RowMapperInterface $mapper
      * @return $this
      */
     public function mapWith(RowMapperInterface $mapper): Select {
@@ -118,12 +119,49 @@ class MySelect extends Select {
         return $this;
     }
     /**
+     * @inheritdoc
+     */
+    public function leftJoin($statement): Select {
+        return self::join("leftJoin", $statement);
+    }
+    /**
+     * @inheritdoc
+     */
+    public function rightJoin($statement): Select {
+        return self::join("leftJoin", $statement);
+    }
+    /**
+     * @inheritdoc
+     */
+    public function innerJoin($statement): Select {
+        return self::join("leftJoin", $statement);
+    }
+    /**
+     * @inheritdoc
+     */
+    public function outerJoin($statement): Select {
+        return self::join("leftJoin", $statement);
+    }
+    /**
+     * @inheritdoc
+     */
+    public function fullJoin($statement): Select {
+        return self::join("leftJoin", $statement);
+    }
+    /**
+     * @param string $which "leftJoin"|"rightJoin"|"innerJoin"|"outerJoin"|"fullJoin"
+     * @param string $statement
+     * @return $this
+     */
+    private function join(string $which, string $statement): Select {
+        if (!$this->db) throw new PikeException("select->db not set");
+        return parent::$which($this->db->compileQuery($statement));
+    }
+    /**
      * Get query string
      *
-     * @param bool $formatted - Return formatted query
-     *
+     * @param bool $formatted = true - Return formatted query
      * @return string
-     * @throws Exception
      */
     public function getQuery2(bool $formatted = true): string {
         unset($this->clauses["SELECT"]);
@@ -131,14 +169,46 @@ class MySelect extends Select {
         return $this->getQuery($formatted);
     }
     /**
+     * @param string $index = ""      - specify index column. Allows for data organization by field using 'field[]'
+     * @param string $selectOnly = "" - select columns which could be fetched
+     * @return array<int, object|array<string, mixed>>
+     */
+    public function fetchAll($index = "", $selectOnly = "") {
+        return $this->processAndGetResults(parent::fetchAll($index, $selectOnly));
+    }
+    /**
+     * @param ?string $column = null - column name or empty string for the whole row
+     * @param int    $cursorOrientation = \PDO::FETCH_ORI_NEXT
+     * @return object|array<string, mixed>|null
+     */
+    public function fetch(?string $column = null, int $cursorOrientation = \PDO::FETCH_ORI_NEXT) {
+        return $this->processAndGetResults([parent::fetch($column, $cursorOrientation)])[0] ?? null;
+    }
+    /**
+     * @param callable(string): string $fn
+     * @return $this
+     */
+    public function mutateQWith(callable $fn): Select {
+        $this->finalQueryMutator = $fn;
+        return $this;
+    }
+    /**
+     * @inheritdoc
+     */
+    protected function buildQuery() {
+        $out = parent::buildQuery();
+        return !$this->finalQueryMutator
+            ? $out
+            : $this->db->compileQuery(call_user_func($this->finalQueryMutator, $out));
+    }
+    /**
      * @param array<int, object|array<string, mixed>> $rows
      * @return array<int, object|array<string, mixed>>
      */
-    private function processAndGetResults(array $rows) {
-        if (!$rows) return $rows;
-        //
-        if (!($mapper = $this->mapper))
+    private function processAndGetResults(array $rows): array {
+        if (!$rows || !($mapper = $this->mapper))
             return $rows;
+        //
         if (!is_object($rows[0]))
             throw new PikeException("Mappers only supports objects i.e. select(..., MyObject::class)",
                                     PikeException::BAD_INPUT);
@@ -153,7 +223,8 @@ class MySelect extends Select {
 }
 
 abstract class InsertUpdate {
-	protected $db;
+    /** @var \Pike\Db */
+    protected $db;
     /** @var string */
     protected $tableName;
     /** @var object[] */
@@ -163,12 +234,13 @@ abstract class InsertUpdate {
     /** @var string[] */
     protected $onlyTheseFields = [];
     /**
-     * assume is valid
+     * @param string $tableName Assume is valid
+     * @param \Pike\Db $db
      */
-	public function __construct(string $tableName, Db $db) {
-	    $this->db = $db;
-	    $this->tableName = $tableName;
-	}
+    public function __construct(string $tableName, Db $db) {
+        $this->db = $db;
+        $this->tableName = $tableName;
+    }
     /**
      * @param object|array $values
      * @return static
@@ -183,7 +255,7 @@ abstract class InsertUpdate {
      * @return static
      */
     public function fields(array $columns): InsertUpdate {
-    	if ($columns) $this->onlyTheseFields = $columns;
+        if ($columns) $this->onlyTheseFields = $columns;
         return $this;
     }
 }
@@ -191,10 +263,11 @@ abstract class InsertUpdate {
 class MyInsert extends InsertUpdate {
     /**
      * @return string $lastInsertId or ""
+     * @throws \Pike\PikeException If there's no data to insert
      */
     public function execute(): string {
         if (!$this->theValues)
-            throw new PikeException("No data to update", PikeException::BAD_INPUT);
+            throw new PikeException("No data to insert", PikeException::BAD_INPUT);
         if (!$this->hasManyValues) {
             [$qList, $vals, $cols] = $this->db->makeInsertQParts($this->theValues[0], $this->onlyTheseFields);
             // @allow \Pike\PikeException
@@ -212,17 +285,20 @@ class MyInsert extends InsertUpdate {
 
 class MyUpdate extends InsertUpdate {
     /** @var ?\Envms\FluentPDO\Queries\Select */
-    private $internalWhere = null;
+    protected $internalWhere = null;
     /**
      * @inheritdoc
      */
     public function values($values): MyUpdate {
         if (is_array($values)) throw new PikeException("Updating multiple objects not supported",
                                                        PikeException::BAD_INPUT);
-      	return parent::values($values);
+          return parent::values($values);
     }
     /**
-     * 
+     * @param string|array $condition  - possibly containing ? or :name (PDO syntax)
+     * @param mixed        $parameters
+     * @param string       $separator - should be AND or OR
+     * @return $this
      */
     public function where($condition, $parameters = [], $separator = "AND"): MyUpdate {
         if (!$this->internalWhere)
@@ -232,7 +308,7 @@ class MyUpdate extends InsertUpdate {
     }
     /**
      * @return int $numAffectedRows
-     * @throws \Pike\PikeException
+     * @throws \Pike\PikeException If there's no data to update or "where" isn't set
      */
     public function execute(): int {
         if (!$this->theValues)
@@ -248,20 +324,25 @@ class MyUpdate extends InsertUpdate {
 }
 
 class MyDelete {
-	protected $db;
+    /** @var \Pike\Db */
+    protected $db;
     /** @var string */
     protected $tableName;
     /** @var ?\Envms\FluentPDO\Queries\Select */
     private $internalWhere = null;
     /**
-     * assume is valid
+     * @param string $tableName Assume is valid
+     * @param \Pike\Db $db
      */
-	public function __construct(string $tableName, Db $db) {
-	    $this->db = $db;
-	    $this->tableName = $tableName;
-	}
+    public function __construct(string $tableName, Db $db) {
+        $this->db = $db;
+        $this->tableName = $tableName;
+    }
     /**
-     * 
+     * @param string|array $condition  - possibly containing ? or :name (PDO syntax)
+     * @param mixed        $parameters
+     * @param string       $separator - should be AND or OR
+     * @return $this
      */
     public function where($condition, $parameters = [], $separator = "AND"): MyDelete {
         if (!$this->internalWhere)
@@ -271,7 +352,7 @@ class MyDelete {
     }
     /**
      * @return int $numAffectedRows
-     * @throws \Pike\PikeException
+     * @throws \Pike\PikeException If "where" isn't set
      */
     public function execute(): int {
         if (!$this->internalWhere)
