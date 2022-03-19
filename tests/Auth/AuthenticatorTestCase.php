@@ -29,6 +29,12 @@ abstract class AuthenticatorTestCase extends DbTestCase {
         'loginData' => null,
     ];
     /**
+     * @return array<string, mixed>
+     */
+    public static function getDbConfig(): array {
+        return require PIKE_TEST_CONFIG_FILE_PATH;
+    }
+    /**
      * @param ?\Pike\Interfaces\SessionInterface $mockSession = null
      * @param ?\Pike\Auth\Interfaces\CookieStorageInterface $mockCookieStorage = null
      * @param ?bool $useUserRoleCookie = false

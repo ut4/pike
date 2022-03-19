@@ -2,48 +2,16 @@
 
 namespace Pike\TestUtils;
 
-use Auryn\Injector;
-use Pike\{App, Db, Response};
-use Pike\Interfaces\SessionInterface;
+use Pike\App;
 
 trait HttpTestUtils {
     /**
-     * @param callable(): \Pike\App $factory
-     * @param ?\Closure $userDefinedAlterDi = null callable(\Auryn\Injector $di): void
+     * @param ?\Pike\App $app = null
+     * @return \Pike\TestUtils\ResponseSpyingAppBuilder
      */
-    public function makeApp(callable $factory,
-                            ?\Closure $userDefinedAlterDi = null): ResponseSpyingApp {
-        $app = call_user_func($factory);
-        if (!($app instanceof App))
-            throw new \UnexpectedValueException('$factory must return an instance of \Pike\App');
-        //
-        $app->setServiceInstantiator(fn($ctx) => new ServiceDefaultsForTests($ctx, function ($_factory) {
-            $mockSession = $this->createMock(SessionInterface::class);
-            $mockSession->method('get')->with('user')->willReturn((object) ['id' => '1', 'role' => 1]);
-            return $mockSession;
-        }, function () {
-            return self::setGetConfig();
-        }));
-        //
-        $app->getModules()[] = new class($userDefinedAlterDi) {
-            private $alterDiFn;
-            public function __construct(?\Closure $userDefinedAlterDi = null) {
-                $this->alterDiFn = $userDefinedAlterDi;
-            }
-            public function alterDi(Injector $di): void {
-                $di->alias(Response::class, MutedSpyingResponse::class);
-                $di->alias(Db::class, SingleConnectionDb::class);
-                if ($this->alterDiFn) $this->alterDiFn->__invoke($di);
-            }
-        };
-        return new ResponseSpyingApp($app);
-    }
-    /**
-     * @deprecated
-     * @return \Pike\TestUtils\MutedSpyingResponse
-     */
-    public function makeSpyingResponse() {
-        return new MutedSpyingResponse;
+    public function buildApp(App $app = null): ResponseSpyingAppBuilder {
+        $app = $app ?? new App;
+        return new ResponseSpyingAppBuilder($app);
     }
     /**
      * @param string|object|array $expected

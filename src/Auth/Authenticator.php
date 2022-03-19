@@ -6,6 +6,7 @@ namespace Pike\Auth;
 
 use Pike\Auth\Internal\ServicesFactory;
 use Pike\Entities\User;
+use Pike\Interfaces\SessionInterface;
 use Pike\PikeException;
 
 /**
@@ -99,12 +100,12 @@ final class Authenticator {
      * @throws \Pike\PikeException
      */
     public function getIdentity() {
-        if (($data = $this->services->makeSession()->get('user')) ||
+        if (($data = $this->getAndOpenSession()->get('user')) ||
             !($rememberMe = $this->services->makeRememberMe()))
             return $data;
         if (($serializedSessionData = $rememberMe->getLogin())) {
             $sessionData = unserialize($serializedSessionData);
-            $this->services->makeSession()->put('user', $sessionData);
+            $this->getAndOpenSession()->put('user', $sessionData);
             return $sessionData;
         }
         return null;
@@ -118,7 +119,7 @@ final class Authenticator {
         if (($rememberMe = $this->services->makeRememberMe()))
             // @allow \Pike\PikeException
             $rememberMe->clearLogin();
-        $this->services->makeSession()->destroy();
+        $this->getAndOpenSession()->destroy();
     }
     /**
      * @param ?callable(): \Pike\Interfaces\MailerInterface $makeMailerFn = null
@@ -133,7 +134,7 @@ final class Authenticator {
      * @return string
      */
     public function getPerSessionCsrfToken(): string {
-        return $this->services->makeSession()->get('csrfToken') ??
+        return $this->getAndOpenSession()->get('csrfToken') ??
             $this->issuePerSessionCsrfToken();
     }
     /**
@@ -141,7 +142,7 @@ final class Authenticator {
      */
     public function issuePerSessionCsrfToken(): string {
         $token = $this->services->makeCrypto()->genRandomToken();
-        $this->services->makeSession()->put('csrfToken', $token);
+        $this->getAndOpenSession()->put('csrfToken', $token);
         return $token;
     }
     /**
@@ -149,6 +150,14 @@ final class Authenticator {
     public function postProcess(): void {
         if ($this->userRoleCookieName || $this->services->makeRememberMe())
             $this->services->makeCookieManager()->commitCookieConfigs();
+    }
+    /**
+     * @return \Pike\Interfaces\SessionInterface
+     */
+    private function getAndOpenSession(): SessionInterface {
+        $sess = $this->services->makeSession();
+        $sess->start();
+        return $sess;
     }
     /**
      * @param \Pike\Entities\User $user
@@ -163,7 +172,7 @@ final class Authenticator {
             throw new PikeException('convertUserToSessionData mustn\'t return null',
                                     PikeException::BAD_INPUT);
         //
-        $this->services->makeSession()->put('user', $sessionData);
+        $this->getAndOpenSession()->put('user', $sessionData);
         //
         if ($this->userRoleCookieName)
             $this->services->makeCookieManager()

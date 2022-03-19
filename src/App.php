@@ -5,34 +5,45 @@ declare(strict_types=1);
 namespace Pike;
 
 use Auryn\Injector;
-use Pike\Interfaces\{FileSystemInterface, SessionInterface};
 
-final class App {
-    public const VERSION = '0.9.0-dev';
-    /** @var object[] */
-    private $moduleInstances;
-    /** @var \Pike\AppContext */
-    private $ctx;
-    /** @var ?\Closure */
-    private $populateCtx;
-    /** @var ?\Pike\ServiceDefaults */
-    private $serviceDefaults;
+class App {
+    public const VERSION = "1.0.0-alpha1";
+    /** @var \ArrayObject */
+    protected $mods;
+    /** @var \Auryn\Injector */
+    protected $di;
+    /**
+     */
+    public function __construct() {
+        $this->mods = new \ArrayObject;
+        $this->di = new Injector;
+        $router = new Router;
+        $router->addMatchTypes(["w" => "[0-9A-Za-z_-]++"]);
+        $this->di->share($router);
+    }
     /**
      * @param object[] $modules
-     * @param ?\Closure $populateCtx = null
-     * @param ?\Pike\AppContext $initialCtx = null
-     * @param ?\Pike\Router $router = null
+     * @return $this
      */
-    public function __construct(array $modules,
-                                ?\Closure $populateCtx = null,
-                                ?AppContext $initialCtx = null,
-                                ?Router $router = null) {
-        self::throwIfAnyModuleIsNotValid($modules);
-        $this->moduleInstances = $modules;
-        $this->populateCtx = $populateCtx;
-        $this->ctx = $initialCtx ?? new AppContext;
-        $this->ctx->router = $router ?? new Router;
-        $this->ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_-]++']);
+    public function setModules(array $modules) {
+        foreach ($modules as $instance) {
+            if (!is_object($instance))
+                throw new PikeException("A module (" . json_encode($instance) . ") must be an object",
+                                        PikeException::BAD_INPUT);
+            if (!method_exists($instance, "init"))
+                throw new PikeException(get_class($instance) . "->init(\Pike\Router \$router) is required",
+                                        PikeException::BAD_INPUT);
+        }
+        $this->mods->exchangeArray($modules);
+        return $this;
+    }
+    /**
+     * @param callable $fn callable(\Auryn\Injector $di):void
+     * @return $this
+     */
+    public function defineInjectables(callable $fn) {
+        call_user_func($fn, $this->di);
+        return $this;
     }
     /**
      * @param \Pike\Request|string|null $request
@@ -43,138 +54,83 @@ final class App {
     public function handleRequest($request,
                                   ?string $baseUrl = null,
                                   ?Response $response = null): void {
-        $this->ctx->req = !$request || is_string($request)
-            ? Request::createFromGlobals($request, $baseUrl)
-            : $request;
-        $this->ctx->res = $response ?? new Response;
-        $req = $this->ctx->req;
-        $res = $this->ctx->res;
-        //
-        $ctxIsPopulated = false;
-        $populateCtxIfNotPopulated = function () use (&$ctxIsPopulated): void {
-            if ($ctxIsPopulated) return;
-            if ($this->populateCtx) call_user_func(
-                $this->populateCtx,
-                $this->ctx,
-                $this->serviceDefaults ?? new ServiceDefaults($this->ctx)
-            );
-            $ctxIsPopulated = true;
-        };
-        $this->forEachModuleCall('init', $this->ctx, $populateCtxIfNotPopulated);
-        //
-        if (($match = $this->ctx->router->match($req->path, $req->method))) {
-            // @allow \Pike\PikeException
-            [$ctrlClassPath, $ctrlMethodName, $userDefinedRouteCtx] =
-                $this->validateRouteMatch($match);
-            $req->params = (object) $match['params'];
-            $req->name = $match['name'];
-            $req->routeInfo = (object) [
-                'myCtx' => $userDefinedRouteCtx,
-                'name' => $req->name,
-            ];
-            //
-            $populateCtxIfNotPopulated();
-            $allWaresRan = $this->runMiddleware();
-            if ($allWaresRan) {
-                $di = $this->makeDi();
-                $this->forEachModuleCall('alterDi', $di);
-                $di->execute("{$ctrlClassPath}::{$ctrlMethodName}");
-                if (isset($this->ctx->auth)) $this->ctx->auth->postProcess();
-            }
-            $res->commitIfReady();
-        } else {
-            throw new PikeException("No route for {$req->method} {$req->path}");
+        if (!$request || is_string($request))
+            $request = Request::createFromGlobals($request, $baseUrl);
+        $this->di->share($request);
+        $router = $this->di->make(Router::class);
+        $di = $this->di;
+        foreach ($this->mods as $mod) {
+            $mod->init($router, $di);
         }
-    }
-    /**
-     * @param callable(\Pike\AppContext $ctx): \Pike\ServiceDefaults $fn
-     */
-    public function setServiceInstantiator(callable $fn): void {
-        $this->serviceDefaults = $fn($this->ctx);
-    }
-    /**
-     * @return object[]
-     */
-    public function &getModules(): array {
-        return $this->moduleInstances;
-    }
-    /**
-     * @return \Pike\AppContext
-    */
-    public function getCtx(): AppContext {
-        return $this->ctx;
-    }
-    /**
-     * @param object[] $modules
-     */
-    private static function throwIfAnyModuleIsNotValid(array $modules): void {
-        foreach ($modules as $instance) {
-            if (!is_object($instance))
-                throw new PikeException('A module (' . json_encode($instance) . ') must be an object',
-                                        PikeException::BAD_INPUT);
-            if (!method_exists($instance, 'init'))
-                throw new PikeException(get_class($instance) . '->init(\Pike\AppContext $ctx) is required',
-                                        PikeException::BAD_INPUT);
+        //
+        $match = $router->match($request->path, $request->method);
+        if (!$match) {
+            throw new PikeException("No route for {$request->method} {$request->path}");
         }
+        [$ctrlClassPath, $ctrlMethodName, $userDefinedRouteCtx] =
+            $this->validateRouteMatch($match, $request);
+        $request->params = (object) $match["params"];
+        $request->name = $match["name"];
+        $request->routeInfo = (object) [
+            "myCtx" => $userDefinedRouteCtx,
+            "name" => $request->name,
+        ];
+        if (!$response) $response = new Response;
+        $this->di->share($response);
+        //
+        foreach ($this->mods as $mod) {
+            if (method_exists($mod, "beforeExecCtrl"))
+                $mod->beforeExecCtrl($this->di);
+        }
+        $allWaresRan = $this->runMiddleware($router, $request, $response);
+        if ($allWaresRan) {
+            if (isset($this->ctx->auth)) $this->ctx->auth->postProcess();
+            $this->di->execute("{$ctrlClassPath}::{$ctrlMethodName}");
+        }
+        $response->commitIfReady();
+    }
+    /**
+     * @return \Auryn\Injector
+     */
+    public function getDi() {
+        return $this->di;
     }
     /**
      * @param array<string, mixed> $match
+     * @param \Pike\Request $req
      * @return array [string, string, <userDefinedRouteCtx>|null]
      * @throws \Pike\PikeException
      */
-    private function validateRouteMatch(array $match): array {
-        $routeInfo = $match['target'];
+    private function validateRouteMatch(array $match, Request $req): array {
+        $routeInfo = $match["target"];
         $numItems = is_array($routeInfo) ? count($routeInfo) : 0;
         if ($numItems < 2 ||
             !is_string($routeInfo[0]) ||
             !is_string($routeInfo[1]))
             throw new PikeException(
-                "A route ({$this->ctx->req->method} {$this->ctx->req->path}) must return an" .
-                " array [\'Ctrl\\Class\\Path\', \'methodName\', <yourCtxVarHere>].",
+                "A route ({$req->method} {$req->path}) must return an" .
+                " array [\"Ctrl\\Class\\Path\", \"methodName\", <yourCtxVarHere>].",
                 PikeException::BAD_INPUT);
         if ($numItems < 3)
             $routeInfo[] = null;
         return $routeInfo;
     }
     /**
+     * @param \Pike\Router $router
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
      * @return bool $didEveryMiddlewareCallNext
      */
-    private function runMiddleware(): bool {
+    private function runMiddleware($router, $req, $res): bool {
         $i = 0;
         $next = function () use (&$i): void { ++$i; };
-        $wares = $this->ctx->router->middleware;
-        $req = $this->ctx->req;
-        $res = $this->ctx->res;
+        $wares = $router->middleware;
         while ($i < count($wares)) {
             $iBefore = $i;
             call_user_func($wares[$iBefore]->fn, $req, $res, $next);
-            if ($i === $iBefore) // Middleware didn't call next()
+            if ($i === $iBefore) // Middleware didn"t call next()
                 return false;
         }
         return true;
-    }
-    /**
-     * @return \Auryn\Injector
-     */
-    private function makeDi(): Injector {
-        $di = new Injector;
-        $di->share($this->ctx->req);
-        $di->share($this->ctx->res);
-        if (isset($this->ctx->config)) $di->share($this->ctx->config);
-        if (isset($this->ctx->db)) $di->share($this->ctx->db);
-        if (isset($this->ctx->auth)) $di->share($this->ctx->auth);
-        $di->alias(FileSystemInterface::class, FileSystem::class);
-        $di->alias(SessionInterface::class, NativeSession::class);
-        return $di;
-    }
-    /**
-     * @param string $methodName
-     * @param mixed[] $args
-     */
-    private function forEachModuleCall(string $methodName, ...$args): void {
-        foreach ($this->moduleInstances as $instance) {
-            if (method_exists($instance, $methodName))
-                call_user_func([$instance, $methodName], ...$args);
-        }
     }
 }

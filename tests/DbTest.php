@@ -9,6 +9,11 @@ class MyEntity {
 }
 
 class DbTest extends DbTestCase {
+    public static function getDbConfig(): array {
+        return require PIKE_TEST_CONFIG_FILE_PATH;
+    }
+
+
     public function testFetchOneWithFetchClassDoesNotReturnAssocArray() {
         $testQ = "SELECT 'foo' AS columnName";
         $actual = self::$db->fetchOne($testQ,

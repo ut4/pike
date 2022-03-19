@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace Pike\Auth\Defaults;
 
-use Pike\AppContext;
 use Pike\Auth\Interfaces\CookieStorageInterface;
 
 class DefaultCookieStorage implements CookieStorageInterface {
-    /** @var \Pike\AppContext */
+    /** @var object */
     private $ctx;
     /**
-     * @param \Pike\AppContext $ctx
+     * @param object $ctx
      */
-    public function __construct(AppContext $ctx) {
+    public function __construct(object $ctx) {
         $this->ctx = $ctx;
     }
     /**

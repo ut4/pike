@@ -10,12 +10,14 @@
         "rdlowrey/auryn": "^1.4"
     },
     "require-dev": {
-        "phpunit/phpunit": "8.*"
+        "phpunit/phpunit": "8.*",
+        "vimeo/psalm": "^4.10"
     },
     "suggest": {
         "ext-pdo_mysql": "To use Db with the MySQL/MariaDB driver",
         "ext-mbstring": "To use Validation",
         "phpmailer/phpmailer": "To use PhpMailerMailer or Authenticator->requestPasswordReset().",
+        "envms/fluentpdo": "To use Db\\FluentDb.",
         "masterminds/html5": "To use Extensions\\Validation\\SafeHTMLValidator.",
         "vimeo/psalm": "To use `composer lint`"
     },

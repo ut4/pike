@@ -3,7 +3,7 @@
 namespace Pike\Tests;
 
 use PHPUnit\Framework\TestCase;
-use Pike\{App, AppContext, Request};
+use Pike\{App, Request, Router};
 use Pike\TestUtils\{HttpTestUtils, MutedSpyingResponse};
 
 final class AppTest extends TestCase {
@@ -25,16 +25,14 @@ final class AppTest extends TestCase {
     public function testHandleRequestStopsAtFirstMiddlewareEvenIfNoRequestHasBeenSent(): void {
         $req = new Request('/foo', 'GET');
         $modules = [new TestModule(false), new TestModule2];
-        $res = $this->sendTestRequest($req, $modules);
+        $_res = $this->sendTestRequest($req, $modules);
         //
         $this->assertTrue($modules[0]->middlewareCalled);
         $this->assertFalse($modules[1]->middlewareCalled);
         $this->verifyDidNotExecuteAnyControllers();
     }
     private function sendTestRequest(Request $req, array $modules): MutedSpyingResponse {
-        return $this->makeApp(function () use ($modules) {
-            return new App($modules);
-        })->sendRequest($req);
+        return $this->buildApp((new App)->setModules($modules))->sendRequest($req);
     }
     private function verifyDidNotExecuteAnyControllers(): void {
         $this->assertFalse(TestController::$method1Called);
@@ -48,9 +46,9 @@ final class TestModule {
     public function __construct(bool $doSendRequest) {
         $this->doSendRequest = $doSendRequest;
     }
-    public function init(AppContext $ctx): void {
-        $ctx->router->map('GET', '/foo', [TestController::class, 'method']);
-        $ctx->router->on('*', function ($_req, $res, $_next) {
+    public function init(Router $router): void {
+        $router->map('GET', '/foo', [TestController::class, 'method']);
+        $router->on('*', function ($_req, $res, $_next) {
             $this->middlewareCalled = true;
             if ($this->doSendRequest)
                 $res->status(400)->plain('Not allowed');
@@ -61,9 +59,9 @@ final class TestModule {
 
 final class TestModule2 {
     public $middlewareCalled = false;
-    public function init(AppContext $ctx): void {
-        $ctx->router->map('GET', '/bar', [TestController::class, 'method2']);
-        $ctx->router->on('*', function ($_req, $res, $_next) {
+    public function init(Router $router): void {
+        $router->map('GET', '/bar', [TestController::class, 'method2']);
+        $router->on('*', function ($_req, $res, $_next) {
             $this->middlewareCalled = true;
         });
     }

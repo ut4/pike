@@ -32,6 +32,9 @@ final class FluentDbTest extends DbTestCase {
         self::$db->exec("DROP TABLE IF EXISTS platforms");
         self::$db->exec("DROP TABLE IF EXISTS games");
     }
+    public static function getDbConfig(): array {
+        return require PIKE_TEST_CONFIG_FILE_PATH;
+    }
     public function testInsertWithSingleObjInsertsAllProps(): void {
         // -- Setup test ----
         $input = (object) ["id" => "1", "title" => "Title", "dev" => "Dev"];
