@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Pike;
 
-use Auryn\Injector;
-
 class App {
     public const VERSION = "1.0.0-alpha1";
     /** @var \ArrayObject */
     protected $mods;
-    /** @var \Auryn\Injector */
+    /** @var \Pike\Injector */
     protected $di;
     /**
      */
@@ -38,7 +36,7 @@ class App {
         return $this;
     }
     /**
-     * @param callable $fn callable(\Auryn\Injector $di):void
+     * @param callable $fn callable(\Pike\Injector $di):void
      * @return $this
      */
     public function defineInjectables(callable $fn) {
@@ -90,9 +88,15 @@ class App {
         $response->commitIfReady();
     }
     /**
-     * @return \Auryn\Injector
+     * @return \ArrayObject
      */
-    public function getDi() {
+    public function getModules(): \ArrayObject {
+        return $this->modules;
+    }
+    /**
+     * @return \Pike\Injector
+     */
+    public function getDi(): Injector {
         return $this->di;
     }
     /**
