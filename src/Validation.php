@@ -10,6 +10,19 @@ use Pike\Extensions\Validation\SafeHTMLValidator;
  * Validaatiomoduulin julkinen API.
  */
 abstract class Validation {
+    private const STRING_TYPE_FUNCS = [
+        "alnum"  => "ctype_alnum",
+        "alpha"  => "ctype_alpha",
+        "cntrl"  => "ctype_cntrl",
+        "digit"  => "ctype_digit",
+        "graph"  => "ctype_graph",
+        "lower"  => "ctype_lower",
+        "print"  => "ctype_print",
+        "punct"  => "ctype_punct",
+        "space"  => "ctype_space",
+        "upper"  => "ctype_upper",
+        "xdigit" => "ctype_xdigit",
+    ];
     /** @var array<string, array> */
     private static $ruleImpls = [];
     /**
@@ -36,28 +49,22 @@ abstract class Validation {
     }
     /**
      * @param string $name
+     * @return bool
+     */
+    public static function hasRuleImpl(string $name): bool {
+        return self::getRuleImplInternal($name) !== null;
+    }
+    /**
+     * @param string $name
      * @return array [callable, string]
      * @throws \Pike\PikeException
      */
     public static function getRuleImpl(string $name): array {
-        if (!isset(self::$ruleImpls['string'])) {
-            $cls = self::class . '::';
-            self::$ruleImpls = array_merge(self::$ruleImpls, [
-                'type'       => ["{$cls}is", '%s must be %s'],
-                'minLength'  => ["{$cls}isMoreOrEqualLength", 'The length of %s must be at least %d'],
-                'maxLength'  => ["{$cls}isLessOrEqualLength", 'The length of %s must be %d or less'],
-                'min'        => ["{$cls}isEqualOrGreaterThan", 'The value of %s must be %d or greater'],
-                'max'        => ["{$cls}isEqualOrLessThan", 'The value of %s must be %d or less'],
-                'in'         => ["{$cls}isOneOf", 'The value of %s was not in the list'],
-                'identifier' => ["{$cls}isIdentifier", '%s must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]'],
-                'regexp'     => ["{$cls}doesMatchRegexp", 'The value of %s did not pass the regexp'],
-                'safeHtml'   => [SafeHTMLValidator::class . '::isSafeHTML', 'The value of %s is not valid html'],
-            ]);
-        }
-        if (!array_key_exists($name, self::$ruleImpls))
+        $out = self::getRuleImplInternal($name);
+        if (!$out)
             throw new PikeException("No implementation found for `{$name}`.",
                                     PikeException::BAD_INPUT);
-        return self::$ruleImpls[$name];
+        return $out;
     }
     // == Default asserters ====================================================
     public static function is($value, string $type): bool {
@@ -69,6 +76,12 @@ abstract class Validation {
         if ($type === 'float') return is_float($value);
         if ($type === 'object') return is_object($value);
         throw new PikeException("is_{$type}() not supported",
+                                PikeException::BAD_INPUT);
+    }
+    public static function isStringType($value, string $type): bool {
+        if (($fn = self::STRING_TYPE_FUNCS[$type] ?? null) !== null)
+            return is_string($value) && $fn($value);
+        throw new PikeException("{$type} id not valid string type (ctype_{$type}())",
                                 PikeException::BAD_INPUT);
     }
     public static function isMoreOrEqualLength($value, int $min, string $expectedType = 'string'): bool {
@@ -102,6 +115,24 @@ abstract class Validation {
                                                        PikeException::BAD_INPUT);
         return $result === 1;
     }
+    private static function getRuleImplInternal(string $name): ?array {
+        if (!isset(self::$ruleImpls['string'])) {
+            $cls = self::class . '::';
+            self::$ruleImpls = array_merge(self::$ruleImpls, [
+                'type'       => ["{$cls}is", '%s must be %s'],
+                'stringType' => ["{$cls}isStringType", '%s must be %s string'],
+                'minLength'  => ["{$cls}isMoreOrEqualLength", 'The length of %s must be at least %d'],
+                'maxLength'  => ["{$cls}isLessOrEqualLength", 'The length of %s must be %d or less'],
+                'min'        => ["{$cls}isEqualOrGreaterThan", 'The value of %s must be %d or greater'],
+                'max'        => ["{$cls}isEqualOrLessThan", 'The value of %s must be %d or less'],
+                'in'         => ["{$cls}isOneOf", 'The value of %s was not in the list'],
+                'identifier' => ["{$cls}isIdentifier", '%s must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]'],
+                'regexp'     => ["{$cls}doesMatchRegexp", 'The value of %s did not pass the regexp'],
+                'safeHtml'   => [SafeHTMLValidator::class . '::isSafeHTML', 'The value of %s is not valid html'],
+            ]);
+        }
+        return self::$ruleImpls[$name] ?? null;
+    }
 }
 
 abstract class BaseValidator {
@@ -118,6 +149,13 @@ abstract class BaseValidator {
                                 string $errorTmpl) {
         $this->oneTimeRuleImpls[$name] = [$checkFn, $errorTmpl];
         return $this;
+    }
+    /**
+     * @param string $name
+     * @return bool
+     */
+    public function hasRuleImpl(string $name): bool {
+        return array_key_exists($name, $this->oneTimeRuleImpls) || Validation::hasRuleImpl($name);
     }
     /**
      * @param string $name

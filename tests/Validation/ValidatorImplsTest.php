@@ -29,6 +29,36 @@ final class ValidatorImplsTest extends TestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
+    public function testTypeValidatorValidatesStringType() {
+        $v = function() { return Validation::makeValueValidator(); };
+        $this->assertNotEmpty($v()->rule('stringType', 'alnum')->validate('foo!#$bar'));
+        $this->assertEmpty($v()->rule('stringType', 'alnum')->validate('AbCd1zyZ9'));
+        $this->assertNotEmpty($v()->rule('stringType', 'alpha')->validate('arf12'));
+        $this->assertEmpty($v()->rule('stringType', 'alpha')->validate('KjgWZC'));
+        $this->assertNotEmpty($v()->rule('stringType', 'cntrl')->validate('arf12'));
+        $this->assertEmpty($v()->rule('stringType', 'cntrl')->validate("\n\r\t"));
+        $this->assertNotEmpty($v()->rule('stringType', 'digit')->validate('wsl!12'));
+        $this->assertEmpty($v()->rule('stringType', 'digit')->validate('10002'));
+        $this->assertNotEmpty($v()->rule('stringType', 'graph')->validate("asdf\n\r\t"));
+        $this->assertEmpty($v()->rule('stringType', 'graph')->validate('arf12'));
+        $this->assertNotEmpty($v()->rule('stringType', 'lower')->validate('QASsdks'));
+        $this->assertEmpty($v()->rule('stringType', 'lower')->validate('qiutoas'));
+        $this->assertNotEmpty($v()->rule('stringType', 'print')->validate("asdf\n\r\t"));
+        $this->assertEmpty($v()->rule('stringType', 'print')->validate('LKA#@%.54'));
+        $this->assertNotEmpty($v()->rule('stringType', 'punct')->validate('ABasdk!@!$#'));
+        $this->assertEmpty($v()->rule('stringType', 'punct')->validate('*&$()'));
+        $this->assertNotEmpty($v()->rule('stringType', 'space')->validate("\narf12"));
+        $this->assertEmpty($v()->rule('stringType', 'space')->validate("\n\r\t"));
+        $this->assertNotEmpty($v()->rule('stringType', 'upper')->validate('akwSKWsm'));
+        $this->assertEmpty($v()->rule('stringType', 'upper')->validate('LMNSDO'));
+        $this->assertNotEmpty($v()->rule('stringType', 'xdigit')->validate('AR1012'));
+        $this->assertEmpty($v()->rule('stringType', 'xdigit')->validate('ab12bc99'));
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testMinLengthValidatorValidatesLength() {
         $v = function() { return Validation::makeValueValidator(); };
         $this->assertNotEmpty($v()->rule('minLength', 2)->validate('s'));
