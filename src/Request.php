@@ -45,7 +45,7 @@ class Request {
                                 ?array $serverVars = null,
                                 ?array $queryVars = null,
                                 ?array $cookies = null) {
-        $this->path = urldecode($path !== '' ? $path : '/');
+        $this->path = $path !== '' ? $path : '/';
         $this->method = $method;
         $this->body = $body ?? new \stdClass;
         $this->files = $files ?? new \stdClass;
