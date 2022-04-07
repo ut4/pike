@@ -7,13 +7,13 @@ namespace Pike;
 class App {
     public const VERSION = "1.0.0-alpha1";
     /** @var \ArrayObject */
-    protected $mods;
+    protected $modules;
     /** @var \Pike\Injector */
     protected $di;
     /**
      */
     public function __construct() {
-        $this->mods = new \ArrayObject;
+        $this->modules = new \ArrayObject;
         $this->di = new Injector;
         $router = new Router;
         $router->addMatchTypes(["w" => "[0-9A-Za-z_-]++"]);
@@ -32,7 +32,7 @@ class App {
                 throw new PikeException(get_class($instance) . "->init(\Pike\Router \$router) is required",
                                         PikeException::BAD_INPUT);
         }
-        $this->mods->exchangeArray($modules);
+        $this->modules->exchangeArray($modules);
         return $this;
     }
     /**
@@ -57,7 +57,7 @@ class App {
         $this->di->share($request);
         $router = $this->di->make(Router::class);
         $di = $this->di;
-        foreach ($this->mods as $mod) {
+        foreach ($this->modules as $mod) {
             $mod->init($router, $di);
         }
         //
@@ -76,7 +76,7 @@ class App {
         if (!$response) $response = new Response;
         $this->di->share($response);
         //
-        foreach ($this->mods as $mod) {
+        foreach ($this->modules as $mod) {
             if (method_exists($mod, "beforeExecCtrl"))
                 $mod->beforeExecCtrl($this->di);
         }

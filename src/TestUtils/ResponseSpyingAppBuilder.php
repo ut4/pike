@@ -22,12 +22,13 @@ class ResponseSpyingAppBuilder {
     }
     /**
      * @param \Pike\Request|string $reqOrPath
-     * @param ?string $method = 'GET'
+     * @param string $method = 'GET'
      * @param ?object $body = new \stdClass
      * @param ?object $files = new \stdClass
      * @param ?array $serverVars = null
      * @param ?array $queryVars = null
      * @param ?array $cookies = null
+     * @return \Pike\TestUtils\MutedSpyingResponse
      */
     public function sendRequest($reqOrPath,
                                 string $method = 'GET',

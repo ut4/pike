@@ -31,7 +31,7 @@ abstract class DbTestCase extends TestCase {
                                 PikeException::BAD_INPUT);
     }
     /**
-     * @return array<string, mixed>|null $config = null
+     * @param array<string, mixed>|null $config = null
      * @return \Pike\Db
      */
     public static function setGetDb(?array $config = null): Db {
