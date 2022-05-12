@@ -149,6 +149,20 @@ class MySelect extends Select {
         return self::join("leftJoin", $statement);
     }
     /**
+     * @inheritdoc
+     */
+    public function orderBy(string $column): Select {
+        $isSqlite = $this->db->attr(\PDO::ATTR_DRIVER_NAME) === "sqlite";
+        if ($isSqlite) {
+            if (str_contains($column, "rand(")) $column = str_replace("rand(", "random(", $column);
+            if (str_contains($column, "RAND(")) $column = str_replace("RAND(", "RANDOM(", $column);
+        } else {
+            if (str_contains($column, "random(")) $column = str_replace("random(", "rand(", $column);
+            if (str_contains($column, "RANDOM(")) $column = str_replace("RANDOM(", "RAND(", $column);
+        }
+        return parent::orderBy($column);
+    }
+    /**
      * @param string $which "leftJoin"|"rightJoin"|"innerJoin"|"outerJoin"|"fullJoin"
      * @param string $statement
      * @return $this
@@ -193,6 +207,25 @@ class MySelect extends Select {
         return $this;
     }
     /**
+     * @param string $mongoExpr
+     * @param array<string, mixed> $variables = []
+     * @return $this
+     */
+    public function mongoWhere(string $mongoExpr, array $variables = []): Select {
+        [$whereSql, $whereVals] = MongoFilters::fromString($mongoExpr)->toQParts();
+        if ($whereSql) {
+            // Substitute "$url" -> $variables->url etc.
+            foreach ($variables as $name => $val) {
+                foreach ($whereVals as $i => $val) {
+                    if ($val === "\${$name}")
+                        $whereVals[$i] = $val;
+                }
+            }
+            $this->where(implode(" AND ", $whereSql), $whereVals);
+        }
+        return $this;
+    }
+    /**
      * @inheritdoc
      */
     protected function buildQuery() {
@@ -209,9 +242,11 @@ class MySelect extends Select {
         if (!$rows || !($mapper = $this->mapper))
             return $rows;
         //
-        if (!is_object($rows[0]))
+        if (!is_object($rows[0])) {
+            if (!$rows[0]) return [];
             throw new PikeException("Mappers only supports objects i.e. select(..., MyObject::class)",
                                     PikeException::BAD_INPUT);
+        }
         //
         $filtered = [];
         for ($i = 0; $i < count($rows); ++$i) {
