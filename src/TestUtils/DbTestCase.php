@@ -37,46 +37,51 @@ abstract class DbTestCase extends TestCase {
     public static function setGetDb(?array $config = null): Db {
         if (!self::$db) {
             self::$db = new SingleConnectionDb([]);
-            self::createOrOpenTestDb($config ?? static::getDbConfig());
+            self::createOrOpenTestDb($config ?? static::getDbConfig(), self::$db);
         }
         return self::$db;
+    }
+    public static function openAndPopulateTestDb(array $config, Db $db, ?array $extraInitStatements = null): void {
+        self::createOrOpenTestDb($config, $db, $extraInitStatements);
     }
     /**
      * @param array<string, mixed> $config
      */
-    private static function createOrOpenTestDb(array $config): void {
+    private static function createOrOpenTestDb(array $config, Db $db, ?array $extraInitStatements = null): void {
         $initFilePath = $config['db.schemaInitFilePath'] ?? '';
         if (!$initFilePath) {
-            self::$db->setConfig($config);
-            self::$db->open();
+            $db->setConfig($config);
+            $db->open();
             return;
         }
         //
         $initSql = self::getInitSql($initFilePath);
+        if (is_array($initSql) && $extraInitStatements)
+            $initSql = array_merge($initSql, $extraInitStatements);
         $isSqlite = ($config['db.driver'] ?? '') === 'sqlite';
-        self::$db->setConfig($isSqlite
+        $db->setConfig($isSqlite
             ? $config
             // Open !sqlite databases without a selected database/schema
             : array_merge($config, ['db.database' => '']));
-        self::$db->open();
+        $db->open();
         //
         if ($isSqlite) {
-            self::populateDb($initSql);
+            self::populateDb($initSql, $db);
             return;
         }
         //
         $databaseName = $config['db.database'];
-        if (self::$db->fetchOne(
+        if ($db->fetchOne(
             'SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA' .
             ' WHERE SCHEMA_NAME = ?',
             [$databaseName]
         )) {
-            self::$db->exec("USE {$databaseName}");
+            $db->exec("USE {$databaseName}");
             return;
         }
-        self::$db->exec("CREATE DATABASE {$databaseName}");
-        self::$db->exec("USE {$databaseName}");
-        self::$db->setConfig($config);
+        $db->exec("CREATE DATABASE {$databaseName}");
+        $db->exec("USE {$databaseName}");
+        $db->setConfig($config);
         self::populateDb($initSql);
     }
     /**
@@ -100,14 +105,14 @@ abstract class DbTestCase extends TestCase {
      * @param string|array<int, string> $initSql
      * @inheritdoc
      */
-    private static function populateDb($initSql): void {
+    private static function populateDb($initSql, Db $db): void {
         if (is_array($initSql)) {
-            self::$db->exec("BEGIN");
+            $db->exec("BEGIN");
             foreach ($initSql as $stmt)
-                self::$db->exec($stmt);
-            self::$db->exec("COMMIT");
+                $db->exec($stmt);
+            $db->exec("COMMIT");
         } else {
-            self::$db->exec($initSql);
+            $db->exec($initSql);
         }
     }
 }

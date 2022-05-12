@@ -16,7 +16,7 @@ class Response {
     /** @var bool */
     protected $responseIsCommitted;
     /** @var bool */
-    protected $hasRedirect;
+    protected $isReady;
     /**
      * @param int $statusCode = 200
      */
@@ -26,13 +26,18 @@ class Response {
         $this->body = null;
         $this->headers = [];
         $this->responseIsCommitted = false;
-        $this->hasRedirect = false;
+        $this->isReady = false;
     }
     /**
      * @param int $statusCode
      * @return $this
      */
     public function status(int $statusCode): Response {
+        if ($statusCode === 301 || $statusCode === 302)
+            throw new PikeException("Please use \$res->redirect()",
+                                    PikeException::BAD_INPUT);
+        if ($statusCode === 204 || $statusCode === 304)
+            $this->isReady = true;
         $this->statusCode = $statusCode;
         return $this;
     }
@@ -98,7 +103,7 @@ class Response {
     public function redirect(string $to,
                              bool $isPermanent = true): Response {
         $this->headers[] = ['Location', $to, true, $isPermanent ? 301 : 302];
-        $this->hasRedirect = true;
+        $this->isReady = true;
         return $this;
     }
     /**
@@ -120,11 +125,16 @@ class Response {
         $this->body = $body;
     }
     /**
+     */
+    public function end(): void {
+        $this->isReady = true;
+    }
+    /**
      * @return bool $responseIsCommitted
      */
     public function commitIfReady(): bool {
         if ($this->isCommitted()) return true;
-        if (($this->contentType && $this->body !== null) || $this->hasRedirect) {
+        if ($this->isReady || ($this->contentType && $this->body !== null)) {
             $this->commit();
             return true;
         }
@@ -140,13 +150,14 @@ class Response {
      * @throws \Pike\PikeException
      */
     protected function commit(): void {
-        if ($this->body === null && !$this->hasRedirect)
+        if ($this->body === null && !$this->isReady)
             throw new PikeException('Nothing to send', PikeException::BAD_INPUT);
         http_response_code($this->statusCode);
         header("Content-Type: {$this->contentType}");
         foreach ($this->headers as $def)
             header("{$def[0]}: {$def[1]}", ...array_slice($def, 2));
-        echo $this->body;
+        if ($this->body)
+            echo $this->body;
         $this->responseIsCommitted = true;
     }
 }
