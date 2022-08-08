@@ -191,7 +191,7 @@ class Db extends DbUtils {
         }
     }
     /**
-     * @return string
+     * @return string|false
      */
     public function lastInsertId(): string {
         return $this->pdo->lastInsertId();

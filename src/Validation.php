@@ -84,12 +84,12 @@ abstract class Validation {
         throw new PikeException("{$type} id not valid string type (ctype_{$type}())",
                                 PikeException::BAD_INPUT);
     }
-    public static function isMoreOrEqualLength($value, int $min, string $expectedType = 'string'): bool {
+    public static function isMoreOrEqualLength(/*string|\Countable*/ $value, int $min, string $expectedType = 'string'): bool {
         return ($expectedType === 'string' && is_string($value) && mb_strlen($value) >= $min) ||
                ($expectedType === 'array' && (is_array($value) || $value instanceof \Countable) &&
                 count($value) >= $min);
     }
-    public static function isLessOrEqualLength($value, int $max, string $expectedType = 'string'): bool {
+    public static function isLessOrEqualLength(/*string|\Countable*/ $value, int $max, string $expectedType = 'string'): bool {
         return ($expectedType === 'string' && is_string($value) && mb_strlen($value) <= $max) ||
                ($expectedType === 'array' && (is_array($value) || $value instanceof \Countable) &&
                 count($value) <= $max);
@@ -102,6 +102,20 @@ abstract class Validation {
     }
     public static function isOneOf($value, array $listOfAllowedVals): bool {
         return in_array($value, $listOfAllowedVals, true);
+    }
+    public static function contains($value, /*string|\Traversable*/ $what, string $expectedType = 'string'): bool {
+        if ($expectedType === 'string')
+            return strpos($value, $what) !== false;
+        if ($expectedType === 'array') {
+            foreach ($value as $item) {
+                if ($item === $value) return true;
+            }
+            return false;
+        }
+        return false;
+    }
+    public static function notContains($value, /*string|\Traversable*/ $what, string $expectedType = 'string'): bool {
+        return !self::contains($value, $what, $expectedType);
     }
     public static function isIdentifier($str): bool {
         return is_string($str) &&
@@ -126,6 +140,8 @@ abstract class Validation {
                 'min'        => ["{$cls}isEqualOrGreaterThan", 'The value of %s must be %d or greater'],
                 'max'        => ["{$cls}isEqualOrLessThan", 'The value of %s must be %d or less'],
                 'in'         => ["{$cls}isOneOf", 'The value of %s was not in the list'],
+                'contains'   => ["{$cls}contains", 'Expected %s to contain the value'],
+                'notContains'=> ["{$cls}notContains", 'Expected %s not to contain the value'],
                 'identifier' => ["{$cls}isIdentifier", '%s must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]'],
                 'regexp'     => ["{$cls}doesMatchRegexp", 'The value of %s did not pass the regexp'],
                 'safeHtml'   => [SafeHTMLValidator::class . '::isSafeHTML', 'The value of %s is not valid html'],

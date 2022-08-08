@@ -10,4 +10,5 @@ class PikeException extends \RuntimeException {
     public const BAD_INPUT         = 101012;
     public const INEFFECTUAL_DB_OP = 101013;
     public const ERROR_EXCEPTION   = 101014;
+    public const DOING_IT_WRONG    = 101015;
 }

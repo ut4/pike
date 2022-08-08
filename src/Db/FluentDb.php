@@ -2,7 +2,7 @@
 
 namespace Pike\Db;
 
-use Envms\FluentPDO\{Query};
+use Envms\FluentPDO\{Query, Structure};
 use Envms\FluentPDO\Queries\Select;
 use Pike\{Db, PikeException};
 use Pike\Interfaces\RowMapperInterface;
@@ -29,10 +29,13 @@ class FluentDb {
     /**
      * @param string $tableName
      * @param ?class-string $toClass = null
+     * @param ?class-string<\Pike\Db\MySelect> $selectCls = null
      * @return \Pike\Db\MySelect
      */
-    public function select(string $tableName, ?string $toClass = null): MySelect {
-        $out = (new MyQuery($this->db->getPdo()))
+    public function select(string $tableName,
+                           ?string $toClass = null,
+                           ?string $selectCls = null): MySelect {
+        $out = (new MyQuery($this->db->getPdo(), null, $selectCls))
             ->from($this->db->compileQuery($tableName), null, $this->db);
         if ($toClass)
             $out->asObject($toClass);
@@ -62,6 +65,19 @@ class FluentDb {
 }
 
 class MyQuery extends Query {
+    /** @var class-string<\Pike\Db\MySelect> */
+    protected string $SelectCls;
+    /**
+     * Query constructor
+     *
+     * @param \PDO $pdo
+     * @param ?\Envms\FluentPDO\Structure $structure
+     * @param ?class-string<\Pike\Db\MySelect> $selectCls = null
+     */
+    public function __construct(\PDO $pdo, ?Structure $structure = null, ?string $selectCls = null) {
+        parent::__construct($pdo, $structure);
+        $this->selectCls = $selectCls ?? MySelect::class;
+    }
     /**
      * @param ?string  $table = null      - db table name
      * @param ?int     $primaryKey = null - return one row by primary key
@@ -73,7 +89,8 @@ class MyQuery extends Query {
                          Db $db = null): Select {
         $this->setTableName($table);
         $table = $this->getFullTableName();
-        $query = new MySelect($this, $table, $db);
+        $Cls = $this->selectCls;
+        $query = new $Cls($this, $table, $db);
         if ($primaryKey !== null) {
             $tableTable = $query->getFromTable();
             $tableAlias = $query->getFromAlias();
@@ -128,25 +145,25 @@ class MySelect extends Select {
      * @inheritdoc
      */
     public function rightJoin($statement): Select {
-        return self::join("leftJoin", $statement);
+        return self::join("rightJoin", $statement);
     }
     /**
      * @inheritdoc
      */
     public function innerJoin($statement): Select {
-        return self::join("leftJoin", $statement);
+        return self::join("innerJoin", $statement);
     }
     /**
      * @inheritdoc
      */
     public function outerJoin($statement): Select {
-        return self::join("leftJoin", $statement);
+        return self::join("outerJoin", $statement);
     }
     /**
      * @inheritdoc
      */
     public function fullJoin($statement): Select {
-        return self::join("leftJoin", $statement);
+        return self::join("fullJoin", $statement);
     }
     /**
      * @inheritdoc
@@ -238,7 +255,7 @@ class MySelect extends Select {
      * @param array<int, object|array<string, mixed>> $rows
      * @return array<int, object|array<string, mixed>>
      */
-    private function processAndGetResults(array $rows): array {
+    protected function processAndGetResults(array $rows): array {
         if (!$rows || !($mapper = $this->mapper))
             return $rows;
         //
@@ -297,10 +314,11 @@ abstract class InsertUpdate {
 
 class MyInsert extends InsertUpdate {
     /**
-     * @return string $lastInsertId or ""
+     * @param string $return = "insertId" "insertId"|"numRows"
+     * @return string|int|false ($lastInsertId or "" or false) or $numRows
      * @throws \Pike\PikeException If there's no data to insert
      */
-    public function execute(): string {
+    public function execute(string $return = "insertId"): string|int|bool {
         if (!$this->theValues)
             throw new PikeException("No data to insert", PikeException::BAD_INPUT);
         if (!$this->hasManyValues) {
@@ -314,7 +332,8 @@ class MyInsert extends InsertUpdate {
             $numRows = $this->db->exec("INSERT INTO {$this->tableName} ({$cols}) VALUES {$qGroups}",
                                        $vals);
         }
-        return $numRows ? $this->db->lastInsertId() : "";
+        if ($return === "insertId") return $numRows ? $this->db->lastInsertId() : "";
+        return $numRows;
     }
 }
 
