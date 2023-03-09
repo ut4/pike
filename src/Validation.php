@@ -105,8 +105,9 @@ abstract class Validation {
     }
     public static function contains($value, /*string|\Traversable*/ $what, string $expectedType = 'string'): bool {
         if ($expectedType === 'string')
-            return strpos($value, $what) !== false;
+            return is_string($value) && strpos($value, $what) !== false;
         if ($expectedType === 'array') {
+            if (!is_iterable($value)) return false;
             foreach ($value as $item) {
                 if ($item === $value) return true;
             }
@@ -115,6 +116,8 @@ abstract class Validation {
         return false;
     }
     public static function notContains($value, /*string|\Traversable*/ $what, string $expectedType = 'string'): bool {
+        if (($expectedType === 'string' && !is_string($value)) ||
+            ($expectedType === 'array' && !is_iterable($value))) return false;
         return !self::contains($value, $what, $expectedType);
     }
     public static function isIdentifier($str): bool {

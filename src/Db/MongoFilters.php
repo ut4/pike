@@ -37,7 +37,7 @@ final class MongoFilters {
                 throw new PikeException("Filter columnName name `{$colName}` is not" .
                                         " valid columnName expression",
                                         PikeException::BAD_INPUT);
-            $filterType = key($filter);
+            $filterType = (new \ArrayIterator($filter))->key();
             if (in_array($filterType, ["\$eq", "\$in", "\$startsWith", "\$contains", "\$gt"])) {
                 if ($filterType === "\$in" && !is_array($filter->{$filterType}))
                     throw new PikeException("\$in value must be an array",

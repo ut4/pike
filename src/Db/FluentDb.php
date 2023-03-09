@@ -66,7 +66,7 @@ class FluentDb {
 
 class MyQuery extends Query {
     /** @var class-string<\Pike\Db\MySelect> */
-    protected string $SelectCls;
+    protected string $selectCls;
     /**
      * Query constructor
      *
