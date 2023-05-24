@@ -6,6 +6,19 @@ use PHPUnit\Framework\TestCase;
 use Pike\ArrayUtils;
 
 final class ArrayUtilsTest extends TestCase {
+    public function testFindReturnsValues() {
+        $plainArray = ['val1', 'val2'];
+        $arrayObject = new \ArrayObject($plainArray);
+        $this->assertEquals($plainArray[0], ArrayUtils::find($plainArray, fn($v) => $v === 'val1'));
+        $this->assertEquals('default', ArrayUtils::find($plainArray, fn() => false, 'default'));
+        $this->assertEquals($arrayObject[0], ArrayUtils::find($arrayObject, fn($v) => $v === 'val1'));
+        $this->assertEquals('default', ArrayUtils::find($arrayObject, fn() => false, 'default'));
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testFindByKeyReturnsObjectOrAssoc() {
         $assocs = [['prop' => 'val1'], ['prop' => 'val2']];
         $objects = array_map(function ($a) { return (object) $a; }, $assocs);

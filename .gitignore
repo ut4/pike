@@ -3,5 +3,4 @@
 /docs
 /internal
 vendor
-composer.lock
 config.php

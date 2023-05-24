@@ -6,12 +6,12 @@
     "require": {
         "php": ">=8.0 <9.0",
         "ext-ctype": "*",
-        "altorouter/altorouter": "^1.2",
+        "altorouter/altorouter": "^2.0",
         "rdlowrey/auryn": "^1.4"
     },
     "require-dev": {
-        "phpunit/phpunit": "8.*",
-        "vimeo/psalm": "^4.10"
+        "phpunit/phpunit": "^10.1",
+        "vimeo/psalm": "^5.12"
     },
     "suggest": {
         "ext-pdo_mysql": "To use Db with the MySQL/MariaDB driver",

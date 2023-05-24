@@ -6,6 +6,18 @@ namespace Pike;
 
 class ArrayUtils {
     /**
+     * @param mixed[]|\ArrayObject<mixed, mixed> $array
+     * @param \Closure $predicate fn(mixed $item, mixed $i) => bool
+     * @param mixed $default = null
+     * @return mixed|null
+     */
+    public static function find($array, \Closure $predicate, $default = null) {
+        foreach ($array as $i => $item) {
+            if ($predicate($item, $i)) return $item;
+        }
+        return $default;
+    }
+    /**
      * @param array<mixed, object|array>|\ArrayObject<mixed, object|array> $array
      * @param mixed $val
      * @param string $key
