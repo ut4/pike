@@ -20,7 +20,7 @@ class PhpMailerMailer implements MailerInterface {
         $this->mailer = $mailer ?? new PHPMailer(true);
     }
     /**
-     * @param object $settings {fromAddress: string, fromName?: string, toAddress: string, toName?: string, subject: string, body: string, configureMailer?: fn(\Pike\PhpMailerMailer $mailer): void}, olettaa että validi
+     * @param object $settings {fromAddress: string, fromName?: string, toAddress: string, toName?: string, replyToAddress?: string, replyToName?: string, subject: string, body: string, configureMailer?: fn(\Pike\PhpMailerMailer $mailer): void}, olettaa että validi
      * @return bool
      */
     public function sendMail(object $settings): bool {
@@ -31,6 +31,8 @@ class PhpMailerMailer implements MailerInterface {
             $this->mailer->clearCustomHeaders();
         }
         $this->mailer->CharSet = PHPMailer::CHARSET_UTF8;
+        if (strlen($settings->replyToAddress ?? ''))
+            $this->mailer->addReplyTo($settings->replyToAddress, $settings->replyToName ?? '');
         $this->mailer->setFrom($settings->fromAddress, $settings->fromName ?? '');
         $this->mailer->addAddress($settings->toAddress, $settings->toName ?? '');
         $this->mailer->Subject = $settings->subject;
