@@ -19,6 +19,10 @@ Low-level toolkit for developing fast and testable php applications. A mixture o
 
 [Suomeksi](https://ut4.github.io/pike/index.html).
 
+# Security
+
+If you discover any security related issues, please email security@sivujetti.org instead of using the issue tracker. Voit kirjoittaa viestisi myös suomeksi.
+
 # License
 
 Apache 2.0
