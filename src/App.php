@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Pike;
 
+use Pike\Auth\Authenticator;
+
 class App {
     public const VERSION = "1.0.0-alpha1";
     /** @var \ArrayObject */
@@ -82,8 +84,9 @@ class App {
         }
         $allWaresRan = $this->runMiddleware($router, $request, $response);
         if ($allWaresRan) {
-            if (isset($this->ctx->auth)) $this->ctx->auth->postProcess();
             $this->di->execute("{$ctrlClassPath}::{$ctrlMethodName}");
+            if ($di->inspect(Authenticator::class, $di::I_SHARES)[$di::I_SHARES])
+                $di->make(Authenticator::class)->postProcess();
         }
         $response->commitIfReady();
     }
