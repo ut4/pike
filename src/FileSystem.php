@@ -7,13 +7,19 @@ namespace Pike;
 use Pike\Interfaces\FileSystemInterface;
 
 class FileSystem implements FileSystemInterface {
+    /** @var int */
+    public $defaultDirPerms = 0755;
+    /** @var int */
+    public $defaultFilePerms = 0644;
     /**
      * @param string $path
      * @param string $content
+     * @param int $flags = LOCK_EX
+     * @param ?resource $context
      * @return int|false
      */
-    public function write(string $path, string $content) {
-        return file_put_contents($path, $content, LOCK_EX);
+    public function write(string $path, string $content, int $flags = LOCK_EX, $context = null) {
+        return file_put_contents($path, $content, $flags, $context);
     }
     /**
      * @param string $path
@@ -53,12 +59,12 @@ class FileSystem implements FileSystemInterface {
     }
     /**
      * @param string $path
-     * @param int $perms = 0755
+     * @param int $perms = $this->defaultDirPerms = 0755
      * @param bool $recursive = true
      * @return bool
      */
     public function mkDir(string $path,
-                          int $perms = 0755,
+                          int $perms = $this->defaultDirPerms,
                           bool $recursive = true): bool {
         return mkdir($path, $perms, $recursive);
     }
@@ -118,6 +124,14 @@ class FileSystem implements FileSystemInterface {
      */
     public function lastModTime(string $path) {
         return filemtime($path);
+    }
+    /**
+     * @param string $path
+     * @param int $perms
+     * @return bool
+     */
+    public function chmod(string $path, int $perms) {
+        return chmod($path, $perms);
     }
     /**
      * 'foo/bar\baz/' -> 'foo/bar/baz'
