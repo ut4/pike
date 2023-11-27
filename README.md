@@ -6,7 +6,7 @@ Low-level toolkit for developing fast and testable php applications. A mixture o
 
 # Dependencies
 
-- PHP >=7.3
+- PHP >=8.1
 - [altorouter/altorouter ^1.2](https://github.com/dannyvankooten/AltoRouter)
 - [rdlowrey/auryn ^1.4](https://github.com/rdlowrey/auryn) (Dependency injection)
 
