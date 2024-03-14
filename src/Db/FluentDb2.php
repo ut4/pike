@@ -71,7 +71,12 @@ class FluentDb2 {
      */
     public function delete(string $table): Query {
         return $this->newQuery(function (object $configurations) use ($table) {
-            //
+            $whereConf = $configurations->where ?? throw new PikeException("Deleting without WHERE!", PikeException::DOING_IT_WRONG);
+            $whereSql = self::generateWhereSql($whereConf[0]);
+            return $this->db->exec(
+                "DELETE FROM {$this->generateTableName($table)}{$whereSql}",
+                $whereConf[1]
+            );
         });
     }
     /**
@@ -97,6 +102,23 @@ class FluentDb2 {
         $prefixified = $this->db->compileQuery($table);
         // 2. Return escaped
         return preg_replace("/[^A-Za-z0-9\$_ ]/", "", $prefixified);
+    /**
+     * @param string $sql
+     * @return string
+     */
+    private static function generateWhereSql(string $sql): string {
+        return " WHERE " . self::getValidFreeformSql($sql);
+    }
+    /**
+     * @param string $sql
+     * @return string
+     * @throws \Pike\PikeException
+     */
+    private static function getValidFreeformSql(string $sql): string {
+        // $sql (provided by a dev) normally never contains these substrings (`;`, `'`, `"` and `--`)
+        if (preg_match("/(?:[;'\"]|--)/", $sql))
+            throw new PikeException("Freeform sql contains unusual characters", PikeException::DOING_IT_WRONG);
+        return $sql;
     }
 }
 

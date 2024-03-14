@@ -2,13 +2,11 @@
 
 namespace Pike\Tests\Db\FluentDb2;
 
-use Pike\Db;
-use Pike\Db\{FluentDb2};
-use PHPUnit\Framework\TestCase;
+use Pike\Db\FluentDb2;
 
-final class BuildInsertQueriesTest extends TestCase {
+final class BuildInsertQueriesTest extends BuildQueriesTestCase {
     public function testInsertOrReplace(): void {
-        [$actualSql, $actualParams] = self::buildQuery(fn($fluentDb2) =>
+        [$actualSql, $actualParams] = self::buildQuery(fn(FluentDb2 $fluentDb2) =>
             $fluentDb2->insert("articles", orReplace: true)
                 ->values((object) ["id" => "1", "title" => "Title"])
                 ->execute()
@@ -23,7 +21,7 @@ final class BuildInsertQueriesTest extends TestCase {
         );
     }
     public function testInsertSelectedFields(): void {
-        [$actualSql, $actualParams] = self::buildQuery(fn($fluentDb2) =>
+        [$actualSql, $actualParams] = self::buildQuery(fn(FluentDb2 $fluentDb2) =>
             $fluentDb2->insert("articles")
                 ->values((object) ["id" => "1", "title" => "Title", "text" => "..."])
                 ->fields(["title", "text"])
@@ -37,31 +35,5 @@ final class BuildInsertQueriesTest extends TestCase {
             ["Title", "..."],
             $actualParams
         );
-    }
-    private static function buildQuery(\Closure $doTheQ): array {
-        $mutedSpyingDb = new MutedSpyingDb([]);
-        $fluentDb2 = new FluentDb2($mutedSpyingDb);
-        $_ = $doTheQ($fluentDb2);
-        return [$mutedSpyingDb->executedQuery, $mutedSpyingDb->executedParams];
-    }
-}
-
-final class MutedSpyingDb extends Db {
-    public string $executedQuery = "";
-    public array $executedParams = [];
-    public function fetchAll(string $query,
-                             array $params = null,
-                             ...$fetchConfig): array {
-        $this->executedQuery = $query;
-        $this->executedParams = $params ?? [];
-        return [];
-    }
-    public function exec(string $query, array $params = null): int {
-        $this->executedQuery = $query;
-        $this->executedParams = $params ?? [];
-        return 1;
-    }
-    public function lastInsertId(): string {
-        return "";
     }
 }
