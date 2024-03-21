@@ -75,11 +75,4 @@ final class RunInsertQueriesTest extends RunQueriesTestCase {
         $this->assertEquals("Title13", $actuallyInserted[1]["title"], "Shouldn't ignore `id`");
         $this->assertEquals(null, $actuallyInserted[1]["dev"], "Should ignore `dev`");
     }
-
-    private function verifyGameEquals(array $expected, ?array $actualFromDb): void {
-        $this->assertNotNull($actualFromDb);
-        $this->assertEquals($expected["id"], $actualFromDb["id"]);
-        $this->assertEquals($expected["title"], $actualFromDb["title"]);
-        $this->assertEquals($expected["dev"], $actualFromDb["dev"]);
-    }
 }

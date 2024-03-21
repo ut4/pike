@@ -31,7 +31,7 @@ class FluentDb2 {
             $valuesConf = $configurations->values[0] ?? throw new PikeException("Nothing to insert");
             $fieldsConf = $configurations->fields[0] ?? [];
             $insertType = !$orReplace ? "INSERT" : "REPLACE";
-            if (is_object($valuesConf) || !($valuesConf[0] ?? null)) {
+            if (!self::hasManyItems($valuesConf)) {
                 [$qList, $vals, $cols] = $this->db->makeInsertQParts($valuesConf, $fieldsConf);
                 // @allow \Pike\PikeException
                 $numRows = $this->db->exec("{$insertType} INTO {$this->generateTableName($table)} ({$cols}) VALUES ({$qList})",
@@ -62,7 +62,15 @@ class FluentDb2 {
      */
     public function update(string $table): Query {
         return $this->newQuery(function (object $configurations/*, ?string $return*/) use ($table) {
-            //
+            $valuesConf = $configurations->values[0] ?? throw new PikeException("No data to update", PikeException::DOING_IT_WRONG);
+            $item = !self::hasManyItems($valuesConf) ? $valuesConf : throw new PikeException("Updating multiple items not supported", PikeException::DOING_IT_WRONG);
+            [$cols, $values] = $this->db->makeUpdateQParts($item, $configurations->fields[0] ?? []);
+            $whereConf = $configurations->where ?? throw new PikeException("Updating without WHERE!", PikeException::DOING_IT_WRONG);
+            $whereSql = self::generateWhereSql($whereConf[0]);
+            return $this->db->exec(
+                "UPDATE {$this->generateTableName($table)} SET {$cols}{$whereSql}",
+                [...$values, ...$whereConf[1]]
+            );
         });
     }
     /**
@@ -119,6 +127,12 @@ class FluentDb2 {
         if (preg_match("/(?:[;'\"]|--)/", $sql))
             throw new PikeException("Freeform sql contains unusual characters", PikeException::DOING_IT_WRONG);
         return $sql;
+    }
+    /**
+     * @param object|array<int, object|array<string, mixed>>|array<string, mixed> $data
+     */
+    private static function hasManyItems($data): bool {
+        return is_array($data) && ($data[0] ?? null);
     }
 }
 

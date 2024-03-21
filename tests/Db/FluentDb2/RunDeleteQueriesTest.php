@@ -17,7 +17,4 @@ final class RunDeleteQueriesTest extends RunQueriesTestCase {
         $actuallyDeleted = self::$db->fetchOne("SELECT * FROM games");
         $this->assertNull($actuallyDeleted);
     }
-    private function insertTestGame(string $id, string $title, ?string $dev): void {
-        self::$db->exec("INSERT INTO games VALUES (?,?,?)", [$id, $title, $dev]);
-    }
 }

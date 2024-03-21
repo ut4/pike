@@ -32,4 +32,13 @@ abstract class RunQueriesTestCase extends DbTestCase {
     public static function getDbConfig(): array {
         return require PIKE_TEST_CONFIG_FILE_PATH;
     }
+    protected function insertTestGame(string $id, string $title, ?string $dev): void {
+        self::$db->exec("INSERT INTO games VALUES (?,?,?)", [$id, $title, $dev]);
+    }
+    protected function verifyGameEquals(array $expected, ?array $actualFromDb): void {
+        $this->assertNotNull($actualFromDb);
+        $this->assertEquals($expected["id"], $actualFromDb["id"]);
+        $this->assertEquals($expected["title"], $actualFromDb["title"]);
+        $this->assertEquals($expected["dev"], $actualFromDb["dev"]);
+    }
 }
