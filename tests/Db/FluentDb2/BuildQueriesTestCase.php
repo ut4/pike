@@ -7,8 +7,8 @@ use Pike\Db\{FluentDb2};
 use PHPUnit\Framework\TestCase;
 
 abstract class BuildQueriesTestCase extends TestCase {
-    protected static function buildQuery(\Closure $doTheQuery): array {
-        $mutedSpyingDb = new MutedSpyingDb([]);
+    protected static function buildQuery(\Closure $doTheQuery, array $dbConfig = []): array {
+        $mutedSpyingDb = new MutedSpyingDb($dbConfig);
         $fluentDb2 = new FluentDb2($mutedSpyingDb);
         $_ = $doTheQuery($fluentDb2);
         return [$mutedSpyingDb->executedQuery, $mutedSpyingDb->executedParams];
@@ -32,5 +32,8 @@ final class MutedSpyingDb extends Db {
     }
     public function lastInsertId(): string {
         return "";
+    }
+    public function attr(int $attr, $value = null) {
+        if ($attr === \PDO::ATTR_DRIVER_NAME && !$value) return $this->config["db.driver"] ?? "sqlite";
     }
 }

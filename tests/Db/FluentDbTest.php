@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Pike\Tests;
+namespace Pike\Tests\Db;
 
 use Pike\Db\{FluentDb, NoDupeRowMapper};
 use Pike\Interfaces\RowMapperInterface;
