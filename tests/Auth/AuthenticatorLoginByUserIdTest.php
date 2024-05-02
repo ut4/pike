@@ -96,7 +96,9 @@ class AuthenticatorLoginByUserIdTest extends AuthenticatorTestCase {
     private function verifyPassedConfigurationsToCookieStorage(\stdClass $s): void {
         $this->assertCount(1, $s->actualDataPassedToCookieStorage);
         [$userRoleCookie] = $s->actualDataPassedToCookieStorage[0];
-        $makeExpectedCookie = function ($name, $value) { return "{$name}={$value};path=/"; };
+        $makeExpectedCookie = function ($name, $value) {
+            return "{$name}={$value};" . self::DEFAULT_COOKIE_CONFIG;
+        };
         $this->assertEquals($makeExpectedCookie('loggedInUserRole',
                                                 self::TEST_USER['role']),
                             $userRoleCookie);

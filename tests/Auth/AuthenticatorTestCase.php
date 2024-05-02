@@ -28,6 +28,7 @@ abstract class AuthenticatorTestCase extends DbTestCase {
         'loginIdValidatorHash' => null,
         'loginData' => null,
     ];
+    protected const DEFAULT_COOKIE_CONFIG = "path=/;SameSite=Strict";
     /**
      * @return array<string, mixed>
      */

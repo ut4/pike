@@ -127,8 +127,10 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
     }
     private function verifyPassedUserRoleConfigurationsToCookieStorage(\stdClass $s): void {
         [$userRoleCookie] = $s->actualDataPassedToCookieStorage[0];
-        $this->assertEquals('loggedInUserRole=' . self::TEST_USER['role'] . ';path=/',
-                            $userRoleCookie);
+        $this->assertEquals(
+            'loggedInUserRole=' . self::TEST_USER['role'] . ';' . self::DEFAULT_COOKIE_CONFIG,
+            $userRoleCookie
+        );
     }
 
 
@@ -155,7 +157,7 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
         //
         [$loginTokensCookie] = $s->actualDataPassedToCookieStorage[1];
         $noExpires = explode(';expires=', $loginTokensCookie)[0];
-        $this->assertEquals("loginTokens={$expectedTokens};path=/",
+        $this->assertEquals("loginTokens={$expectedTokens};" . self::DEFAULT_COOKIE_CONFIG,
                             $noExpires);
     }
     private function verifyInsertedLoginDataToDb(\stdClass $s): void {

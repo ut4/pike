@@ -6,8 +6,10 @@ namespace Pike\Interfaces;
 
 interface SessionInterface {
     /**
+     * @param ?array $settings = null
+     * @psalm-param ?array<string, string> $settings = null
      */
-    public function start(): void;
+    public function start(?array $settings = null): void;
     /**
      * @param string $key
      * @param mixed $value

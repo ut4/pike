@@ -32,7 +32,8 @@ class AuthenticatorLogoutTest extends AuthenticatorTestCase {
                                                              \stdClass $s): void {
         $this->assertCount(1, $s->actualDataPassedToCookieStorage);
         [$clearUserRoleCookie] = $s->actualDataPassedToCookieStorage[0];
-        $this->assertEquals("{$expectedCookieName}=-;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT",
+        $expectedTimePart = "expires=Thu, 01 Jan 1970 00:00:01 GMT";
+        $this->assertEquals("{$expectedCookieName}=-;" . self::DEFAULT_COOKIE_CONFIG . ";{$expectedTimePart}",
                             $clearUserRoleCookie);
     }
 

@@ -31,7 +31,7 @@ final class CookieManager {
                                     string $value,
                                     ?int $expiration = null): void {
         $e = $expiration !== null ? (';' . self::makeCookieExpiresKeyPair($expiration)) : '';
-        $this->configs[] = "{$name}={$value};path=/{$e}";
+        $this->configs[] = "{$name}={$value};path=/;SameSite=Strict{$e}";
     }
     /**
      * @param string $name
@@ -45,7 +45,7 @@ final class CookieManager {
      */
     public function addClearCookieConfig(string $name): void {
         $e = self::makeCookieExpiresKeyPair(1);
-        $this->configs[] = "{$name}=-;path=/;{$e}";
+        $this->configs[] = "{$name}=-;path=/;SameSite=Strict;{$e}";
     }
     /**
      * Kirjoittaa asetetut keksit $this->ctx->req-olioon.
