@@ -15,7 +15,7 @@ class FileSystem implements FileSystemInterface {
      * @param string $path
      * @param string $content
      * @param int $flags = LOCK_EX
-     * @param ?resource $context
+     * @param ?resource $context = null
      * @return int|false
      */
     public function write(string $path, string $content, int $flags = LOCK_EX, $context = null) {
@@ -23,10 +23,18 @@ class FileSystem implements FileSystemInterface {
     }
     /**
      * @param string $path
+     * @param bool $useIncludePath = false,
+     * @param ?resource $context = null
+     * @param int $offset = 0
+     * @param ?int $length = null
      * @return string|false
      */
-    public function read(string $path) {
-        return file_get_contents($path);
+    public function read(string $path,
+                         bool $useIncludePath = false,
+                         $context = null,
+                         int $offset = 0,
+                         ?int $length = null) {
+        return file_get_contents($path, $useIncludePath, $context, $offset, $length);
     }
     /**
      * @param string $path
@@ -59,14 +67,14 @@ class FileSystem implements FileSystemInterface {
     }
     /**
      * @param string $path
-     * @param int $perms = $this->defaultDirPerms = 0755
+     * @param ?int $perms = $this->defaultDirPerms
      * @param bool $recursive = true
      * @return bool
      */
     public function mkDir(string $path,
-                          int $perms = $this->defaultDirPerms,
+                          ?int $perms = null,
                           bool $recursive = true): bool {
-        return mkdir($path, $perms, $recursive);
+        return mkdir($path, $perms ?? $this->defaultDirPerms, $recursive);
     }
     /**
      * @param string $path
