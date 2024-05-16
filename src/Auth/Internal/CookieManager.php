@@ -25,13 +25,16 @@ final class CookieManager {
     /**
      * @param string $name
      * @param string $value
-     * @param ?int $expiration = null null = istunnon ajan, >0 = absoluuttinen aika, unixtime
+     * @param ?int $expiration = null null = session length, > 0 = specific absolute unix timestamp
+     * @param ?bool $httpOnly = true
      */
     public function addCookieConfig(string $name,
                                     string $value,
-                                    ?int $expiration = null): void {
-        $e = $expiration !== null ? (';' . self::makeCookieExpiresKeyPair($expiration)) : '';
-        $this->configs[] = "{$name}={$value};path=/;SameSite=Strict{$e}";
+                                    ?int $expiration = null,
+                                    ?bool $httpOnly = true): void {
+        $exp  = $expiration !== null ? ('; ' . self::makeCookieExpiresKeyPair($expiration)) : '';
+        $nojs = $httpOnly            ? ('; HttpOnly')                                       : '';
+        $this->configs[] = "{$name}={$value}; path=/; SameSite=Strict{$exp}{$nojs}";
     }
     /**
      * @param string $name
@@ -44,8 +47,9 @@ final class CookieManager {
      * @param string $name
      */
     public function addClearCookieConfig(string $name): void {
-        $e = self::makeCookieExpiresKeyPair(1);
-        $this->configs[] = "{$name}=-;path=/;SameSite=Strict;{$e}";
+        $jan_1_1970 = 0;
+        $exp = self::makeCookieExpiresKeyPair($jan_1_1970);
+        $this->configs[] = "{$name}=-; path=/; SameSite=Strict; {$exp}";
     }
     /**
      * Kirjoittaa asetetut keksit $this->ctx->req-olioon.

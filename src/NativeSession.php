@@ -23,7 +23,10 @@ class NativeSession implements SessionInterface {
      * @param ?array $settings = ['cookie_samesite' => 'Strict']
      */
     public function start(?array $settings = null): void {
-        if (!session_id()) session_start($settings ?? ['cookie_samesite' => 'Strict']);
+        if (!session_id()) session_start($settings ?? [
+            'cookie_httponly' => '1',
+            'cookie_samesite' => 'Strict',
+        ]);
     }
     /** 
      * @param string $key

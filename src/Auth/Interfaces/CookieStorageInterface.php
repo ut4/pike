@@ -11,7 +11,7 @@ interface CookieStorageInterface {
      */
     public function getCookie(string $name): ?string;
     /**
-     * @param string $cookieString e.g. 'name=foo;path=/'
+     * @param string $cookieString e.g. 'name=foo; path=/'
      */
     public function storeCookie(string $cookieString): void;
 }

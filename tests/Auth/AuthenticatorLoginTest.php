@@ -128,7 +128,7 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
     private function verifyPassedUserRoleConfigurationsToCookieStorage(\stdClass $s): void {
         [$userRoleCookie] = $s->actualDataPassedToCookieStorage[0];
         $this->assertEquals(
-            'loggedInUserRole=' . self::TEST_USER['role'] . ';' . self::DEFAULT_COOKIE_CONFIG,
+            'loggedInUserRole=' . self::TEST_USER['role'] . '; ' . self::DEFAULT_COOKIE_CONFIG,
             $userRoleCookie
         );
     }
@@ -156,9 +156,14 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
         $expectedTokens = "{$expectedLoginId}:{$expectedLoginValidator}";
         //
         [$loginTokensCookie] = $s->actualDataPassedToCookieStorage[1];
-        $noExpires = explode(';expires=', $loginTokensCookie)[0];
-        $this->assertEquals("loginTokens={$expectedTokens};" . self::DEFAULT_COOKIE_CONFIG,
-                            $noExpires);
+        $pieces = explode("; ", $loginTokensCookie);
+        $this->assertEquals("loginTokens={$expectedTokens}",
+                            $pieces[0]);
+        $this->assertEquals(self::DEFAULT_COOKIE_CONFIG,
+                            "{$pieces[1]}; {$pieces[2]}");
+        $this->assertEquals(1, preg_match("/expires=([a-zA-Z0-9,: ]+) GMT/", $pieces[3]));
+        $this->assertEquals("HttpOnly",
+                            $pieces[4]);
     }
     private function verifyInsertedLoginDataToDb(\stdClass $s): void {
         $actual = $this->getTestUserFromDb();

@@ -176,7 +176,7 @@ final class Authenticator {
         //
         if ($this->userRoleCookieName)
             $this->services->makeCookieManager()
-                ->addCookieConfig($this->userRoleCookieName, strval($user->role));
+                ->addCookieConfig($this->userRoleCookieName, strval($user->role), httpOnly: false);
         //
         if ($rememberMe = $this->services->makeRememberMe())
             // @allow \Pike\PikeException
