@@ -11,7 +11,7 @@ class NativeSession implements SessionInterface {
     /** 
      * @param string $bucketKey = 'pike'
      * @param bool $autostart = true
-     * @param ?array $startSettings = ['cookie_samesite' => 'Strict']
+     * @param ?array $startSettings = ['cookie_httponly' => '1', 'cookie_samesite' => 'Strict']
      */
     public function __construct(string $bucketKey = 'pike',
                                 bool $autostart = true,
@@ -20,7 +20,7 @@ class NativeSession implements SessionInterface {
         if ($autostart) $this->start($startSettings);
     }
     /**
-     * @param ?array $settings = ['cookie_samesite' => 'Strict']
+     * @param ?array $settings = ['cookie_httponly' => '1', 'cookie_samesite' => 'Strict']
      */
     public function start(?array $settings = null): void {
         if (!session_id()) session_start($settings ?? [

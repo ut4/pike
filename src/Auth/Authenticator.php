@@ -35,6 +35,7 @@ final class Authenticator {
     /**
      * @param callable(\Pike\Auth\Internal\ServicesFactory): \Pike\Interfaces\UserRepositoryInterface $makeUserRepositoryFn
      * @param callable(\Pike\Auth\Internal\ServicesFactory): \Pike\Interfaces\SessionInterface $makeSessionFn
+     * @param callable(\Pike\Auth\Internal\ServicesFactory): \Pike\Request $makeRequestFn
      * @param callable(\Pike\Auth\Internal\ServicesFactory): \Pike\Auth\Interfaces\CookieStorageInterface $makeCookieStorageFn
      * @param string $userRoleCookieName = 'maybeLoggedInUserRole'
      * @param bool $doUseRememberMe = true
@@ -42,12 +43,14 @@ final class Authenticator {
      */
     public function __construct(callable $makeUserRepositoryFn,
                                 callable $makeSessionFn,
+                                callable $makeRequestFn,
                                 callable $makeCookieStorageFn,
                                 string $userRoleCookieName = 'maybeLoggedInUserRole',
                                 bool $doUseRememberMe = true,
                                 Crypto $crypto = null) {
         $this->services = new ServicesFactory($makeUserRepositoryFn,
                                               $makeSessionFn,
+                                              $makeRequestFn,
                                               $makeCookieStorageFn,
                                               $doUseRememberMe,
                                               $crypto);
@@ -100,9 +103,10 @@ final class Authenticator {
      * @throws \Pike\PikeException
      */
     public function getIdentity() {
-        if (($data = $this->getAndOpenSession()->get('user')) ||
-            !($rememberMe = $this->services->makeRememberMe()))
+        if (($data = $this->getAndOpenSession()->get('user')))
             return $data;
+        if (!($rememberMe = $this->services->makeRememberMe()))
+            return null;
         if (($serializedSessionData = $rememberMe->getLogin())) {
             $sessionData = unserialize($serializedSessionData);
             $this->getAndOpenSession()->put('user', $sessionData);

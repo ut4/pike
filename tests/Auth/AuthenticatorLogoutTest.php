@@ -55,7 +55,7 @@ class AuthenticatorLogoutTest extends AuthenticatorTestCase {
     }
     private function setupRememberMeLogoutTest(): \stdClass {
         $state = new \stdClass;
-        $state->loginValidatorToken = str_repeat('a', 32);
+        $state->loginLoginIdValidator = str_repeat('a', 32);
         $state->testUserData = [
             'loginId' => str_repeat('b', 32),
             'loginIdValidatorHash' => '<mock-sha256-hash---------------------------------------------->',

@@ -7,10 +7,12 @@ use Pike\Auth\{ACL, Authenticator};
 use Pike\Auth\Interfaces\CookieStorageInterface;
 use Pike\Defaults\DefaultUserRepository;
 use Pike\Interfaces\{MailerInterface, SessionInterface};
+use Pike\Request;
 use Pike\TestUtils\{DbTestCase, MockCrypto};
 
 abstract class AuthenticatorTestCase extends DbTestCase {
     protected const TEST_USER_PASS = '1234';
+    protected const TEST_USER_IP = '127.0.0.2';
     protected const TEST_USER = [
         'id' => '12345678-1234-1234-1234-123456781234',
         'username' => 'Pike',
@@ -46,15 +48,16 @@ abstract class AuthenticatorTestCase extends DbTestCase {
                                 ?bool $useUserRoleCookie = false,
                                 ?bool $useRememberMe = false): Authenticator {
         return new Authenticator(
+            fn($_factory) => new DefaultUserRepository(self::$db),
+            fn($_factory) => $mockSession ?? $this->createMock(SessionInterface::class),
             function ($_factory) {
-                return new DefaultUserRepository(self::$db);
+                $out = $this->createMock(Request::class);
+                $out->method('attr')
+                    ->with('REMOTE_ADDR')
+                    ->willReturn(self::TEST_USER_IP);
+                return $out;
             },
-            function ($_factory) use ($mockSession) {
-                return $mockSession ?? $this->createMock(SessionInterface::class);
-            },
-            function ($_factory) use ($mockCookieStorage) {
-                return $mockCookieStorage ?? $this->createMock(CookieStorageInterface::class);
-            },
+            fn($_factory) => $mockCookieStorage ?? $this->createMock(CookieStorageInterface::class),
             $useUserRoleCookie ? 'loggedInUserRole' : '',
             $useRememberMe,
             new MockCrypto
@@ -99,7 +102,7 @@ abstract class AuthenticatorTestCase extends DbTestCase {
         $out = $this->makeSpyingCookieStorage($state);
         $out->method('getCookie')
             ->with('loginTokens')
-            ->willReturn("{$state->testUserData['loginId']}:{$state->loginValidatorToken}");
+            ->willReturn("{$state->testUserData['loginId']}:{$state->loginLoginIdValidator}");
         return $out;
     }
     /**

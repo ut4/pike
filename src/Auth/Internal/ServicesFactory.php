@@ -7,12 +7,15 @@ namespace Pike\Auth\Internal;
 use Pike\Auth\Crypto;
 use Pike\Auth\Interfaces\CookieStorageInterface;
 use Pike\Interfaces\{SessionInterface, UserRepositoryInterface};
+use Pike\Request;
 
 class ServicesFactory {
     /** @var callable fn($this): \Pike\Interfaces\UserRepositoryInterface */
     private $makeUserRepositoryFn;
     /** @var callable fn($this): \Pike\Interfaces\SessionInterface */
     private $makeSessionFn;
+    /** @var callable fn($this): \Pike\Request */
+    private $makeRequestFn;
     /** @var callable fn($this): \Pike\Auth\Interfaces\CookieStorageInterface */
     private $makeCookieStorageFn;
     /** @var bool */
@@ -26,17 +29,20 @@ class ServicesFactory {
     /**
      * @param callable $makeUserRepositoryFn fn($this): \Pike\Interfaces\UserRepositoryInterface
      * @param callable $makeSessionFn fn($this): \Pike\Interfaces\SessionInterface
+     * @param callable $makeRequestFn fn($this): \Pike\Request
      * @param callable $makeCookieStorageFn fn($this): \Pike\Auth\Interfaces\CookieStorageInterface
      * @param bool $doUseRememberMe
      * @param ?\Pike\Auth\Crypto $crypto = null
      */
     public function __construct(callable $makeUserRepositoryFn,
                                 callable $makeSessionFn,
+                                callable $makeRequestFn,
                                 callable $makeCookieStorageFn,
                                 bool $doUseRememberMe,
                                 ?Crypto $crypto = null) {
         $this->makeUserRepositoryFn = $makeUserRepositoryFn;
         $this->makeSessionFn = $makeSessionFn;
+        $this->makeRequestFn = $makeRequestFn;
         $this->makeCookieStorageFn = $makeCookieStorageFn;
         $this->doUseRememberMe = $doUseRememberMe;
         $this->crypto = $crypto;
@@ -63,7 +69,8 @@ class ServicesFactory {
         return $this->doUseRememberMe
             ? new RememberMe($this->makeUserRepository(),
                              $this->makeCookieManager(),
-                             $this->makeCrypto())
+                             $this->makeCrypto(),
+                             $this->makeRequest())
             : null;
     }
     /**
@@ -71,6 +78,12 @@ class ServicesFactory {
      */
     public function makeCrypto(): Crypto {
         return $this->crypto ?? new Crypto;
+    }
+    /**
+     * @return \Pike\Request
+     */
+    public function makeRequest(): Request {
+        return call_user_func($this->makeRequestFn, $this);
     }
     /**
      * @return \Pike\Auth\Internal\CookieManager

@@ -46,8 +46,7 @@ class AuthenticatorGetIdentityTest extends AuthenticatorTestCase {
     public function testGetIdentityReturnsNullIfUserSessionNorRememberMeCookieExist(): void {
         $auth = $this->makeAuth($this->makeSessionThatReturnsNothing(),
                                 $this->makeCookieStorageThatReturnsNothing(),
-                                false,
-                                true);
+                                useRememberMe: true);
         $actual = $auth->getIdentity();
         $this->assertNull($actual);
     }
@@ -70,13 +69,13 @@ class AuthenticatorGetIdentityTest extends AuthenticatorTestCase {
         $this->verifyReturnedMatchingLoginDataFromDb($state);
         $this->verifyStoredLoginDataToSession($state);
     }
-    private function setupRememberMeTest(): \stdClass {
+    private function setupRememberMeTest(string $IPStoredOnLogin = self::TEST_USER_IP): \stdClass {
         $state = new \stdClass;
-        $state->loginValidatorToken = str_repeat('a', 32);
+        $state->loginLoginIdValidator = str_repeat('a', 32);
         $state->sessionData = (object) ['id' => self::TEST_USER['id']];
         $state->testUserData = [
             'loginId' => str_repeat('b', 32),
-            'loginIdValidatorHash' => MockCrypto::mockHash('sha256', $state->loginValidatorToken),
+            'loginIdValidatorHash' => MockCrypto::mockHash('sha256', "{$state->loginLoginIdValidator}{$IPStoredOnLogin}"),
             'loginData' => serialize($state->sessionData),
         ];
         $state->actualDataPutToSession = null;
@@ -86,8 +85,7 @@ class AuthenticatorGetIdentityTest extends AuthenticatorTestCase {
     private function invokeGetIdentityFeature(\stdClass $state): void {
         $auth = $this->makeAuth($this->makeSessionThatReturnsNothing($state),
                                 $this->makeCookieStorageThatReturnsValidRememberMeTokens($state),
-                                false,
-                                true);
+                                useRememberMe: true);
         $state->actualIdentity = $auth->getIdentity();
     }
     private function verifyReturnedMatchingLoginDataFromDb(\stdClass $state): void {
@@ -123,5 +121,22 @@ class AuthenticatorGetIdentityTest extends AuthenticatorTestCase {
         $this->assertNull($data->loginId);
         $this->assertNull($data->loginIdValidatorHash);
         $this->assertNull($data->loginData);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testGetIdentityWithRememberMeOnDoesNotRetrieveIdentityIfRequestIPDiffersFromStoredOne(): void {
+        $state = $this->setupRememberIPMismatchTest();
+        $this->insertTestUserToDb($state->testUserData);
+        $this->invokeGetIdentityFeature($state);
+        $this->verifyDidNotReturIdentity($state);
+        $this->verifyClearedLoginDataFromDb($state);
+    }
+    private function setupRememberIPMismatchTest(): \stdClass {
+        $someOtherIp = str_replace("127", "126", self::TEST_USER_IP);
+        $state = $this->setupRememberMeTest($someOtherIp);
+        return $state;
     }
 }

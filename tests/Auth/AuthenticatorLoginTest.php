@@ -167,13 +167,16 @@ class AuthenticatorLoginTest extends AuthenticatorTestCase {
     }
     private function verifyInsertedLoginDataToDb(\stdClass $s): void {
         $actual = $this->getTestUserFromDb();
-        $expected = array_merge(self::TEST_USER,
-                                ['loginId' => MockCrypto::mockGenRandomToken(),
-                                 'loginIdValidatorHash' => MockCrypto::mockHash('sha256', MockCrypto::mockGenRandomToken()),
-                                 'loginData' => serialize(call_user_func($s->myUserToMakeSessionDataFn, (object) [
-                                     'id' => self::TEST_USER['id'],
-                                     'username' => self::TEST_USER['username']
-                                 ]))]);
+        $expected = [
+            ...self::TEST_USER,
+            ...['loginId' => MockCrypto::mockGenRandomToken(),
+                'loginIdValidatorHash' => MockCrypto::mockHash('sha256', MockCrypto::mockGenRandomToken()) .
+                                          self::TEST_USER_IP,
+                'loginData' => serialize(call_user_func($s->myUserToMakeSessionDataFn, (object) [
+                    'id' => self::TEST_USER['id'],
+                    'username' => self::TEST_USER['username']
+                ]))]
+        ];
         $this->assertEquals((object) $expected, $actual);
     }
 }
