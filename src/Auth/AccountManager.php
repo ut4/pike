@@ -42,7 +42,7 @@ final class AccountManager {
      */
     public function requestNewAccount(string $username,
                                       string $email,
-                                      string $password,
+                                      #[\SensitiveParameter] string $password,
                                       callable $makeEmailSettings,
                                       int $role = ACL::ROLE_LAST): string {
         // @allow \Pike\PikeException
@@ -163,7 +163,7 @@ final class AccountManager {
      * @throws \Pike\PikeException
      */
     public function finalizePasswordReset(string $key,
-                                          string $newPassword): void {
+                                          #[\SensitiveParameter] string $newPassword): void {
         // 1. Hae resetointidata tietokannasta
         // @allow \Pike\PikeException
         $user = $this->persistence->getUserByColumn('resetKey', $key);
@@ -191,7 +191,8 @@ final class AccountManager {
      * @param string $newPassword
      * @throws \Pike\PikeException
      */
-    public function updatePassword(string $userId, string $newPassword): void {
+    public function updatePassword(string $userId,
+                                   #[\SensitiveParameter] string $newPassword): void {
         throw new PikeException('Not implemented yo');
     }
     /**

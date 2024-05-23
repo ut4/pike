@@ -19,7 +19,7 @@ class Db extends DbUtils {
     /**
      * @param object|array $config ['db.host' => string, ...]
      */
-    public function __construct($config) {
+    public function __construct(#[\SensitiveParameter] $config) {
         $this->setConfig($config);
     }
     /**
@@ -209,7 +209,7 @@ class Db extends DbUtils {
     /**
      * @param object|array $config ['db.host' => string, ...]
      */
-    public function setConfig($config): void {
+    public function setConfig(#[\SensitiveParameter] $config): void {
         $this->config = is_array($config) ? $config : (array) $config;
         $this->tablePrefix = $this->config['db.tablePrefix'] ?? '';
     }

@@ -40,7 +40,7 @@ class Request {
      */
     public function __construct(string $path,
                                 string $method = 'GET',
-                                ?object $body = null,
+                                #[\SensitiveParameter] ?object $body = null,
                                 ?object $files = null,
                                 ?array $serverVars = null,
                                 ?array $queryVars = null,

@@ -63,7 +63,7 @@ final class Authenticator {
      * @throws \Pike\PikeException
      */
     public function login(string $usernameOrEmail,
-                          string $password,
+                          #[\SensitiveParameter] string $password,
                           ?callable $convertUserToSessionData = null): void {
         // @allow \Pike\PikeException
         $user = $this->services->makeUserRepository()

@@ -15,7 +15,7 @@ class AppConfig {
     /**
      * @param object|array $vals
      */
-    public function __construct($vals) {
+    public function __construct(#[\SensitiveParameter] $vals) {
         // @allow \Pike\PikeException
         $this->setVals($vals);
     }
@@ -23,7 +23,7 @@ class AppConfig {
      * @param object|array $config
      * @throws \Pike\PikeException
      */
-    public function setVals($config): void {
+    public function setVals(#[\SensitiveParameter] $config): void {
         if (is_object($config))
             $this->vals = $config;
         elseif (is_array($config))

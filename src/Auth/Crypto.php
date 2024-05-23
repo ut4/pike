@@ -14,7 +14,7 @@ class Crypto {
      * @return string
      * @throws \Pike\PikeException
      */
-    public function hashPass(string $plainPass): string {
+    public function hashPass(#[\SensitiveParameter] string $plainPass): string {
         $out = password_hash($plainPass, PASSWORD_DEFAULT);
         if (is_string($out))
             return $out;
@@ -26,7 +26,8 @@ class Crypto {
      * @param string $hashedPass
      * @return bool
      */
-    public function verifyPass(string $plainPass, string $hashedPass): bool {
+    public function verifyPass(#[\SensitiveParameter] string $plainPass,
+                               string $hashedPass): bool {
         return password_verify($plainPass, $hashedPass);
     }
     /**
@@ -69,7 +70,7 @@ class Crypto {
      * @return string
      * @throws \Pike\PikeException|\Exception
      */
-    public function encrypt(string $plainStr, string $key): string {
+    public function encrypt(string $plainStr, #[\SensitiveParameter] string $key): string {
         $nonce = random_bytes(self::SECRETBOX_NONCEBYTES);
         try {
             $ciphertext = sodium_crypto_secretbox($plainStr, $nonce, $key);
@@ -84,7 +85,7 @@ class Crypto {
      * @return string
      * @throws \Pike\PikeException
      */
-    public function decrypt(string $encodedStr, string $key): string {
+    public function decrypt(string $encodedStr, #[\SensitiveParameter] string $key): string {
         if (!($decoded = base64_decode($encodedStr)))
             throw new PikeException('Failed to decode input string',
                                     PikeException::BAD_INPUT);
