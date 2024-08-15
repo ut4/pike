@@ -28,7 +28,7 @@
         "psr-4": { "Pike\\Tests\\": "tests/" }
     },
     "scripts": {
-        "test": "\"vendor/bin/phpunit\" --bootstrap ./tests/bootstrap.php",
+        "test": "\"vendor/bin/phpunit\" --bootstrap ./tests/bootstrap.php  --display-warnings",
         "lint": "\"./vendor/bin/psalm\" --set-baseline=psalm-known-errors.xml"
     }
 }

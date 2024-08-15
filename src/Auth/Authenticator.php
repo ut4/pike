@@ -65,13 +65,17 @@ final class Authenticator {
     public function login(string $usernameOrEmail,
                           #[\SensitiveParameter] string $password,
                           ?callable $convertUserToSessionData = null): void {
+        $crypto = $this->services->makeCrypto();
         // @allow \Pike\PikeException
         $user = $this->services->makeUserRepository()
             ->getUserByColumn('usernameOrEmail', $usernameOrEmail);
-        if (!$user)
+        if (!$user) {
+            // Call password_verify() anyway to prevent quessing / timing attacks
+            $crypto->verifyPass($password, '$2y$10$t5qHKpiTRk3QMiYuabuHaeDzsQelD0uhe94abePfdq3ikQM7DE0He');
             throw new PikeException('User not found or not activated',
                                     Authenticator::CREDENTIAL_WAS_INVALID);
-        if (!$this->services->makeCrypto()->verifyPass($password, $user->passwordHash))
+        }
+        if (!$crypto->verifyPass($password, $user->passwordHash))
             throw new PikeException('Invalid password',
                                     Authenticator::CREDENTIAL_WAS_INVALID);
         if ($user->accountStatus !== Authenticator::ACCOUNT_STATUS_ACTIVATED)

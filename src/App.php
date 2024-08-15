@@ -7,7 +7,7 @@ namespace Pike;
 use Pike\Auth\Authenticator;
 
 class App {
-    public const VERSION = "1.0.0-alpha1";
+    public const VERSION = "1.0.0-alpha6";
     /** @var \ArrayObject */
     protected $modules;
     /** @var \Pike\Injector */
